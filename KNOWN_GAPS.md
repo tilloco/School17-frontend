@@ -14,3 +14,15 @@
 - In-call chat is a provider data channel and is not stored server-side (the UI says so). Persistent chat comes with S5.
 - A guardian cannot observe a minor's lesson (tokens only for the two booked participants). Product/safeguarding decision pending.
 - Presence with the mock provider trusts client heartbeats; with LiveKit only webhooks are trusted (untested).
+
+## S5 Messaging and files
+- No S3/R2 adapter: uploads/downloads use LocalDiskStorage + our own signed-URL endpoints. A production object store (direct-to-storage presigned multipart) is NOT built or tested. Local disk is not suitable for multiple servers.
+- PDF first-page preview is NOT implemented (needs poppler or pdfjs+canvas); PDFs have page count only. Image thumbnails are implemented (sharp).
+- ClamAV adapter (`ClamdScanProvider`) is UNTESTED against a real clamd. Default is NO scanning (files marked NOT_SCANNED) unless CLAMD_HOST is set; set FILE_SCAN_REQUIRED=true in production.
+- PDF active-content check is a keyword scan on raw bytes: it will miss obfuscated/compressed object streams. It is a filter, not proof of safety.
+- Files are fully buffered in memory during completion (up to 50 MB). Fine for current limits; not for large video.
+- Image decoding relies on libvips (sharp) security updates; keep it updated.
+- Virus-free is never claimed anywhere in the UI.
+- Mobile chat UI and file picker/upload progress UI are NOT built yet (backend + API only); see S11 note.
+- Typing indicators, message delete/edit, search and push notifications for messages are not built.
+- Unread counts are computed by queries (fine for current scale, no caching).
