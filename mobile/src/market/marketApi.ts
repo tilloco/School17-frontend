@@ -221,6 +221,10 @@ export const market = {
   classFileReport: (token: string, id: string, fid: string, reason: string) => apiRequest(`/classes/${id}/files/${fid}/report`, { method: 'POST', token, body: { reason } }),
   present: (token: string, sid: string, fileId: string, page: number) => apiRequest(`/class-sessions/${sid}/present`, { method: 'POST', token, body: { fileId, page } }),
   presentStop: (token: string, sid: string) => apiRequest(`/class-sessions/${sid}/present/stop`, { method: 'POST', token, body: {} }),
+  boardGet: (token: string, sid: string) => apiRequest<{ rev: number; strokes: BoardStroke[] }>(`/class-sessions/${sid}/whiteboard`, { token }),
+  boardPut: (token: string, sid: string, strokes: BoardStroke[]) => apiRequest(`/class-sessions/${sid}/whiteboard`, { method: 'PUT', token, body: { strokes } }),
+  boardSave: (token: string, sid: string, clear: boolean) => apiRequest(`/class-sessions/${sid}/whiteboard/save`, { method: 'POST', token, body: { clear } }),
+  classFeed: (token: string, id: string) => apiRequest<FeedPost[]>(`/classes/${id}/feed`, { token }),
   owed: (token: string) => apiRequest<OwedGroup[]>('/teachers/me/money/owed', { token }),
   remind: (token: string, bookingId: string) => apiRequest<{ reminded: number }>('/teachers/me/money/remind', { method: 'POST', token, body: { bookingId } }),
   income: (token: string, month: string) => apiRequest<IncomeView>(`/teachers/me/money/income?month=${month}`, { token }),
@@ -282,6 +286,7 @@ export interface ClassDetail {
 export interface ClassRoomState {
   id: string; role: 'teacher' | 'pupil'; status: string; startAt: string; lobbyOpensAt: string; stageMode: 'LISTEN_ONLY' | 'HAND_RAISE' | 'OPEN_STAGE'; locked: boolean;
   teacherReconnecting: boolean; teacherNoShow: boolean; stageCount: number; stageMax: number;
+  whiteboardRev: number;
   presentation: { fileId: string; name: string; page: number; pageCount: number; renderedPages: number; renderStatus: string } | null;
   classId: string;
   me: { handRaised: boolean; stage: 'NONE' | 'VOICE' | 'VOICE_VIDEO'; removed: boolean } | null;
@@ -293,3 +298,5 @@ export interface ClassQuestionItem {
   mine: boolean; voted: boolean; reply: { text: string } | null;
 }
 export interface ClassFileItem { id: string; name: string; pageCount: number; renderedPages: number; renderStatus: 'PREPARING' | 'READY' | 'FAILED'; allowDownload: boolean; sizeBytes: number | null }
+export interface BoardStroke { c: string; w: number; p: [number, number][] }
+export interface FeedPost { id: string; kind: string; sessionId: string | null; text: string | null; hasImage: boolean; at: string }

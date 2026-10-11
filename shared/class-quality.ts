@@ -47,6 +47,8 @@ export const CLASS_QUALITY = {
   reconnect: { maxAttemptsBeforeBanner: 2 },
   /** Qayta ulangandan keyin backenddan qayta o'qiladigan holatlar */
   resync: ['permissions', 'stage', 'presentation', 'whiteboard', 'chat', 'questions'] as const,
+  /** Ekran ulashish (faqat o'qituvchi): matn o'qilishi uchun o'lcham saqlanadi, kadr chastotasi kamayadi. Qurilmada sinalmagan. */
+  screenShare: { minFps: 5, maxFps: 15, contentHint: 'text', degradation: 'maintain-resolution', maxWidth: 1920 },
   /** Statistika namunasi (R10) */
   telemetryEveryMs: 30_000,
 } as const;

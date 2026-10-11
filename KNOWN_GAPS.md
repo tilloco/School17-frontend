@@ -129,3 +129,6 @@
 - FilesService.complete() assembles the whole upload in memory (Buffer.concat) and checkPdf converts it to a latin1 string, so the 500 MiB default limit is NOT safe on an 8 GB machine; keep FILE_MAX_BYTES at about 100 MiB until streaming assembly exists.
 - PDF rendering was tested with small generated PDFs only. Large, scanned, encrypted or malicious PDFs, memory use per page and the 300 s limit are unmeasured; the render runs in the API process (a hostile PDF could stall it). Move it to a worker process/queue (R12).
 - Laser pointer is not built. Mobile library and presenter screens are type-checked only. Admin Storage page was type-checked, not rendered; run `cd admin && npm run build` before the e2e test.
+
+## R6 whiteboard and screen share
+- Pupils see the board with a few seconds delay (polling + 15 s snapshots); no stroke streaming. Screen share is configuration only (no SDK). Whiteboard screen (PanResponder + react-native-svg) is type-checked only; drawing feel, palm rejection and performance on low-end phones are unknown.
