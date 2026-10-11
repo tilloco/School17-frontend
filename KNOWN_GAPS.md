@@ -72,3 +72,7 @@
 - Chat uses polling (5 s), not the socket.io channel; no attachment picker/upload UI, no typing indicators, no push-token registration, no reschedule/review/payment/earnings screens, no teacher profile editor or availability editor, no admin UI.
 - The old exam-app screens still contain hard-coded Uzbek text (not touched).
 - Offline handling = "can't reach server" state with retry; there is no offline cache or queued sending.
+
+## A1 Free mode
+- Wording in uz/ru texts was written by me and has not been reviewed by a native legal translator. The S8 payment/ledger code is dormant but still shipped; it has only ever run against the mock provider.
+- DATA_INVENTORY.md and PAYMENTS_GAPS.md still describe the dormant payment tables; they are not live data in free mode.

@@ -99,6 +99,7 @@ export default function TeacherScreen() {
           </View>
         )}
         <Text style={styles.meta}>{t('teacher.guardianNeeded')}</Text>
+        <Text style={styles.meta}>{t('free.notice')}</Text>
         <PrimaryButton title={t('teacher.book')} onPress={book} disabled={!picked} loading={busy} />
         <PrimaryButton title={t('teacher.block')} variant="outline" onPress={block} />
       </ScrollView>

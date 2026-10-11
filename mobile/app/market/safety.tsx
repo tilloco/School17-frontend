@@ -53,6 +53,7 @@ export default function SafetyScreen() {
     <Screen>
       <Stack.Screen options={{ headerShown: true, title: t('safety.title'), headerBackTitle: t('common.back') }} />
       <ScrollView contentContainerStyle={{ gap: spacing.md, paddingVertical: spacing.md }}>
+        <Text style={styles.freeNotice} accessibilityRole="text">{t('free.notice')}</Text>
         <Text style={styles.h2}>{t('safety.tips')}</Text>
         <Text style={styles.draft}>{t('safety.draft')}</Text>
         {tips.data?.tips.map((tip) => <Text key={tip} style={styles.tip}>• {tip}</Text>)}
@@ -111,6 +112,7 @@ export default function SafetyScreen() {
 }
 
 const styles = StyleSheet.create({
+  freeNotice: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, color: colors.text, borderWidth: 1, borderColor: colors.border },
   h2: { fontSize: 18, fontWeight: '700', color: colors.text },
   h3: { fontSize: 16, fontWeight: '700', color: colors.text },
   draft: { fontSize: 12, color: colors.warning },

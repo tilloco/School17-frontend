@@ -38,3 +38,10 @@ Everything below is **NEEDS LAWYER**. Nothing in this repo is legal advice; text
 
 ## 6. Stores
 25. Apple/Google rules for tutoring payments outside IAP and for user-generated content (see STORE_CHECKLIST.md). Child-directed app policies (Apple Kids category / Google Families) if pupils under 13... (we exclude under 13).
+
+## 7. Free model, direct payments (added with A1) - NEEDS LAWYER
+26. Liability wording when pupils pay teachers directly by card transfer: what must the terms say so School17 is not treated as a payment intermediary or seller? Is "the app cannot check, protect, recover or return any payment" enough?
+27. Showing a teacher's card number (and holder name) to pupils who booked: lawfulness, consent of the teacher, security expectations, what we may log. Whether a card number counts as sensitive personal/financial data under the personal-data law.
+28. Personal-data law (Uzbekistan): processing of the teacher's card details and of "paid / not received" records; retention; export/deletion; localisation.
+29. Teacher income tax / self-employment registration: the app gives NO tax advice; what disclaimer is required, and must the platform report teacher income to tax authorities?
+30. Disputes about unpaid or unreceived transfers: may moderators see receipts uploaded by pupils; what to tell users when we cannot help recover money.

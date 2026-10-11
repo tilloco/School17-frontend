@@ -1,3 +1,5 @@
+> **DORMANT (A1):** School17 is free. This file describes the dormant S8 escrow code, which only runs with `ESCROW_ENABLED=true` and only against a mock provider. See DECISIONS.md #60.
+
 # PAYMENTS_GAPS (S8)
 
 Status: **everything money-related runs on `MockPaymentProvider`. No real money moves. Nothing here is production-ready for real payments.**
