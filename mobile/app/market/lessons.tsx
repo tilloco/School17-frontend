@@ -60,6 +60,13 @@ export default function LessonsScreen() {
                 <Text style={styles.when}>{new Date(b.startAt).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · {b.durationMin} min</Text>
                 <Text style={styles.who}>{b.myRole === 'teacher' ? b.student.name : b.teacher.name}</Text>
                 <Text style={styles.status}>{t(`status.${b.status}`)}</Text>
+                {b.reschedule && !b.reschedule.byMe && (
+                  <View style={{ gap: spacing.sm }}>
+                    <Text style={styles.status}>{t('lessons.counter', { time: new Date(b.reschedule.proposedStartAt).toLocaleString() })}</Text>
+                    <PrimaryButton title={t('lessons.acceptTime')} onPress={() => act(() => market.acceptTime(token as string, b.id))} />
+                    <PrimaryButton title={t('lessons.declineTime')} variant="outline" onPress={() => act(() => market.rejectTime(token as string, b.id))} />
+                  </View>
+                )}
                 <View style={styles.actions}>
                   {b.canJoinNow && <PrimaryButton title={t('lessons.join')} onPress={() => router.push(`/call/${b.id}` as never)} />}
                   {b.myRole === 'teacher' && b.status === 'REQUESTED' && (

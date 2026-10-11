@@ -28,7 +28,15 @@ export default function MarketHome() {
     { label: t('market.lessons'), to: '/market/lessons' },
     { label: t('market.messages'), to: '/market/threads' },
     { label: t('market.notifications'), to: '/market/notifications', badge: unread.data?.unread },
-    ...(me.data?.role === 'TEACHER' ? [{ label: t('market.card'), to: '/market/card' }] : []),
+    ...(me.data?.role === 'TEACHER'
+      ? [
+          { label: t('setup.today'), to: '/market/today' },
+          { label: t('setup.requests'), to: '/market/requests' },
+          { label: t('setup.profile'), to: '/market/profile-edit' },
+          { label: t('setup.availability'), to: '/market/availability' },
+          { label: t('market.card'), to: '/market/card' },
+        ]
+      : []),
     { label: t('market.safety'), to: '/market/safety' },
   ];
   return (

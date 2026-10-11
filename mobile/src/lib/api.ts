@@ -19,12 +19,15 @@ const DEFAULT_TIMEOUT_MS = 15000;
 export class ApiError extends Error {
   statusCode: number;
   code?: string;
+  /** Serverning to'liq xato tanasi (masalan { missing: [...] }) */
+  details: Record<string, unknown>;
 
   constructor(body: ApiErrorBody, statusCode: number) {
     const message = Array.isArray(body.message) ? body.message.join(', ') : body.message;
     super(message || "Noma'lum xatolik yuz berdi");
     this.statusCode = statusCode;
     this.code = body.code;
+    this.details = body as unknown as Record<string, unknown>;
   }
 }
 interface RequestOptions {

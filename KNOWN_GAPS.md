@@ -87,3 +87,10 @@
 - Pay screen, clipboard copy, receipt picker and the chunked uploader (src/market/uploader.ts) are type-checked only; never run on a device. expo-image-picker plugin was added to app.json: needs a rebuild of the development client.
 - Existing accepted bookings from before A3 get a record lazily when someone opens the payment view.
 - The teacher's money board and list of own payments come with A4; the profile editor field for paymentTiming comes with A5 (the API already accepts it).
+
+## A5 Teacher setup (mobile)
+- All A5 screens (today, requests, profile-edit, availability) are type-checked only; never rendered on a device. Image picking/upload for the profile photo is unverified on devices.
+- Days off are stored as whole UTC days from the dates typed (not exact local-midnight boundaries in the teacher's time zone). Subject/level/language chips show catalog ids (e.g. "math"), not translated names.
+- The availability editor uses plain HH:MM text boxes (no time picker); invalid input is rejected client-side and by the server.
+- The teacher's profile photo is not yet shown in search results or on the teacher page (API supports GET /teachers/:id/photo; hasPhoto flag exists).
+- The full smoke test (real WebRTC) failed once in ~10 full-suite runs; it passes alone 6/6. Diagnostics were added so the next failure prints page state and call events.

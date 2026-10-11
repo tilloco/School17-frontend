@@ -18,7 +18,7 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 - [x] A1 Free mode (ESCROW_ENABLED off, texts rewritten)
 - [x] A2 Teacher card details (encrypted)
 - [x] A3 Direct payment tracking
-- [ ] A5 Teacher setup on mobile
+- [x] A5 Teacher setup on mobile
 - [ ] A6 Admin web
 - [ ] A4 Teacher money board
 - [ ] A7 Reviews + reschedule on mobile

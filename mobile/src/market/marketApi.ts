@@ -60,6 +60,24 @@ export interface DirectPaymentView {
   note?: string;
 }
 
+export interface OwnProfile {
+  id: string;
+  headline: string;
+  bio: string;
+  subjects: string[];
+  levels: string[];
+  languages: string[];
+  priceMinor: number;
+  introVideoUrl: string | null;
+  instantBooking: boolean;
+  paymentTiming: 'PAY_BEFORE' | 'PAY_AFTER';
+  hasPhoto: boolean;
+  verificationStatus: 'DRAFT' | 'PENDING' | 'VERIFIED' | 'REJECTED' | 'SUSPENDED';
+  rejectionReason: string | null;
+  timeOff: { id: string; startAt: string; endAt: string; reason: string | null }[];
+}
+export interface AvailabilityRuleView { weekday: number; start: string; end: string }
+
 export interface ReviewList {
   summary: { count: number; average: number | null };
   items: { id: string; rating: number; text: string; author: string; createdAt: string; reply: { text: string } | null }[];
@@ -83,6 +101,7 @@ export interface Booking {
   student: { id?: string; name: string | null };
   canJoinNow: boolean;
   isTrial?: boolean;
+  reschedule?: { proposedStartAt: string; byMe: boolean } | null;
   cancel: { by: string; late: boolean } | null;
   lateCancelPolicy: { freeCancelHours: number };
 }
@@ -165,6 +184,19 @@ export const market = {
     apiRequest<DirectPaymentView>(`/bookings/${bookingId}/direct-payment/${what}`, { method: 'POST', token, body }),
   revealCard: (token: string, teacherProfileId: string) =>
     apiRequest<{ cardNumber: string; holderName: string }>(`/teachers/${teacherProfileId}/payment-info/reveal`, { method: 'POST', token, body: {} }),
+  catalogFull: (token: string) => apiRequest<{ subjects: string[]; levels: string[]; languages: string[] }>('/catalog', { token }),
+  ownProfile: (token: string) => apiRequest<OwnProfile>('/teachers/me/profile', { token }),
+  saveProfile: (token: string, body: Record<string, unknown>) => apiRequest<OwnProfile>('/teachers/me/profile', { method: 'PUT', token, body }),
+  submitProfile: (token: string, ) => apiRequest<OwnProfile>('/teachers/me/submit', { method: 'POST', token, body: {} }),
+  setPhoto: (token: string, fileId: string) => apiRequest<{ hasPhoto: boolean }>('/teachers/me/photo', { method: 'PUT', token, body: { fileId } }),
+  getAvailability: (token: string) => apiRequest<AvailabilityRuleView[]>('/teachers/me/availability', { token }),
+  saveAvailability: (token: string, rules: AvailabilityRuleView[]) => apiRequest<AvailabilityRuleView[]>('/teachers/me/availability', { method: 'PUT', token, body: { rules } }),
+  addTimeOff: (token: string, startAt: string, endAt: string) => apiRequest('/teachers/me/time-off', { method: 'POST', token, body: { startAt, endAt } }),
+  removeTimeOff: (token: string, id: string) => apiRequest(`/teachers/me/time-off/${id}`, { method: 'DELETE', token }),
+  counterOffer: (token: string, bookingId: string, startAt: string) => apiRequest<Booking>(`/bookings/${bookingId}/counter-offer`, { method: 'POST', token, body: { startAt } }),
+  acceptTime: (token: string, bookingId: string) => apiRequest<Booking>(`/bookings/${bookingId}/reschedule/accept`, { method: 'POST', token, body: {} }),
+  rejectTime: (token: string, bookingId: string) => apiRequest<Booking>(`/bookings/${bookingId}/reschedule/reject`, { method: 'POST', token, body: {} }),
+  moneySummary: (token: string) => apiRequest<{ unpaidLessons: number; awaitingConfirmation: number }>('/teachers/me/money/summary', { token }),
   blocks: (token: string) => apiRequest<{ id: string; name: string | null }[]>('/blocks', { token }),
   unblock: (token: string, id: string) => apiRequest(`/blocks/${id}`, { method: 'DELETE', token }),
   inbox: (token: string) => apiRequest<InboxItem[]>('/notifications', { token }),
