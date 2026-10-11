@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
 import { colors } from '../../src/theme/colors';
+import { t } from '../../src/i18n';
 
 export default function TabsLayout() {
   return (
@@ -26,6 +27,10 @@ export default function TabsLayout() {
       <Tabs.Screen name="exam" options={{
         title: 'Mock',
         tabBarIcon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} />,
+      }} />
+      <Tabs.Screen name="market" options={{
+        title: t('market.tab'),
+        tabBarIcon: ({ color, size }) => <Ionicons name="school-outline" size={size} color={color} />,
       }} />
       <Tabs.Screen name="profile" options={{
         title: 'Profil',

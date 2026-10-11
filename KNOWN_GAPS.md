@@ -66,3 +66,9 @@
 - Expo Push sender is UNTESTED against the real Expo service (fake fetch only); mobile does not register push tokens yet (no UI wired).
 - No email notifications at all (no SMTP/provider); no quiet hours; no user notification preferences.
 - Reminders are created at confirmation time (24 h and 15 min) and removed on cancel; reschedule re-creates them. Not verified on a real clock over days.
+
+## S11 Mobile UI and languages
+- All new mobile screens (app/market/*, call screen) are type-checked only; never rendered on a device/emulator (no emulators allowed here). Layout, accessibility labels and keyboard behaviour are unverified.
+- Chat uses polling (5 s), not the socket.io channel; no attachment picker/upload UI, no typing indicators, no push-token registration, no reschedule/review/payment/earnings screens, no teacher profile editor or availability editor, no admin UI.
+- The old exam-app screens still contain hard-coded Uzbek text (not touched).
+- Offline handling = "can't reach server" state with retry; there is no offline cache or queued sending.
