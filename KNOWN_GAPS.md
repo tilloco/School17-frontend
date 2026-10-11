@@ -46,3 +46,11 @@
 - No fiscal receipts/tax, no payout KYC, no multi-currency.
 - Admin UI for payments/payouts/disputes does not exist (API only).
 - Mobile screens for paying, earnings dashboard and payouts are not built.
+
+## S9 Safety
+- Guardianship cannot be verified (code sharing proves nothing about parenthood). NEEDS LAWYER.
+- Contact-info filter is heuristic: misses spelled-out digits, images/PDFs with text, other languages' messenger names; also blocks some legitimate 9-10 digit numbers (e.g. in maths) in chats with minors.
+- No automated content moderation (images, abuse language); moderation is report-driven. No admin UI for the moderation queue.
+- Safety tips and legal texts are drafts; tips need a child-safeguarding specialist.
+- Blocks do not cancel existing future bookings automatically.
+- Mobile UI for report/block/guardian linking does not exist yet.
