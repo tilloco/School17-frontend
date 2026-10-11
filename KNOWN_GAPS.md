@@ -135,3 +135,7 @@
 
 ## R7 class payments
 - Monthly classes are not partially waived on a teacher no-show or cancelled session (the teacher can waive by hand). Payment screens (board, gate card, my payments) are type-checked only. There is no proof-of-payment upload for class payments yet.
+
+## R8 recap and feed
+- Notification type for the 30-minute reminder is class.reminder_soon (the template test only recognises letters, underscores and dots). Class homework has no quiz mode. Recap polls are an empty list until R9. Recap/feed/homework screens are type-checked only.
+- Run several DB test files with --test-concurrency=1: ClassRoomService.sweep() and other helpers touch every row in the shared test DB.

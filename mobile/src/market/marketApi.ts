@@ -231,6 +231,14 @@ export const market = {
   classOwed: (token: string) => apiRequest<{ pupilName: string; classTitle: string; classId: string; count: number; totalMinor: number }[]>('/teachers/me/money/class-owed', { token }),
   classPayMine: (token: string) => apiRequest<ClassPayRow[]>('/class-payments/mine', { token }),
   classPaid: (token: string, paymentId: string) => apiRequest(`/class-payments/${paymentId}/paid`, { method: 'POST', token, body: {} }),
+  classRecap: (token: string, sid: string) => apiRequest<ClassRecap>(`/class-sessions/${sid}/recap`, { token }),
+  classNote: (token: string, sid: string, note: { topic: string; homework: string; nextStep: string }) => apiRequest(`/class-sessions/${sid}/note`, { method: 'PUT', token, body: note }),
+  classLateAnswer: (token: string, sid: string, qid: string, text: string) => apiRequest(`/class-sessions/${sid}/questions/${qid}/late-answer`, { method: 'POST', token, body: { text } }),
+  homeworkList: (token: string, id: string) => apiRequest<HomeworkItem[]>(`/classes/${id}/homework`, { token }),
+  homeworkDetail: (token: string, id: string, hid: string) => apiRequest<HomeworkDetail>(`/classes/${id}/homework/${hid}`, { token }),
+  createHomework: (token: string, id: string, body: { title: string; text: string; dueAt: string }) => apiRequest(`/classes/${id}/homework`, { method: 'POST', token, body }),
+  submitHomework: (token: string, id: string, hid: string, body: { text?: string; fileId?: string; studentId?: string }) => apiRequest(`/classes/${id}/homework/${hid}/submit`, { method: 'POST', token, body }),
+  markHomework: (token: string, id: string, hid: string, pupilId: string, score: number) => apiRequest(`/classes/${id}/homework/${hid}/submissions/${pupilId}/mark`, { method: 'POST', token, body: { score } }),
   owed: (token: string) => apiRequest<OwedGroup[]>('/teachers/me/money/owed', { token }),
   remind: (token: string, bookingId: string) => apiRequest<{ reminded: number }>('/teachers/me/money/remind', { method: 'POST', token, body: { bookingId } }),
   income: (token: string, month: string) => apiRequest<IncomeView>(`/teachers/me/money/income?month=${month}`, { token }),
@@ -305,7 +313,17 @@ export interface ClassQuestionItem {
 }
 export interface ClassFileItem { id: string; name: string; pageCount: number; renderedPages: number; renderStatus: 'PREPARING' | 'READY' | 'FAILED'; allowDownload: boolean; sizeBytes: number | null }
 export interface BoardStroke { c: string; w: number; p: [number, number][] }
-export interface FeedPost { id: string; kind: string; sessionId: string | null; text: string | null; hasImage: boolean; at: string }
+export interface FeedPost { id: string; kind: string; sessionId: string | null; title: string | null; text: string | null; data: unknown; hasImage: boolean; at: string }
 export interface ClassBoardRow { id: string; pupilId: string; name: string | null; status: string; amountMinor: number; periodKey: string; teacherConfirmedAt: string | null }
 export interface ClassBoard { classId: string; period: string; currentPeriod: string; periods: { key: string; label: string }[]; rows: ClassBoardRow[] }
 export interface ClassPayRow { id: string; classId: string; classTitle: string; teacher: { id: string; name: string | null }; periodKey: string; amountMinor: number; status: string }
+export interface ClassRecap {
+  role: 'teacher' | 'pupil'; startAt: string; durationSec: number;
+  attendance: { pupilId: string; name: string; attended: boolean; totalSeconds: number; joinedLate: boolean }[];
+  questions: { asked: number; answered: number; unanswered?: { id: string; text: string }[]; answeredList: { text: string; reply: string | null }[] };
+  files: { name: string }[];
+  note: { topic: string; homework: string; nextStep: string } | null;
+}
+export interface HomeworkSub { id: string; pupilId: string; text: string; fileId: string | null; late: boolean; score: number | null; comment: string | null; marked: boolean }
+export interface HomeworkItem { id: string; title: string; text: string; dueAt: string; overdue: boolean; submitted?: number; marked?: number; mine?: HomeworkSub[] }
+export interface HomeworkDetail { id: string; pupils?: { pupilId: string; name: string | null; submission: HomeworkSub | null }[]; mine?: HomeworkSub[] }

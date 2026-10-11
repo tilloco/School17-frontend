@@ -47,6 +47,7 @@ export default function ClassScreen() {
         </View>
 
         <PrimaryButton title={t('cfile.title')} variant="outline" onPress={() => router.push(`/market/class-files/${id}` as never)} />
+        <PrimaryButton title={t('hw.title')} variant="outline" onPress={() => router.push(`/market/class-homework/${id}` as never)} />
         <PrimaryButton title={t('feed.title')} variant="outline" onPress={() => router.push(`/market/class-feed/${id}` as never)} />
         <Text style={styles.h2}>{t('class.sessions')}</Text>
         {sessions.state !== 'ready' || !sessions.data ? (

@@ -17,7 +17,7 @@ export interface UploadOptions {
   uri: string;
   name: string;
   mime: string;
-  purpose: 'PAYMENT_PROOF' | 'MESSAGE_ATTACHMENT' | 'AVATAR' | 'CREDENTIAL' | 'CLASS_FILE';
+  purpose: 'PAYMENT_PROOF' | 'MESSAGE_ATTACHMENT' | 'AVATAR' | 'CREDENTIAL' | 'CLASS_FILE' | 'HOMEWORK';
   onProgress?: (fraction: number) => void;
   signal?: { cancelled: boolean };
   /** Oldingi urinishdan qolgan fileId: yetishmagan bo'laklardan davom etadi */

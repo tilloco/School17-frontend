@@ -103,6 +103,7 @@ export default function ClassRoomScreen() {
                 )}
               </View>
             )}
+            {st.status === 'ENDED' && !st.teacherNoShow && <PrimaryButton title={t('recap.open')} onPress={() => router.push(`/market/class-recap/${sid}` as never)} />}
             {st.status === 'ENDED' && <PrimaryButton title={t('common.back')} variant="outline" onPress={() => router.back()} />}
           </View>
         }
