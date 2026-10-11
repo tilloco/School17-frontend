@@ -10,3 +10,8 @@
 8. Resources a user may not see return 404 (not 403) where existence would leak; permission failures return 403.
 9. Date of birth can be set once through the API. Reason: editable DOB defeats the minor protections.
 10. Migrations are generated only against the throwaway DB; nothing is ever applied to another database.
+11. Teachers are listed/visible only when VERIFIED (strict). Reason: students include minors; trade-off is slower onboarding, the admin queue handles it. NEEDS LAWYER (what vetting is required for adults teaching minors).
+12. Public identifier for a teacher is the TeacherProfile id, never the user id/email. Public view omits email, DOB, credential files.
+13. Intro video is an external https link on an allowlist (YouTube/Vimeo), not an upload. Reason: avoids hosting/transcoding video and rendering user files on our origin; uploads via the S5 pipeline are possible later.
+14. Credentials reference a StoredFile that must be owned by the teacher, purpose CREDENTIAL and status READY (set after S5 content check + scan hook).
+15. Price is integer tiyin per 60 minutes (1 so'm = 100 tiyin), bounded by env-configurable min/max.

@@ -4,7 +4,7 @@ Branch: `claude/school17-features` (local only, never pushed). Backend is a sepa
 Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 54329, db `school17_test`).
 
 - [x] S1 Foundation (roles, permissions, audit log, auth test harness)
-- [ ] S2 Teacher profiles
+- [x] S2 Teacher profiles
 - [ ] S3 Booking
 - [ ] S4 Video calls
 - [ ] S5 Messaging and files
