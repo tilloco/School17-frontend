@@ -56,6 +56,7 @@ export default function ClassScreen() {
             <View key={s.id} style={styles.card}>
               <Text style={styles.strong}>{new Date(s.startAt).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</Text>
               <Text style={styles.help}>{t(`class.status.${s.status}`)}{s.isTrial ? ` · ${t('class.trial')}` : ''}</Text>
+              {['SCHEDULED', 'LOBBY', 'LIVE'].includes(s.status) && <PrimaryButton title={t('room.open')} variant="outline" onPress={() => router.push(`/market/class-room/${s.id}` as never)} />}
               {teacher && s.status === 'SCHEDULED' && <PrimaryButton title={t('class.cancelSession')} variant="outline" onPress={() => confirm(t('class.cancelSession'), () => run(() => market.cancelClassSession(token as string, id, s.id)))} />}
             </View>
           ))

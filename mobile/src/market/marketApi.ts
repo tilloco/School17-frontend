@@ -199,6 +199,12 @@ export const market = {
   leaveClass: (token: string, id: string, studentId: string) => apiRequest(`/classes/${id}/leave`, { method: 'POST', token, body: { studentId } }),
   removeClassPupil: (token: string, id: string, pupilId: string) => apiRequest(`/classes/${id}/pupils/${pupilId}`, { method: 'DELETE', token }),
   children: (token: string) => apiRequest<{ id: string; name: string | null }[]>('/guardian/children', { token }),
+  roomState: (token: string, sid: string) => apiRequest<ClassRoomState>(`/class-sessions/${sid}`, { token }),
+  roomRoster: (token: string, sid: string) => apiRequest<RosterRow[]>(`/class-sessions/${sid}/roster`, { token }),
+  roomStart: (token: string, sid: string) => apiRequest<ClassRoomState>(`/class-sessions/${sid}/start`, { method: 'POST', token, body: {} }),
+  roomHand: (token: string, sid: string, raised: boolean) => apiRequest(`/class-sessions/${sid}/hand`, { method: 'POST', token, body: { raised } }),
+  roomStageMode: (token: string, sid: string, mode: string) => apiRequest(`/class-sessions/${sid}/stage/mode`, { method: 'POST', token, body: { mode } }),
+  roomPost: (token: string, sid: string, path: string, body: object = {}) => apiRequest(`/class-sessions/${sid}/${path}`, { method: 'POST', token, body }),
   owed: (token: string) => apiRequest<OwedGroup[]>('/teachers/me/money/owed', { token }),
   remind: (token: string, bookingId: string) => apiRequest<{ reminded: number }>('/teachers/me/money/remind', { method: 'POST', token, body: { bookingId } }),
   income: (token: string, month: string) => apiRequest<IncomeView>(`/teachers/me/money/income?month=${month}`, { token }),
@@ -257,3 +263,9 @@ export interface ClassDetail {
   id: string; title: string; subject: string; description: string; capacity: number; enrolled: number; priceMinor: number; status: string; role: 'teacher' | 'pupil';
   pupils?: { id: string; name: string | null }[]; classmates?: { name: string }[]; mySeats?: string[];
 }
+export interface ClassRoomState {
+  id: string; role: 'teacher' | 'pupil'; status: string; startAt: string; lobbyOpensAt: string; stageMode: 'LISTEN_ONLY' | 'HAND_RAISE' | 'OPEN_STAGE'; locked: boolean;
+  teacherReconnecting: boolean; teacherNoShow: boolean; stageCount: number; stageMax: number;
+  me: { handRaised: boolean; stage: 'NONE' | 'VOICE' | 'VOICE_VIDEO'; removed: boolean } | null;
+}
+export interface RosterRow { pupilId: string; name: string | null; present: boolean; hand: boolean; stage: 'NONE' | 'VOICE' | 'VOICE_VIDEO'; removed: boolean }

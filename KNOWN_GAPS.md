@@ -114,3 +114,7 @@
 
 ## R1 classes
 - Mobile class screens (list, create/edit, class page, join by code) are type-checked only. Class edit does not change the schedule. Invite link is the token only (no deep-link route registered yet). Pupils see classmates by first name; the teacher sees full names.
+
+## R2 class room core
+- No local livekit-server was available, so the grant/revoke/hand-crafted-publish checks ran only against the Mock provider; LiveKit Twirp calls, participant attributes (UpdateParticipant attributes field), token claims (canPublishSources, canUpdateOwnMetadata) and webhook delivery are unverified against a real server.
+- Mobile class room screen polls every 3 s and is type-checked only; it does not connect media.
