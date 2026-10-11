@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Linking, Pressable, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Screen } from '../../../src/components/Screen';
 import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
-import { ApiError } from '../../../src/lib/api';
+import { API_URL, ApiError } from '../../../src/lib/api';
+import { AttachBar } from '../../../src/market/AttachBar';
 import { useAuth } from '../../../src/lib/auth-context';
 import { t } from '../../../src/i18n';
 import { ChatMessage, market } from '../../../src/market/marketApi';
@@ -74,6 +75,19 @@ export default function ThreadScreen() {
       setSending(false);
     }
   };
+  const sendFile = async (fileId: string, name: string) => {
+    const m = await market.send(token as string, id, '', fileId);
+    last.current = Math.max(last.current, m.seq);
+    setMsgs((x) => [...x, m]);
+  };
+  const openFile = async (fileId: string) => {
+    try {
+      const { url } = await market.fileUrl(token as string, fileId);
+      await Linking.openURL(url.startsWith('/') ? `${API_URL}${url}` : url);
+    } catch {
+      setProblem(t('attach.openFailed'));
+    }
+  };
   const block = () => Alert.alert(t('chat.block'), undefined, [
     { text: t('common.cancel'), style: 'cancel' },
     { text: t('chat.block'), style: 'destructive', onPress: () => market.blockThread(token as string, id).then(() => setProblem(t('chat.blocked'))).catch(() => undefined) },
@@ -97,7 +111,12 @@ export default function ThreadScreen() {
             renderItem={({ item }) => (
               <View style={[styles.bubble, item.mine ? styles.mine : styles.theirs]}>
                 {/* Matn HECH QACHON HTML sifatida emas, oddiy matn sifatida ko'rsatiladi */}
-                <Text style={item.mine ? styles.mineText : undefined}>{item.body}{item.file ? `\n📎 ${item.file.name}` : ''}</Text>
+                <Text style={item.mine ? styles.mineText : undefined}>{item.body}</Text>
+                {item.file && (
+                  <Pressable accessibilityRole="button" accessibilityLabel={t('attach.open', { name: item.file.name })} onPress={() => openFile(item.file!.id)}>
+                    <Text style={[item.mine ? styles.mineText : undefined, { textDecorationLine: 'underline' }]}>📎 {item.file.name}{item.file.sizeBytes ? ` (${Math.max(1, Math.round(item.file.sizeBytes / 1024))} KB)` : ''}</Text>
+                  </Pressable>
+                )}
                 {item.mine && <Text style={styles.state}>{stateLabel(item.state)}</Text>}
               </View>
             )}
@@ -110,6 +129,7 @@ export default function ThreadScreen() {
             <PrimaryButton title={t('chat.send')} onPress={send} loading={sending} disabled={!draft.trim()} />
           </View>
         )}
+        {!readOnly && <AttachBar token={token as string} onUploaded={async (fid, name) => { try { await sendFile(fid, name); } catch (e) { setProblem(errorText(e)); } }} />}
         <View style={styles.tools}>
           <PrimaryButton title={t('chat.report')} variant="outline" onPress={report} />
           <PrimaryButton title={t('chat.block')} variant="outline" onPress={block} />

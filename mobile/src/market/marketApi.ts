@@ -123,7 +123,7 @@ export interface ChatMessage {
   body: string;
   createdAt: string;
   state?: 'SENT' | 'DELIVERED' | 'READ';
-  file: { name: string } | null;
+  file: { id: string; name: string; mime?: string; sizeBytes?: number } | null;
 }
 
 export interface InboxItem {
@@ -170,7 +170,8 @@ export const market = {
   threads: (token: string) => apiRequest<ThreadItem[]>('/threads', { token }),
   messages: (token: string, threadId: string, afterSeq?: number) =>
     apiRequest<ChatMessage[]>(`/threads/${threadId}/messages?${q({ afterSeq, limit: 50 })}`, { token }),
-  send: (token: string, threadId: string, body: string) => apiRequest<ChatMessage>(`/threads/${threadId}/messages`, { method: 'POST', token, body: { body } }),
+  send: (token: string, threadId: string, body: string, fileId?: string) => apiRequest<ChatMessage>(`/threads/${threadId}/messages`, { method: 'POST', token, body: fileId ? { body, fileId } : { body } }),
+  fileUrl: (token: string, fileId: string) => apiRequest<{ url: string }>(`/files/${fileId}/download-url`, { method: 'POST', token, body: {} }),
   markRead: (token: string, threadId: string, upToSeq: number) => apiRequest(`/threads/${threadId}/read`, { method: 'POST', token, body: { upToSeq } }),
   blockThread: (token: string, threadId: string) => apiRequest<{ id: string }>('/blocks/thread', { method: 'POST', token, body: { threadId } }),
   reportThread: (token: string, threadId: string, reason: string) => apiRequest(`/threads/${threadId}/report`, { method: 'POST', token, body: { reason } }),

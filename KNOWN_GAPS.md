@@ -108,3 +108,6 @@
 
 ## A7 reviews and reschedule (mobile)
 - Screens are type-checked only, not run on a device. Reviews list for the teacher shows the first 20 only.
+
+## A8 chat attachments (mobile)
+- AttachBar, upload resume and opening files via Linking are type-checked only; never run on a real device or emulator. Picker URI-to-Blob reading on Android content:// URIs is unverified.
