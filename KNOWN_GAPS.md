@@ -54,3 +54,10 @@
 - Safety tips and legal texts are drafts; tips need a child-safeguarding specialist.
 - Blocks do not cancel existing future bookings automatically.
 - Mobile UI for report/block/guardian linking does not exist yet.
+
+## S10 Privacy
+- No retention job: old notifications, call events, audit rows and soft-deleted files are not purged automatically beyond the 24 h pending-upload sweep.
+- Export is JSON only, built in memory (fine for current size); it does not include file bytes.
+- Deleting an account does not scrub server/host logs, backups, or copies at third-party providers.
+- Guardian-requested export/deletion of a minor's data is not implemented; no admin-initiated erasure workflow.
+- Consent screens are API-only (no mobile UI); consent text versions are hard-coded drafts.
