@@ -10,7 +10,7 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 - [x] S5 Messaging and files
 - [x] S6 Discovery
 - [x] S7 Ratings and reviews
-- [ ] S8 Earnings
+- [x] S8 (mock provider only) Earnings
 - [ ] S9 Safety
 - [ ] S10 Privacy
 - [ ] S11 Notifications and languages

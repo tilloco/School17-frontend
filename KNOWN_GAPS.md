@@ -38,3 +38,11 @@
 - Review-gaming defences are Bayesian shrinkage, one-per-completed-lesson (which needs 5+ min of real presence) and moderation. Colluding accounts that complete genuine paid lessons are NOT detected (no anomaly detection).
 - Review text is not automatically scanned for phone numbers/abuse; moderation is report-driven.
 - No mobile UI for reviews yet.
+
+## S8 Earnings (see also PAYMENTS_GAPS.md)
+- Mock provider only: NO real charge, refund or payout was ever executed against any payment service. Everything money-related is untested against real processors.
+- No provider reconciliation or refund-retry queue: if a provider refund fails after the ledger entry, it is only logged.
+- Settlement/refund percentages and the 90 % rule are product defaults, not legal advice.
+- No fiscal receipts/tax, no payout KYC, no multi-currency.
+- Admin UI for payments/payouts/disputes does not exist (API only).
+- Mobile screens for paying, earnings dashboard and payouts are not built.
