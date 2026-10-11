@@ -15,3 +15,10 @@
 13. Intro video is an external https link on an allowlist (YouTube/Vimeo), not an upload. Reason: avoids hosting/transcoding video and rendering user files on our origin; uploads via the S5 pipeline are possible later.
 14. Credentials reference a StoredFile that must be owned by the teacher, purpose CREDENTIAL and status READY (set after S5 content check + scan hook).
 15. Price is integer tiyin per 60 minutes (1 so'm = 100 tiyin), bounded by env-configurable min/max.
+16. Double-booking is prevented by PostgreSQL exclusion constraints (teacher and student, REQUESTED/CONFIRMED) in addition to service checks; needs the `btree_gist` extension. Reason: only the database can close the race window. A race test proves exactly one of two simultaneous requests wins.
+17. Minors cannot book for themselves; a linked (ACTIVE GuardianLink) guardian books for them. Adults book for themselves; guardians cannot book for adult pupils. Unknown date of birth => cannot book. NEEDS LAWYER (consent age, parental consent).
+18. Reschedule = proposal that the OTHER side must accept (in-place move, same booking id). Not allowed inside the free-cancel window. Reason: avoids silent changes and keeps ledger/chat tied to one booking.
+19. Join window: opens 5 min before start, closes 5 min after the scheduled end (env-configurable); no-show can be reported only after a 10 min grace. Late-cancel refund % defaults to 0 (NEEDS LAWYER/product decision), teacher cancel = 100% refund.
+20. Teachers see pupils only as display name (minors: "First L."), never email or user id. Booking views for outsiders return 404.
+21. A `ClockService` is injected everywhere time matters so tests control "now".
+22. Notifications are an outbox table (`Notification`) with dedupe keys; email/push delivery arrives in S11.
