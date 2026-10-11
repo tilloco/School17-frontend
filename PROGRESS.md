@@ -14,4 +14,4 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 - [x] S9 Safety
 - [x] S10 Privacy
 - [x] S11 Notifications and languages
-- [ ] S12 Hardening
+- [ ] S12 (in progress: hardening tests added, docs pending) Hardening
