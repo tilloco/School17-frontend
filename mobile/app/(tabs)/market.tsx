@@ -38,6 +38,7 @@ export default function MarketHome() {
           { label: t('market.card'), to: '/market/card' },
         ]
       : [{ label: t('mypay.menu'), to: '/market/my-payments' }]),
+    { label: t('rev.title'), to: '/market/reviews' },
     { label: t('market.safety'), to: '/market/safety' },
   ];
   return (

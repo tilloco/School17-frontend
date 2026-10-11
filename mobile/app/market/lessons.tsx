@@ -78,6 +78,8 @@ export default function LessonsScreen() {
                   {['CONFIRMED', 'COMPLETED', 'NO_SHOW_STUDENT'].includes(b.status) && !b.isTrial && (
                     <PrimaryButton title={t('pay.button')} variant="outline" onPress={() => router.push(`/market/pay/${b.id}` as never)} />
                   )}
+                  {b.status === 'CONFIRMED' && !b.reschedule && <PrimaryButton title={t('resch.button')} variant="outline" onPress={() => router.push(`/market/reschedule/${b.id}` as never)} />}
+                  {b.status === 'COMPLETED' && b.myRole !== 'teacher' && <PrimaryButton title={t('rev.write')} variant="outline" onPress={() => router.push('/market/reviews' as never)} />}
                   {open && <PrimaryButton title={t('lessons.chat')} variant="outline" onPress={() => openChat(b)} />}
                   {open && <PrimaryButton title={t('lessons.cancel')} variant="outline" onPress={() => confirmCancel(b)} />}
                 </View>

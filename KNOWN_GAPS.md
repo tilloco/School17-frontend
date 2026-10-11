@@ -105,3 +105,6 @@
 ## A4 money board
 - Mobile money.tsx and my-payments.tsx are type-checked only, never run on a device; Share sheet CSV not tried.
 - Income and reminders count only marks, not real money; the platform cannot verify any payment.
+
+## A7 reviews and reschedule (mobile)
+- Screens are type-checked only, not run on a device. Reviews list for the teacher shows the first 20 only.

@@ -179,6 +179,13 @@ export const market = {
   setPaymentInfo: (token: string, cardNumber: string, holderName: string) =>
     apiRequest<{ set: boolean; cardLast4: string; holderName: string }>('/teachers/me/payment-info', { method: 'PUT', token, body: { cardNumber, holderName } }),
   removePaymentInfo: (token: string) => apiRequest<{ set: boolean }>('/teachers/me/payment-info', { method: 'DELETE', token }),
+  pendingReviews: (token: string) => apiRequest<PendingReview[]>('/reviews/pending', { token }),
+  myReviews: (token: string) => apiRequest<OwnReview[]>('/reviews/mine', { token }),
+  createReview: (token: string, bookingId: string, rating: number, text: string) => apiRequest<OwnReview>(`/bookings/${bookingId}/review`, { method: 'POST', token, body: { rating, text } }),
+  updateReview: (token: string, id: string, rating: number, text: string) => apiRequest<OwnReview>(`/reviews/${id}`, { method: 'PUT', token, body: { rating, text } }),
+  replyReview: (token: string, id: string, text: string) => apiRequest<OwnReview>(`/reviews/${id}/reply`, { method: 'PUT', token, body: { text } }),
+  reviewsPage: (token: string, teacherId: string) => apiRequest<ReviewList>(`/teachers/${teacherId}/reviews?pageSize=20`, { token }),
+  requestReschedule: (token: string, bookingId: string, startAt: string) => apiRequest<Booking>(`/bookings/${bookingId}/reschedule`, { method: 'POST', token, body: { startAt } }),
   owed: (token: string) => apiRequest<OwedGroup[]>('/teachers/me/money/owed', { token }),
   remind: (token: string, bookingId: string) => apiRequest<{ reminded: number }>('/teachers/me/money/remind', { method: 'POST', token, body: { bookingId } }),
   income: (token: string, month: string) => apiRequest<IncomeView>(`/teachers/me/money/income?month=${month}`, { token }),
@@ -224,3 +231,5 @@ export const market = {
 export interface OwedGroup { pupilName: string; count: number; totalMinor: number; remindBookingId: string; canRemind: boolean; lessons: { bookingId: string; startAt: string; amountMinor: number }[] }
 export interface IncomeView { month: string; timezone: string; confirmedCount: number; confirmedMinor: number; awaitingConfirmation: number; unpaidLessons: number }
 export interface MyPaymentRow { bookingId: string; status: string; amountMinor: number; startAt: string; teacher: { id: string; name: string } }
+export interface PendingReview { bookingId: string; teacher: { id: string; name: string | null }; completedAt: string }
+export interface OwnReview { id: string; bookingId: string; rating: number; text: string | null; status: string; reply: { text: string } | null; canEditUntil: string }
