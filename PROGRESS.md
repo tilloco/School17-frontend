@@ -14,4 +14,38 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 - [x] S9 Safety
 - [x] S10 Privacy
 - [x] S11 Notifications and languages
+## New features (see NEW_FEATURES_SPEC.md; S12 stays LAST)
+- [ ] A1 Free mode (ESCROW_ENABLED off, texts rewritten)
+- [ ] A2 Teacher card details (encrypted)
+- [ ] A3 Direct payment tracking
+- [ ] A5 Teacher setup on mobile
+- [ ] A6 Admin web
+- [ ] A4 Teacher money board
+- [ ] A7 Reviews + reschedule on mobile
+- [ ] A8 Chat attachments on mobile
+- [ ] A9 Push token registration
+- [ ] B1 Invite link
+- [ ] B2 Public teacher page
+- [ ] B3 Credentials
+- [ ] B4 Free trial
+- [ ] B5 My students
+- [ ] B6 Group lessons
+- [ ] C1 Telegram link
+- [ ] C2 Lesson reminders
+- [ ] C3 Lesson notes
+- [ ] C4 Homework
+- [ ] C5 Whiteboard
+- [ ] C6 Weekly parent report
+- [ ] D1 Content model
+- [ ] D2 Daily practice
+- [ ] D3 Mistake notebook
+- [ ] D4 Mock test
+- [ ] D5 Exam countdown
+- [ ] D6 Q&A board
+- [ ] D7 Photo-a-problem
+- [ ] E1 Class code
+- [ ] E2 Referral
+- [ ] E3 Low bandwidth
+- [ ] E4 Safety page
+
 - [ ] S12 (in progress: hardening tests added, docs pending) Hardening
