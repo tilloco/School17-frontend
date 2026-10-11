@@ -118,3 +118,6 @@
 ## R2 class room core
 - No local livekit-server was available, so the grant/revoke/hand-crafted-publish checks ran only against the Mock provider; LiveKit Twirp calls, participant attributes (UpdateParticipant attributes field), token claims (canPublishSources, canUpdateOwnMetadata) and webhook delivery are unverified against a real server.
 - Mobile class room screen polls every 3 s and is type-checked only; it does not connect media.
+
+## R3 class chat and questions
+- Realtime push events are emitted but only the polling path is tested. Mobile chat screen is type-checked only. The two-browser smoke test failed once in the full suite ("billable is capped at the scheduled hour") and passed alone: the known load flake.

@@ -24,7 +24,7 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 - [x] R0 Video status (read-only)
 - [x] R1 Class model + enrollment
 - [x] R2 Class room core
-- [ ] R3 Questions + chat in class
+- [x] R3 Questions + chat in class
 - [ ] R4 Quality engine
 - [ ] R5 PDF presenter + class library
 - [ ] R6 Whiteboard + screen share
