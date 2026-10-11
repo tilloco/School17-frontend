@@ -94,3 +94,10 @@
 - The availability editor uses plain HH:MM text boxes (no time picker); invalid input is rejected client-side and by the server.
 - The teacher's profile photo is not yet shown in search results or on the teacher page (API supports GET /teachers/:id/photo; hasPhoto flag exists).
 - The full smoke test (real WebRTC) failed once in ~10 full-suite runs; it passes alone 6/6. Diagnostics were added so the next failure prints page state and call events.
+
+## A6 Admin web
+- Verified by a real `next build` + `next start` end-to-end test (login, queue, detail, escaping, proxy rules, report resolve, user suspend, signed document link) against the throwaway backend. NOT verified in a browser by a human: layout, mobile widths, keyboard/screen-reader use.
+- The e2e test needs `admin/.next` (run `npm run build` in admin/ first) and port 3101; it is skipped otherwise.
+- The old exam-app admin pages (/, /users, /users/[id]) call /admin/stats and /admin/users, which I did not test; they compile but may not match the current backend guards.
+- `next build` downloads Google Fonts at build time (needs internet). Login has no brute-force limit in the web layer beyond the backend's throttle. No two-factor, no per-admin permissions beyond the existing SUPERADMIN/EDITOR roles.
+- The panel shows the first 20/50 items per page with simple prev/next links; no bulk actions.

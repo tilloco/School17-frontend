@@ -1,118 +1,41 @@
-import type {
-  AiRecommendation,
-  ApiErrorBody,
-  CourseModule,
-  DashboardData,
-  ExamHistoryItem,
-  ExamResult,
-  ExamSessionPayload,
-  FreeQuota,
-  LessonDetail,
-  RequestOtpResponse,
-  SaveExamAnswerDto,
-  SubmitAnswerResult,
-  User,
-  VerifyOtpResponse,
-} from '../types/api';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+// Server komponentlar uchun backend klienti. Token httpOnly cookie'da (admin_token): brauzer skriptlari uni ko'rmaydi.
+// ESLATMA: bu fayl avval mobil ilova klientining nusxasi bo'lib, kompilyatsiya bo'lmas edi (adminFetch yo'q edi). Qayta yozildi.
+export const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
+/** Brauzer ochadigan imzolangan fayl havolalari uchun backendning OMMAVIY manzili (BACKEND_URL ichki bo'lishi mumkin) */
+export const BACKEND_PUBLIC_URL = process.env.BACKEND_PUBLIC_URL || BACKEND_URL;
 
-export class ApiError extends Error {
-  statusCode: number;
-  code?: string;
-
-  constructor(body: ApiErrorBody, statusCode: number) {
-    const message = Array.isArray(body.message) ? body.message.join(', ') : body.message;
-    super(message || "Noma'lum xatolik yuz berdi");
-    this.statusCode = statusCode;
-    this.code = body.code;
+export class AdminApiError extends Error {
+  constructor(public status: number, message: string, public body?: unknown) {
+    super(message);
   }
 }
 
-interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
-  body?: unknown;
-  token?: string | null;
-}
-
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (options.token) headers.Authorization = `Bearer ${options.token}`;
-
+export async function adminFetch<T>(path: string, init: { method?: 'GET' | 'POST'; body?: unknown } = {}): Promise<T> {
+  const token = cookies().get('admin_token')?.value;
+  if (!token) redirect('/login');
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, {
-      method: options.method || 'GET',
-      headers,
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    res = await fetch(`${BACKEND_URL}${path}`, {
+      method: init.method ?? 'GET',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+      cache: 'no-store',
     });
   } catch {
-    // Tarmoq xatosi (server ishlamayapti, internet yo'q va h.k.)
-    throw new ApiError(
-      { statusCode: 0, message: "Serverga ulanib bo'lmadi. Internetni yoki server manzilini tekshiring." },
-      0,
-    );
+    throw new AdminApiError(0, 'Backend is unreachable');
   }
-
-  const isJson = res.headers.get('content-type')?.includes('application/json');
-  const data = isJson ? await res.json().catch(() => ({})) : {};
-
-  if (!res.ok) {
-    throw new ApiError(data as ApiErrorBody, res.status);
-  }
-
+  if (res.status === 401) redirect('/login');
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new AdminApiError(res.status, (data && (Array.isArray(data.message) ? data.message.join(', ') : data.message)) || `HTTP ${res.status}`, data);
   return data as T;
 }
 
-export const api = {
-  // --- Auth ---
-  requestOtp: (email: string) => request<RequestOtpResponse>('/auth/request-otp', { method: 'POST', body: { email } }),
-
-  verifyOtp: (email: string, code: string, name?: string, referredByCode?: string) =>
-    request<VerifyOtpResponse>('/auth/verify-otp', {
-      method: 'POST',
-      body: { email, code, name, referredByCode },
-    }),
-
-  // --- Profile ---
-  getMe: (token: string) => request<User>('/users/me', { token }),
-
-  updateProfile: (token: string, dto: { name?: string; examDate?: string }) =>
-    request<User>('/users/me', { method: 'PATCH', token, body: dto }),
-
-  getDashboard: (token: string) => request<DashboardData>('/users/dashboard', { token }),
-
-  // --- Content ---
-  // Backend endi bu ikkalasini ham login talab qiladi (anonim scraping'dan himoya
-  // uchun) - shuning uchun token har doim yuborilishi kerak.
-  listModules: (token: string) => request<CourseModule[]>('/content/modules', { token }),
-
-  getLesson: (token: string, lessonId: string) =>
-    request<LessonDetail>(`/content/lessons/${lessonId}`, { token }),
-
-  // --- Quiz ---
-  submitAnswer: (token: string, questionId: string, chosenIndex: number) =>
-    request<SubmitAnswerResult>('/quiz/answer', { method: 'POST', token, body: { questionId, chosenIndex } }),
-
-  completeLesson: (token: string, lessonId: string) =>
-    request<{ message: string }>(`/quiz/lessons/${lessonId}/complete`, { method: 'POST', token }),
-
-  getFreeQuota: (token: string) => request<FreeQuota>('/quiz/free-quota', { token }),
-
-  // --- AI shaxsiylashtirilgan tavsiyalar (faqat Premium) ---
-  getAiRecommendation: (token: string, forceRefresh = false) =>
-    request<AiRecommendation>(`/ai/recommendation${forceRefresh ? '?refresh=true' : ''}`, { token }),
-    // --- Sinov imtihoni (mock exam) ---
-  startExam: (token: string) => request<ExamSessionPayload>('/exam/start', { method: 'POST', token }),
-
-  saveExamAnswer: (token: string, sessionId: string, answerId: string, dto: SaveExamAnswerDto) =>
-    request<{ saved: boolean }>(`/exam/${sessionId}/answer/${answerId}`, { method: 'POST', token, body: dto }),
-
-  submitExam: (token: string, sessionId: string) =>
-    request<ExamResult>(`/exam/${sessionId}/submit`, { method: 'POST', token }),
-
-  getExamResult: (token: string, sessionId: string) =>
-    request<ExamResult>(`/exam/${sessionId}/result`, { token }),
-
-  getExamHistory: (token: string) => request<ExamHistoryItem[]>('/exam/history', { token }),
-};
+/** Eski panel sahifalari uchun: /uploads/... nisbiy yo'llarni to'liq manzilga aylantiradi */
+export function resolveMediaUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${BACKEND_PUBLIC_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+}

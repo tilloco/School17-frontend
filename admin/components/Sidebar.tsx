@@ -3,12 +3,18 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-const navItems = [
-  { href: '/', label: 'Umumiy holat' },
-  { href: '/users', label: 'Foydalanuvchilar' },
-];
+import { LangSwitch } from './LangSwitch';
+import { DICT, Lang } from '@/lib/dict';
 
-export function Sidebar() {
+export function Sidebar({ lang = 'uz' }: { lang?: Lang }) {
+  const T = DICT[lang];
+  const navItems = [
+    { href: '/', label: 'Umumiy holat' },
+    { href: '/users', label: 'Foydalanuvchilar' },
+    { href: '/teachers', label: T['a.nav.teachers'] },
+    { href: '/reports', label: T['a.nav.reports'] },
+    { href: '/people', label: T['a.nav.people'] },
+  ];
   const pathname = usePathname();
   const router = useRouter();
 
@@ -26,7 +32,7 @@ export function Sidebar() {
 
       <nav className="flex-1 px-3 py-4 space-y-1">
         {navItems.map((item) => {
-          const active = pathname === item.href;
+          const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
@@ -41,6 +47,7 @@ export function Sidebar() {
         })}
       </nav>
 
+      <LangSwitch current={lang} label={T['a.lang']} />
       <div className="px-3 py-4 border-t border-white/10">
         <button
           onClick={handleLogout}
