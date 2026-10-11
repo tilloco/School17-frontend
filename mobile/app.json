@@ -30,7 +30,13 @@
       "expo-font",
       "expo-audio",
       "expo-web-browser",
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "School17 needs access to your photos to attach a payment receipt or homework image."
+        }
+      ]
     ],
     "extra": {
       "router": {

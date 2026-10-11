@@ -1,7 +1,7 @@
 # HANDOFF
 Branch `claude/school17-features` (local only, nothing pushed). Commit in `backend/` first, then in the parent.
 - Last finished: Step 1 + plan (spec v2 saved, repo map below). Full suite 261/261 at commit d6a323f6-ish. S1-S11 done; S12 docs still LAST.
-- A1, A2 done (286 tests pass). In progress: nothing. Next: A3 direct payment tracking (`grep -n "^A3 " NEW_FEATURES_SPEC.md`).
+- A1, A2, A3 done (301 tests pass). In progress: nothing. Next: A5 teacher setup on mobile (order is A1 A2 A3 A5 A6 A4 ...; `grep -n "^A5 " NEW_FEATURES_SPEC.md`).
 - Next: see `grep -n "\[ \]" PROGRESS.md | head -5`, spec: `grep -n "^A1 " NEW_FEATURES_SPEC.md`.
 - Unverified: mobile screens, LiveKit/Expo-push/ClamAV adapters never run on devices/real services. Payments code is dormant/mock.
 - Start test DB first: `bash backend/scripts/dev-db.sh start`. Never kill processes you did not start.

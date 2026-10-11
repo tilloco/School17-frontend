@@ -17,7 +17,7 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 ## New features (see NEW_FEATURES_SPEC.md; S12 stays LAST)
 - [x] A1 Free mode (ESCROW_ENABLED off, texts rewritten)
 - [x] A2 Teacher card details (encrypted)
-- [ ] A3 Direct payment tracking
+- [x] A3 Direct payment tracking
 - [ ] A5 Teacher setup on mobile
 - [ ] A6 Admin web
 - [ ] A4 Teacher money board

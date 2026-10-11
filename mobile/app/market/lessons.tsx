@@ -68,6 +68,9 @@ export default function LessonsScreen() {
                       <PrimaryButton title={t('lessons.decline')} variant="outline" onPress={() => act(() => market.decline(token as string, b.id))} />
                     </>
                   )}
+                  {['CONFIRMED', 'COMPLETED', 'NO_SHOW_STUDENT'].includes(b.status) && !b.isTrial && (
+                    <PrimaryButton title={t('pay.button')} variant="outline" onPress={() => router.push(`/market/pay/${b.id}` as never)} />
+                  )}
                   {open && <PrimaryButton title={t('lessons.chat')} variant="outline" onPress={() => openChat(b)} />}
                   {open && <PrimaryButton title={t('lessons.cancel')} variant="outline" onPress={() => confirmCancel(b)} />}
                 </View>

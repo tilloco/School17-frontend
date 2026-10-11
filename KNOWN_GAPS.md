@@ -81,3 +81,9 @@
 - Changing APP_DATA_KEY makes stored cards unreadable (no key rotation / re-encryption tool); teachers must re-enter. The dev fallback key is public in the source: never use it with real cards.
 - Mobile: only the teacher editor (app/market/card.tsx) exists; the pupil reveal + copy button arrive with A3 (Pay screen). Screen type-checked only, never run on a device.
 - Server logs/HTTP proxies in front of the API could log request bodies of PUT /teachers/me/payment-info: configure them not to (not verifiable here).
+
+## A3 Direct payment tracking
+- The app cannot verify any transfer: marks are statements by the two users, nothing more. Disputes (fake receipts, wrong card holder) can only be reported; nobody can recover money.
+- Pay screen, clipboard copy, receipt picker and the chunked uploader (src/market/uploader.ts) are type-checked only; never run on a device. expo-image-picker plugin was added to app.json: needs a rebuild of the development client.
+- Existing accepted bookings from before A3 get a record lazily when someone opens the payment view.
+- The teacher's money board and list of own payments come with A4; the profile editor field for paymentTiming comes with A5 (the API already accepts it).

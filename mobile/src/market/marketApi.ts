@@ -34,11 +34,30 @@ export interface SearchResult {
 }
 
 export interface TeacherDetail extends TeacherCard {
+  paymentTiming: 'PAY_BEFORE' | 'PAY_AFTER';
+  paymentInfoAvailable: boolean;
   bio: string;
   levels: string[];
   timezone: string;
   introVideoUrl: string | null;
   credentials: { kind: string; title: string }[];
+}
+
+export type DirectStatus = 'UNPAID' | 'PUPIL_MARKED_PAID' | 'TEACHER_CONFIRMED' | 'NOT_RECEIVED' | 'WAIVED';
+export interface DirectPaymentView {
+  bookingId: string;
+  trial: boolean;
+  side?: 'teacher' | 'pupil';
+  status: DirectStatus | null;
+  amountMinor?: number;
+  paymentTiming?: 'PAY_BEFORE' | 'PAY_AFTER';
+  teacher?: { id: string; name: string | null };
+  hasProof?: boolean;
+  canMarkPaid?: boolean;
+  canConfirm?: boolean;
+  canMarkNotReceived?: boolean;
+  canWaive?: boolean;
+  note?: string;
 }
 
 export interface ReviewList {
@@ -63,6 +82,7 @@ export interface Booking {
   teacher: { id: string; name: string | null };
   student: { id?: string; name: string | null };
   canJoinNow: boolean;
+  isTrial?: boolean;
   cancel: { by: string; late: boolean } | null;
   lateCancelPolicy: { freeCancelHours: number };
 }
@@ -140,6 +160,11 @@ export const market = {
   setPaymentInfo: (token: string, cardNumber: string, holderName: string) =>
     apiRequest<{ set: boolean; cardLast4: string; holderName: string }>('/teachers/me/payment-info', { method: 'PUT', token, body: { cardNumber, holderName } }),
   removePaymentInfo: (token: string) => apiRequest<{ set: boolean }>('/teachers/me/payment-info', { method: 'DELETE', token }),
+  directPayment: (token: string, bookingId: string) => apiRequest<DirectPaymentView>(`/bookings/${bookingId}/direct-payment`, { token }),
+  directAction: (token: string, bookingId: string, what: 'paid' | 'received' | 'not-received' | 'waive', body: object = {}) =>
+    apiRequest<DirectPaymentView>(`/bookings/${bookingId}/direct-payment/${what}`, { method: 'POST', token, body }),
+  revealCard: (token: string, teacherProfileId: string) =>
+    apiRequest<{ cardNumber: string; holderName: string }>(`/teachers/${teacherProfileId}/payment-info/reveal`, { method: 'POST', token, body: {} }),
   blocks: (token: string) => apiRequest<{ id: string; name: string | null }[]>('/blocks', { token }),
   unblock: (token: string, id: string) => apiRequest(`/blocks/${id}`, { method: 'DELETE', token }),
   inbox: (token: string) => apiRequest<InboxItem[]>('/notifications', { token }),
