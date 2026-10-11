@@ -111,3 +111,6 @@
 
 ## A8 chat attachments (mobile)
 - AttachBar, upload resume and opening files via Linking are type-checked only; never run on a real device or emulator. Picker URI-to-Blob reading on Android content:// URIs is unverified.
+
+## R1 classes
+- Mobile class screens (list, create/edit, class page, join by code) are type-checked only. Class edit does not change the schedule. Invite link is the token only (no deep-link route registered yet). Pupils see classmates by first name; the teacher sees full names.

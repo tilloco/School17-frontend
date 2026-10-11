@@ -22,7 +22,7 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 - [x] A6 Admin web
 - [x] A4 Teacher money board
 - [x] R0 Video status (read-only)
-- [ ] R1 Class model + enrollment
+- [x] R1 Class model + enrollment
 - [ ] R2 Class room core
 - [ ] R3 Questions + chat in class
 - [ ] R4 Quality engine

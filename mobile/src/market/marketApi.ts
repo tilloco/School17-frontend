@@ -187,6 +187,18 @@ export const market = {
   replyReview: (token: string, id: string, text: string) => apiRequest<OwnReview>(`/reviews/${id}/reply`, { method: 'PUT', token, body: { text } }),
   reviewsPage: (token: string, teacherId: string) => apiRequest<ReviewList>(`/teachers/${teacherId}/reviews?pageSize=20`, { token }),
   requestReschedule: (token: string, bookingId: string, startAt: string) => apiRequest<Booking>(`/bookings/${bookingId}/reschedule`, { method: 'POST', token, body: { startAt } }),
+  myClasses: (token: string) => apiRequest<ClassItem[]>('/classes/mine', { token }),
+  classDetail: (token: string, id: string) => apiRequest<ClassDetail>(`/classes/${id}`, { token }),
+  classSessions: (token: string, id: string) => apiRequest<ClassSessionItem[]>(`/classes/${id}/sessions`, { token }),
+  createClass: (token: string, body: Record<string, unknown>) => apiRequest<{ id: string; joinCode: string; inviteToken: string }>('/classes', { method: 'POST', token, body }),
+  updateClass: (token: string, id: string, body: Record<string, unknown>) => apiRequest<ClassDetail>(`/classes/${id}`, { method: 'PATCH', token, body }),
+  cancelClass: (token: string, id: string) => apiRequest(`/classes/${id}/cancel`, { method: 'POST', token, body: {} }),
+  cancelClassSession: (token: string, id: string, sessionId: string) => apiRequest(`/classes/${id}/sessions/${sessionId}/cancel`, { method: 'POST', token, body: {} }),
+  regenerateClassCode: (token: string, id: string) => apiRequest<{ joinCode: string; inviteToken: string }>(`/classes/${id}/regenerate-code`, { method: 'POST', token, body: {} }),
+  joinClass: (token: string, body: { code?: string; token?: string; studentId?: string }) => apiRequest<ClassDetail>('/classes/join', { method: 'POST', token, body }),
+  leaveClass: (token: string, id: string, studentId: string) => apiRequest(`/classes/${id}/leave`, { method: 'POST', token, body: { studentId } }),
+  removeClassPupil: (token: string, id: string, pupilId: string) => apiRequest(`/classes/${id}/pupils/${pupilId}`, { method: 'DELETE', token }),
+  children: (token: string) => apiRequest<{ id: string; name: string | null }[]>('/guardian/children', { token }),
   owed: (token: string) => apiRequest<OwedGroup[]>('/teachers/me/money/owed', { token }),
   remind: (token: string, bookingId: string) => apiRequest<{ reminded: number }>('/teachers/me/money/remind', { method: 'POST', token, body: { bookingId } }),
   income: (token: string, month: string) => apiRequest<IncomeView>(`/teachers/me/money/income?month=${month}`, { token }),
@@ -234,3 +246,14 @@ export interface IncomeView { month: string; timezone: string; confirmedCount: n
 export interface MyPaymentRow { bookingId: string; status: string; amountMinor: number; startAt: string; teacher: { id: string; name: string } }
 export interface PendingReview { bookingId: string; teacher: { id: string; name: string | null }; completedAt: string }
 export interface OwnReview { id: string; bookingId: string; rating: number; text: string | null; status: string; reply: { text: string } | null; canEditUntil: string }
+
+export interface ClassSessionItem { id: string; startAt: string; endAt: string; status: string; isTrial: boolean }
+export interface ClassItem {
+  id: string; title: string; subject: string; capacity: number; status: string; enrolled?: number;
+  teacher?: { id: string; name: string | null }; pupil?: { id: string; name: string };
+  next: { id: string; startAt: string; isTrial: boolean } | null;
+}
+export interface ClassDetail {
+  id: string; title: string; subject: string; description: string; capacity: number; enrolled: number; priceMinor: number; status: string; role: 'teacher' | 'pupil';
+  pupils?: { id: string; name: string | null }[]; classmates?: { name: string }[]; mySeats?: string[];
+}

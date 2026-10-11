@@ -27,6 +27,7 @@ export default function MarketHome() {
     { label: t('market.find'), to: '/market/search' },
     { label: t('market.lessons'), to: '/market/lessons' },
     { label: t('market.messages'), to: '/market/threads' },
+    { label: t('class.menu'), to: '/market/classes' },
     { label: t('market.notifications'), to: '/market/notifications', badge: unread.data?.unread },
     ...(me.data?.role === 'TEACHER'
       ? [
