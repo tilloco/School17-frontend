@@ -8,6 +8,7 @@ import { ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
 import { t } from '../../../src/i18n';
 import { ClassRoomState, market, RosterRow } from '../../../src/market/marketApi';
+import { ClassPayGate } from '../../../src/market/ClassPayGate';
 import { PresentationPanel } from '../../../src/market/PresentationPanel';
 import { colors, radius, spacing } from '../../../src/theme/colors';
 
@@ -86,6 +87,7 @@ export default function ClassRoomScreen() {
                 <Text style={styles.h2}>{t('room.roster')}</Text>
               </View>
             )}
+            {!teacher && st.me?.paymentGate && st.status !== 'ENDED' && <ClassPayGate token={token as string} gate={st.me.paymentGate} onChanged={load} />}
             {!teacher && live && st.me && (
               <View style={{ gap: spacing.sm }}>
                 {st.me.removed ? <Text>{t('room.removed')}</Text> : (

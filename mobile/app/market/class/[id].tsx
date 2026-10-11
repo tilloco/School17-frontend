@@ -76,6 +76,7 @@ export default function ClassScreen() {
             ))}
             {c.status === 'ACTIVE' && (
               <View style={{ gap: spacing.sm }}>
+                <PrimaryButton title={t('cmoney.title')} variant="outline" onPress={() => router.push(`/market/class-money/${id}` as never)} />
                 <PrimaryButton title={t('class.newCode')} variant="outline" onPress={() => run(async () => { const r = await market.regenerateClassCode(token as string, id); Alert.alert(t('class.codeTitle'), t('class.codeShown', { code: r.joinCode })); })} />
                 <PrimaryButton title={t('class.edit')} variant="outline" onPress={() => router.push(`/market/class-edit?id=${id}` as never)} />
                 <PrimaryButton title={t('class.cancelClass')} variant="outline" onPress={() => confirm(t('class.cancelClass'), () => run(() => market.cancelClass(token as string, id)))} />

@@ -132,3 +132,6 @@
 
 ## R6 whiteboard and screen share
 - Pupils see the board with a few seconds delay (polling + 15 s snapshots); no stroke streaming. Screen share is configuration only (no SDK). Whiteboard screen (PanResponder + react-native-svg) is type-checked only; drawing feel, palm rejection and performance on low-end phones are unknown.
+
+## R7 class payments
+- Monthly classes are not partially waived on a teacher no-show or cancelled session (the teacher can waive by hand). Payment screens (board, gate card, my payments) are type-checked only. There is no proof-of-payment upload for class payments yet.

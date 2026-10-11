@@ -225,6 +225,12 @@ export const market = {
   boardPut: (token: string, sid: string, strokes: BoardStroke[]) => apiRequest(`/class-sessions/${sid}/whiteboard`, { method: 'PUT', token, body: { strokes } }),
   boardSave: (token: string, sid: string, clear: boolean) => apiRequest(`/class-sessions/${sid}/whiteboard/save`, { method: 'POST', token, body: { clear } }),
   classFeed: (token: string, id: string) => apiRequest<FeedPost[]>(`/classes/${id}/feed`, { token }),
+  classBoard: (token: string, id: string, period?: string) => apiRequest<ClassBoard>(`/classes/${id}/money${period ? `?period=${encodeURIComponent(period)}` : ''}`, { token }),
+  classMark: (token: string, id: string, action: 'received' | 'not_received' | 'waive', paymentIds: string[]) => apiRequest<{ changed: number; skipped: number }>(`/classes/${id}/money/mark`, { method: 'POST', token, body: { action, paymentIds } }),
+  classRemind: (token: string, id: string, period?: string) => apiRequest<{ reminded: number; skipped: number }>(`/classes/${id}/money/remind`, { method: 'POST', token, body: period ? { period } : {} }),
+  classOwed: (token: string) => apiRequest<{ pupilName: string; classTitle: string; classId: string; count: number; totalMinor: number }[]>('/teachers/me/money/class-owed', { token }),
+  classPayMine: (token: string) => apiRequest<ClassPayRow[]>('/class-payments/mine', { token }),
+  classPaid: (token: string, paymentId: string) => apiRequest(`/class-payments/${paymentId}/paid`, { method: 'POST', token, body: {} }),
   owed: (token: string) => apiRequest<OwedGroup[]>('/teachers/me/money/owed', { token }),
   remind: (token: string, bookingId: string) => apiRequest<{ reminded: number }>('/teachers/me/money/remind', { method: 'POST', token, body: { bookingId } }),
   income: (token: string, month: string) => apiRequest<IncomeView>(`/teachers/me/money/income?month=${month}`, { token }),
@@ -289,7 +295,7 @@ export interface ClassRoomState {
   whiteboardRev: number;
   presentation: { fileId: string; name: string; page: number; pageCount: number; renderedPages: number; renderStatus: string } | null;
   classId: string;
-  me: { handRaised: boolean; stage: 'NONE' | 'VOICE' | 'VOICE_VIDEO'; removed: boolean } | null;
+  me: { handRaised: boolean; stage: 'NONE' | 'VOICE' | 'VOICE_VIDEO'; removed: boolean; paymentGate?: { required: boolean; ok: boolean; paymentId?: string | null; status?: string; amountMinor?: number; teacherId?: string } } | null;
 }
 export interface RosterRow { pupilId: string; name: string | null; present: boolean; hand: boolean; stage: 'NONE' | 'VOICE' | 'VOICE_VIDEO'; removed: boolean }
 export interface ClassMsg { id: string; seq: number; from: 'teacher' | 'pupil'; name: string; body: string | null; deleted: boolean; at: string }
@@ -300,3 +306,6 @@ export interface ClassQuestionItem {
 export interface ClassFileItem { id: string; name: string; pageCount: number; renderedPages: number; renderStatus: 'PREPARING' | 'READY' | 'FAILED'; allowDownload: boolean; sizeBytes: number | null }
 export interface BoardStroke { c: string; w: number; p: [number, number][] }
 export interface FeedPost { id: string; kind: string; sessionId: string | null; text: string | null; hasImage: boolean; at: string }
+export interface ClassBoardRow { id: string; pupilId: string; name: string | null; status: string; amountMinor: number; periodKey: string; teacherConfirmedAt: string | null }
+export interface ClassBoard { classId: string; period: string; currentPeriod: string; periods: { key: string; label: string }[]; rows: ClassBoardRow[] }
+export interface ClassPayRow { id: string; classId: string; classTitle: string; teacher: { id: string; name: string | null }; periodKey: string; amountMinor: number; status: string }

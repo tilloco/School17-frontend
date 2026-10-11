@@ -20,6 +20,7 @@ export default function MoneyScreen() {
   const [cursor, setCursor] = useState(() => new Date());
   const month = ym(cursor);
   const owed = useAsync(() => market.owed(token as string), [token]);
+  const classOwed = useAsync(() => market.classOwed(token as string), [token]);
   const income = useAsync(() => market.income(token as string, month), [token, month]);
   const shift = (n: number) => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + n, 1));
 
@@ -75,6 +76,17 @@ export default function MoneyScreen() {
               <PrimaryButton title={t('money.remind')} variant="outline" disabled={!g.canRemind} onPress={() => remind(g.remindBookingId)} />
             </View>
           ))
+        )}
+        {(classOwed.data?.length ?? 0) > 0 && (
+          <>
+            <Text style={styles.h2}>{t('cmoney.title')}</Text>
+            {classOwed.data!.map((g) => (
+              <View key={g.classId + g.pupilName} style={styles.card}>
+                <Text style={styles.strong}>{g.pupilName} · {g.classTitle}</Text>
+                <Text>{t('money.lessons', { n: g.count })} · {som(g.totalMinor)}</Text>
+              </View>
+            ))}
+          </>
         )}
       </ScrollView>
     </Screen>
