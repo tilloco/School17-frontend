@@ -76,3 +76,8 @@
 ## A1 Free mode
 - Wording in uz/ru texts was written by me and has not been reviewed by a native legal translator. The S8 payment/ledger code is dormant but still shipped; it has only ever run against the mock provider.
 - DATA_INVENTORY.md and PAYMENTS_GAPS.md still describe the dormant payment tables; they are not live data in free mode.
+
+## A2 Card details
+- Changing APP_DATA_KEY makes stored cards unreadable (no key rotation / re-encryption tool); teachers must re-enter. The dev fallback key is public in the source: never use it with real cards.
+- Mobile: only the teacher editor (app/market/card.tsx) exists; the pupil reveal + copy button arrive with A3 (Pay screen). Screen type-checked only, never run on a device.
+- Server logs/HTTP proxies in front of the API could log request bodies of PUT /teachers/me/payment-info: configure them not to (not verifiable here).

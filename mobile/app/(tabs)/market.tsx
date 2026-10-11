@@ -28,6 +28,7 @@ export default function MarketHome() {
     { label: t('market.lessons'), to: '/market/lessons' },
     { label: t('market.messages'), to: '/market/threads' },
     { label: t('market.notifications'), to: '/market/notifications', badge: unread.data?.unread },
+    ...(me.data?.role === 'TEACHER' ? [{ label: t('market.card'), to: '/market/card' }] : []),
     { label: t('market.safety'), to: '/market/safety' },
   ];
   return (

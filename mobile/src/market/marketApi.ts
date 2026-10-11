@@ -136,6 +136,10 @@ export const market = {
   blockThread: (token: string, threadId: string) => apiRequest<{ id: string }>('/blocks/thread', { method: 'POST', token, body: { threadId } }),
   reportThread: (token: string, threadId: string, reason: string) => apiRequest(`/threads/${threadId}/report`, { method: 'POST', token, body: { reason } }),
   blockTeacher: (token: string, teacherId: string) => apiRequest<{ id: string }>('/blocks/teacher', { method: 'POST', token, body: { teacherId } }),
+  getPaymentInfo: (token: string) => apiRequest<{ set: boolean; cardLast4?: string; holderName?: string }>('/teachers/me/payment-info', { token }),
+  setPaymentInfo: (token: string, cardNumber: string, holderName: string) =>
+    apiRequest<{ set: boolean; cardLast4: string; holderName: string }>('/teachers/me/payment-info', { method: 'PUT', token, body: { cardNumber, holderName } }),
+  removePaymentInfo: (token: string) => apiRequest<{ set: boolean }>('/teachers/me/payment-info', { method: 'DELETE', token }),
   blocks: (token: string) => apiRequest<{ id: string; name: string | null }[]>('/blocks', { token }),
   unblock: (token: string, id: string) => apiRequest(`/blocks/${id}`, { method: 'DELETE', token }),
   inbox: (token: string) => apiRequest<InboxItem[]>('/notifications', { token }),
