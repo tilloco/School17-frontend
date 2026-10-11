@@ -32,3 +32,9 @@
 - The availability filter evaluates at most 300 candidates per request (sorted first); beyond that, matching teachers can be missed.
 - Blocked-user exclusion is wired (hiddenFor) but empty until S9.
 - No mobile search/filters UI yet (API only).
+
+## S7 Reviews
+- Completed lessons in tests are set via direct DB update for speed; the real path (call -> COMPLETED) is covered separately in S4 tests.
+- Review-gaming defences are Bayesian shrinkage, one-per-completed-lesson (which needs 5+ min of real presence) and moderation. Colluding accounts that complete genuine paid lessons are NOT detected (no anomaly detection).
+- Review text is not automatically scanned for phone numbers/abuse; moderation is report-driven.
+- No mobile UI for reviews yet.
