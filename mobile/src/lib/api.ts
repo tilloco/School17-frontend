@@ -183,3 +183,6 @@ export const api = {
   createQuestionsBulkAdmin: (adminKey: string, dto: { lessonId: string; text: string }) =>
     request<{ message: string; count: number }>('/content/questions/bulk', { method: 'POST', adminKey, body: dto }),
 };
+
+// Qo'shimcha modullar (masalan src/call) uchun umumiy so'rov funksiyasi
+export const apiRequest = request;

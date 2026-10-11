@@ -6,7 +6,7 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 - [x] S1 Foundation (roles, permissions, audit log, auth test harness)
 - [x] S2 Teacher profiles
 - [x] S3 Booking
-- [ ] S4 Video calls
+- [x] S4 (server + shared state machine + smoke test tested; native RTC driver UNTESTED, see KNOWN_GAPS) Video calls
 - [ ] S5 Messaging and files
 - [ ] S6 Discovery
 - [ ] S7 Ratings and reviews
