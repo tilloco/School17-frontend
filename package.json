@@ -1,8 +1,11 @@
 {
   "devDependencies": {
-    "prisma": "^6.19.3"
+    "@types/react": "~19.2.4",
+    "prisma": "^6.19.3",
+    "typescript": "~6.0.3"
   },
   "dependencies": {
+    "@react-native-google-signin/google-signin": "^16.1.5",
     "expo-audio": "^57.0.5",
     "expo-auth-session": "~57.0.12",
     "expo-dev-client": "~57.0.19",

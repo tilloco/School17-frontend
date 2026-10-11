@@ -15,7 +15,7 @@ import type {
 } from '../types/api';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
-
+const DEFAULT_TIMEOUT_MS = 15000;
 export class ApiError extends Error {
   statusCode: number;
   code?: string;
@@ -36,21 +36,34 @@ interface RequestOptions {
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-   if (options.token) headers.Authorization = `Bearer ${options.token}`;
+  if (options.token) headers.Authorization = `Bearer ${options.token}`;
   if (options.adminKey) headers['x-admin-key'] = options.adminKey;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
       method: options.method || 'GET',
       headers,
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      signal: controller.signal,
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new ApiError(
+        { statusCode: 0, message: "Ulanish juda sekin. Qaytadan urinib ko'ring.", code: 'TIMEOUT' },
+        0,
+      );
+    }
     // Tarmoq xatosi (server ishlamayapti, internet yo'q va h.k.)
     throw new ApiError(
       { statusCode: 0, message: "Serverga ulanib bo'lmadi. Internetni yoki server manzilini tekshiring." },
       0,
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   const isJson = res.headers.get('content-type')?.includes('application/json');
@@ -146,6 +159,12 @@ export const api = {
     request<ExamResult>(`/exam/${sessionId}/submit`, { method: 'POST', token }),
   loginWithGoogle: (idToken: string) =>
   request<VerifyOtpResponse>('/auth/google', { method: 'POST', body: { idToken } }),
+
+  adminLogin: (email: string, password: string) =>
+  request<{ accessToken: string; admin: { id: string; email: string; role: string } }>(
+    '/admin/auth/login',
+    { method: 'POST', body: { email, password } },
+  ),
 
   getExamResult: (token: string, sessionId: string) =>
     request<ExamResult>(`/exam/${sessionId}/result`, { token }),

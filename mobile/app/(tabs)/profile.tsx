@@ -1,13 +1,17 @@
 import React, { useRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Screen } from '../../src/components/Screen';
-import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { useAuth } from '../../src/lib/auth-context';
 import { colors, radius, spacing } from '../../src/theme/colors';
 
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
 export default function ProfileScreen() {
-   const router = useRouter();
+  const router = useRouter();
   const { user, signOut } = useAuth();
   const tapCount = useRef(0);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -26,34 +30,36 @@ export default function ProfileScreen() {
     }, 2000);
   };
 
-  const onLogout = async () => {
-    await signOut();
-    router.replace('/');
+  const onLogout = () => {
+    Alert.alert('Chiqish', 'Hisobdan chiqmoqchimisiz?', [
+      { text: 'Bekor qilish', style: 'cancel' },
+      {
+        text: 'Chiqish',
+        style: 'destructive',
+        onPress: async () => {
+          await signOut();
+          router.replace('/');
+        },
+      },
+    ]);
   };
 
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.scroll}>
-               <Pressable onPress={onTitleTap}>
+        <Pressable onPress={onTitleTap}>
           <Text style={styles.title}>Profil</Text>
         </Pressable>
 
         <View style={styles.card}>
-          <Row label="Ism" value={user?.name || '—'} />
-          <Row label="Telefon" value={user?.phone || '—'} />
-          <Row
-            label="Imtihon sanasi"
-            value={user?.examDate ? new Date(user.examDate).toLocaleDateString('uz-UZ') : '—'}
-          />
-          <Row label="Tarif" value={user?.isPremium ? 'Premium' : 'Bepul'} />
-          <Row label="Referral kodi" value={user?.referralCode || '—'} last />
+          <Row label="Ism" value={user?.name || '-'} />
+     <Row label="Imtihon sanasi" value={formatDate(user?.examDate)} last />
         </View>
 
-        <View style={styles.card}>
-          <Row label="Hamyon balansi" value={`${user?.walletBalance ?? 0} so'm`} last />
-        </View>
-
-        <PrimaryButton title="Chiqish" onPress={onLogout} variant="outline" />
+        <Pressable onPress={onLogout} style={styles.logout} hitSlop={8}>
+          <Ionicons name="log-out-outline" size={16} color={colors.textMuted} />
+          <Text style={styles.logoutText}>Chiqish</Text>
+        </Pressable>
       </ScrollView>
     </Screen>
   );
@@ -79,8 +85,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     paddingHorizontal: spacing.md,
   },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm + 4 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
   rowLabel: { fontSize: 14, color: colors.textMuted },
   rowValue: { fontSize: 14, color: colors.text, fontWeight: '600' },
+  logout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.sm,
+  },
+  logoutText: { fontSize: 13, color: colors.textMuted },
 });

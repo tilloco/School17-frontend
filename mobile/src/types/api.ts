@@ -20,13 +20,11 @@ export interface Streak {
   currentCount: number;
   lastActiveDate: string | null;
 }
-
 export interface DashboardData {
-  progressPercent: number;
-  completedLessons: number;
-  totalLessons: number;
-  streak: number;
-  weakTopics: { title: string; correctPercent: number }[];
+  examsTaken: number;
+  examsGoal: number;
+  streakCurrent: number;
+  streakLongest: number;
 }
 
 export interface LessonSummary {

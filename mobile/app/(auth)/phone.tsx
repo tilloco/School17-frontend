@@ -9,6 +9,8 @@ import { useAuth } from '../../src/lib/auth-context';
 import { signInWithGoogle } from '../../src/lib/google-auth';
 import { colors, spacing } from '../../src/theme/colors';
 
+const EXAM_DATE = '2026-12-23';
+
 export default function PhoneScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
@@ -19,12 +21,15 @@ export default function PhoneScreen() {
     setGoogleLoading(true);
     setError(null);
     try {
-      const idToken = await signInWithGoogle();
+      const { idToken, name } = await signInWithGoogle();
       const result = await api.loginWithGoogle(idToken);
+      if (name) {
+        await api.updateProfile(result.accessToken, { name, examDate: EXAM_DATE });
+      }
       await signIn(result.accessToken);
       router.replace('/(tabs)/dashboard');
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Google orqali kirishda xatolik yuz berdi");
+      setError(e instanceof ApiError ? e.message : 'Google orqali kirishda xatolik yuz berdi');
     } finally {
       setGoogleLoading(false);
     }

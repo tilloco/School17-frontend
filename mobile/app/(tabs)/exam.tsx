@@ -8,6 +8,7 @@ import { api, ApiError } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth-context';
 import { colors, radius, spacing, shadow } from '../../src/theme/colors';
 import type { ExamQuestion, ExamSessionPayload } from '../../src/types/api';
+const PREMIUM_ENABLED = false; // set to true when we add payments back
 
 function formatTime(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -73,10 +74,10 @@ export default function ExamScreen() {
       api.saveExamAnswer(token, session.sessionId, q.answerId, data).catch(() => undefined);
     }, 500);
   };
-
-  const onSubmit = async () => {
+const onSubmit = async () => {
     if (!token || !session) return;
     setSubmitting(true);
+    setError(null);
     try {
       await api.submitExam(token, session.sessionId);
       router.push({ pathname: '/(tabs)/exam-result', params: { sessionId: session.sessionId } });
@@ -94,7 +95,7 @@ export default function ExamScreen() {
     );
   }
 
-  if (premiumRequired) {
+if (PREMIUM_ENABLED && premiumRequired) {
     return (
       <Screen style={styles.center}>
         <Text style={styles.paywallTitle}>Sinov imtihoni</Text>
@@ -115,13 +116,19 @@ export default function ExamScreen() {
 
   const remainingMs = new Date(session.expiresAt).getTime() - now;
   const isExpired = remainingMs <= 0;
-
+  const answeredCount = session.questions.filter((q) => {
+    const a = answers[q.answerId];
+    if (!a) return false;
+    if (q.questionType === 'CLOSED') return a.chosenIndex !== undefined;
+    return !!(a.partAText?.trim() || a.partBText?.trim());
+  }).length;
   return (
     <Screen>
-      <View style={styles.timerBar}>
+            <View style={styles.timerBar}>
         <Text style={styles.timerText}>{isExpired ? "Vaqt tugadi" : formatTime(remainingMs)}</Text>
+        <Text style={styles.timerProgress}>{answeredCount}/{session.questions.length} javob berildi</Text>
       </View>
-
+  
       <ScrollView contentContainerStyle={styles.scroll}>
         <ErrorText message={error} />
 
@@ -180,12 +187,16 @@ export default function ExamScreen() {
 
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
-  timerBar: {
+   timerBar: {
     backgroundColor: colors.primary,
     paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   timerText: { color: colors.white, fontSize: 18, fontWeight: '700' },
+  timerProgress: { color: colors.white, fontSize: 13, opacity: 0.9 },
   scroll: { padding: spacing.md, paddingBottom: spacing.xl, gap: spacing.md },
   card: {
     backgroundColor: colors.surface,
