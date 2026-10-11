@@ -61,3 +61,8 @@
 - Deleting an account does not scrub server/host logs, backups, or copies at third-party providers.
 - Guardian-requested export/deletion of a minor's data is not implemented; no admin-initiated erasure workflow.
 - Consent screens are API-only (no mobile UI); consent text versions are hard-coded drafts.
+
+## S11 Notifications
+- Expo Push sender is UNTESTED against the real Expo service (fake fetch only); mobile does not register push tokens yet (no UI wired).
+- No email notifications at all (no SMTP/provider); no quiet hours; no user notification preferences.
+- Reminders are created at confirmation time (24 h and 15 min) and removed on cancel; reschedule re-creates them. Not verified on a real clock over days.
