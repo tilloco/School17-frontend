@@ -281,7 +281,7 @@ export const ru: Record<string, string> = {
   "resch.help": "Выберите новое время. Вы получите уведомление, когда другая сторона ответит.",
   "resch.sent": "Запрос отправлен.",
   "attach.photo": "Фото",
-  "attach.pdf": "PDF",
+  "attach.pdf": "PDF-файл",
   "attach.uploading": "Загрузка… {pct}%",
   "attach.retry": "Повторить",
   "attach.cancelled": "Загрузка отменена.",

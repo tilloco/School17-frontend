@@ -281,7 +281,7 @@ export const en: Record<string, string> = {
   "resch.help": "Pick a new time. The other side will accept or decline, and you will be notified.",
   "resch.sent": "Request sent.",
   "attach.photo": "Photo",
-  "attach.pdf": "PDF",
+  "attach.pdf": "PDF file",
   "attach.uploading": "Uploading… {pct}%",
   "attach.retry": "Retry",
   "attach.cancelled": "Upload cancelled.",

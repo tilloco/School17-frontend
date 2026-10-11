@@ -281,7 +281,7 @@ export const uz: Record<string, string> = {
   "resch.help": "Yangi vaqtni tanlang. Ikkinchi tomon qabul qilsa yoki rad etsa, sizga xabar keladi.",
   "resch.sent": "So'rov yuborildi.",
   "attach.photo": "Rasm",
-  "attach.pdf": "PDF",
+  "attach.pdf": "PDF fayl",
   "attach.uploading": "Yuklanmoqda… {pct}%",
   "attach.retry": "Qayta urinish",
   "attach.cancelled": "Yuklash bekor qilindi.",
