@@ -46,6 +46,7 @@ export default function ClassScreen() {
           {c.status === 'CANCELLED' && <Text style={styles.strong}>{t('class.cancelledLabel')}</Text>}
         </View>
 
+        <PrimaryButton title={t('cfile.title')} variant="outline" onPress={() => router.push(`/market/class-files/${id}` as never)} />
         <Text style={styles.h2}>{t('class.sessions')}</Text>
         {sessions.state !== 'ready' || !sessions.data ? (
           <StateView state={sessions.state === 'ready' ? 'loading' : sessions.state} onRetry={sessions.reload} />

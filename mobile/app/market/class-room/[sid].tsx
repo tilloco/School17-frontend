@@ -8,6 +8,7 @@ import { ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
 import { t } from '../../../src/i18n';
 import { ClassRoomState, market, RosterRow } from '../../../src/market/marketApi';
+import { PresentationPanel } from '../../../src/market/PresentationPanel';
 import { colors, radius, spacing } from '../../../src/theme/colors';
 
 const POLL_MS = 3000; // control plane polling; media itself needs the LiveKit client in a development build (R4)
@@ -69,6 +70,7 @@ export default function ClassRoomScreen() {
             </View>
             {(st.status === 'SCHEDULED' || st.status === 'LOBBY') && <PrimaryButton title={t('pre.title')} variant="outline" onPress={() => router.push('/market/precheck' as never)} />}
             {(live || st.status === 'LOBBY') && <PrimaryButton title={t('cchat.title')} variant="outline" onPress={() => router.push(`/market/class-chat/${sid}` as never)} />}
+            {live && <PresentationPanel token={token as string} classId={st.classId} sessionId={sid} state={st} teacher={teacher} onChanged={load} />}
             {teacher && st.status === 'LOBBY' && <PrimaryButton title={t('room.start')} onPress={() => act(() => market.roomStart(token as string, sid))} />}
             {teacher && live && (
               <View style={{ gap: spacing.sm }}>

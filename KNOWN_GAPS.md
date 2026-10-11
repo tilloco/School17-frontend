@@ -124,3 +124,8 @@
 
 ## R4 quality engine
 - Thresholds (1500/400/60 kbps, loss 3/8/20 %, rtt 400/800/2500 ms, 15 s recovery) are starting guesses, not measured. Codec preference (H.264 then VP8) must be re-checked against current LiveKit docs on a real device. Foreground service, iOS background audio, Bluetooth routing and incoming-call handling are only configured in app.json, never tested. Mic level meter and device picker are missing (need the media SDK).
+
+## R5 PDF presenter
+- FilesService.complete() assembles the whole upload in memory (Buffer.concat) and checkPdf converts it to a latin1 string, so the 500 MiB default limit is NOT safe on an 8 GB machine; keep FILE_MAX_BYTES at about 100 MiB until streaming assembly exists.
+- PDF rendering was tested with small generated PDFs only. Large, scanned, encrypted or malicious PDFs, memory use per page and the 300 s limit are unmeasured; the render runs in the API process (a hostile PDF could stall it). Move it to a worker process/queue (R12).
+- Laser pointer is not built. Mobile library and presenter screens are type-checked only. Admin Storage page was type-checked, not rendered; run `cd admin && npm run build` before the e2e test.

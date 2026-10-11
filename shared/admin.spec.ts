@@ -8,7 +8,7 @@ const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1
 
 describe('admin web: proxy allow-list (pure)', () => {
   it('allows exactly the moderation actions', () => {
-    for (const p of [`teachers/${U}/approve`, `teachers/${U}/reject`, `teachers/${U}/suspend`, `teachers/${U}/reinstate`, `teachers/credentials/${U}/approve`, `teachers/credentials/${U}/reject`, `reports/${U}/resolve`, `users/${U}/suspend`, `users/${U}/reinstate`, `reviews/${U}/hide`, `reviews/${U}/restore`, `files/${U}/download-url`]) {
+    for (const p of [`teachers/${U}/approve`, `teachers/${U}/reject`, `teachers/${U}/suspend`, `teachers/${U}/reinstate`, `teachers/credentials/${U}/approve`, `teachers/credentials/${U}/reject`, `reports/${U}/resolve`, `users/${U}/suspend`, `users/${U}/reinstate`, `reviews/${U}/hide`, `reviews/${U}/restore`, `files/${U}/download-url`, `class-files/${U}/takedown`, `class-files/${U}/restore`, `teachers/${U}/storage-quota`]) {
       assert.equal(isAllowedProxy('POST', p), true, p);
       assert.equal(isAllowedProxy('GET', p), false, 'GET ' + p);
     }

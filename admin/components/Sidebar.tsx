@@ -14,6 +14,7 @@ export function Sidebar({ lang = 'uz' }: { lang?: Lang }) {
     { href: '/teachers', label: T['a.nav.teachers'] },
     { href: '/reports', label: T['a.nav.reports'] },
     { href: '/people', label: T['a.nav.people'] },
+    { href: '/storage', label: T['a.nav.storage'] },
   ];
   const pathname = usePathname();
   const router = useRouter();

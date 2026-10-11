@@ -26,7 +26,7 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 - [x] R2 Class room core
 - [x] R3 Questions + chat in class
 - [x] R4 Quality engine (pure ladder, tile policy, config, pre-check done; LiveKit client binding blocked, see BLOCKED.md)
-- [ ] R5 PDF presenter + class library
+- [x] R5 PDF presenter + class library
 - [ ] R6 Whiteboard + screen share
 - [ ] R7 Class payments
 - [ ] R8 Recap + class feed

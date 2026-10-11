@@ -213,6 +213,14 @@ export const market = {
   classAsk: (token: string, sid: string, text: string, anonymous: boolean) => apiRequest<ClassQuestionItem>(`/class-sessions/${sid}/questions`, { method: 'POST', token, body: { text, anonymous } }),
   classUpvote: (token: string, sid: string, id: string) => apiRequest(`/class-sessions/${sid}/questions/${id}/upvote`, { method: 'POST', token, body: {} }),
   classQuestionAction: (token: string, sid: string, id: string, action: 'answer' | 'later' | 'hide' | 'pin' | 'call', body: object = {}) => apiRequest(`/class-sessions/${sid}/questions/${id}/${action}`, { method: 'POST', token, body }),
+  classFiles: (token: string, id: string, q = '') => apiRequest<ClassFileItem[]>(`/classes/${id}/files${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''}`, { token }),
+  addClassFile: (token: string, id: string, fileId: string) => apiRequest<ClassFileItem>(`/classes/${id}/files`, { method: 'POST', token, body: { fileId } }),
+  setClassFileDownload: (token: string, id: string, fid: string, allowDownload: boolean) => apiRequest(`/classes/${id}/files/${fid}`, { method: 'PATCH', token, body: { allowDownload } }),
+  deleteClassFile: (token: string, id: string, fid: string) => apiRequest(`/classes/${id}/files/${fid}`, { method: 'DELETE', token }),
+  classFileDownload: (token: string, id: string, fid: string) => apiRequest<{ url: string }>(`/classes/${id}/files/${fid}/download-url`, { method: 'POST', token, body: {} }),
+  classFileReport: (token: string, id: string, fid: string, reason: string) => apiRequest(`/classes/${id}/files/${fid}/report`, { method: 'POST', token, body: { reason } }),
+  present: (token: string, sid: string, fileId: string, page: number) => apiRequest(`/class-sessions/${sid}/present`, { method: 'POST', token, body: { fileId, page } }),
+  presentStop: (token: string, sid: string) => apiRequest(`/class-sessions/${sid}/present/stop`, { method: 'POST', token, body: {} }),
   owed: (token: string) => apiRequest<OwedGroup[]>('/teachers/me/money/owed', { token }),
   remind: (token: string, bookingId: string) => apiRequest<{ reminded: number }>('/teachers/me/money/remind', { method: 'POST', token, body: { bookingId } }),
   income: (token: string, month: string) => apiRequest<IncomeView>(`/teachers/me/money/income?month=${month}`, { token }),
@@ -274,6 +282,8 @@ export interface ClassDetail {
 export interface ClassRoomState {
   id: string; role: 'teacher' | 'pupil'; status: string; startAt: string; lobbyOpensAt: string; stageMode: 'LISTEN_ONLY' | 'HAND_RAISE' | 'OPEN_STAGE'; locked: boolean;
   teacherReconnecting: boolean; teacherNoShow: boolean; stageCount: number; stageMax: number;
+  presentation: { fileId: string; name: string; page: number; pageCount: number; renderedPages: number; renderStatus: string } | null;
+  classId: string;
   me: { handRaised: boolean; stage: 'NONE' | 'VOICE' | 'VOICE_VIDEO'; removed: boolean } | null;
 }
 export interface RosterRow { pupilId: string; name: string | null; present: boolean; hand: boolean; stage: 'NONE' | 'VOICE' | 'VOICE_VIDEO'; removed: boolean }
@@ -282,3 +292,4 @@ export interface ClassQuestionItem {
   id: string; text: string; status: 'OPEN' | 'ANSWERED' | 'LATER' | 'HIDDEN'; pinned: boolean; upvotes: number; author: string | null; anonymous: boolean;
   mine: boolean; voted: boolean; reply: { text: string } | null;
 }
+export interface ClassFileItem { id: string; name: string; pageCount: number; renderedPages: number; renderStatus: 'PREPARING' | 'READY' | 'FAILED'; allowDownload: boolean; sizeBytes: number | null }

@@ -9,6 +9,8 @@ const RULES: { method: 'GET' | 'POST'; re: RegExp }[] = [
   { method: 'POST', re: new RegExp(`^users/${UUID}/(suspend|reinstate)$`) },
   { method: 'POST', re: new RegExp(`^reviews/${UUID}/(hide|restore)$`) },
   { method: 'POST', re: new RegExp(`^files/${UUID}/download-url$`) },
+  { method: 'POST', re: new RegExp(`^class-files/${UUID}/(takedown|restore)$`) },
+  { method: 'POST', re: new RegExp(`^teachers/${UUID}/storage-quota$`) },
 ];
 
 export function isAllowedProxy(method: string, path: string): boolean {

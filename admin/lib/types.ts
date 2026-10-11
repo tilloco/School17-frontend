@@ -51,7 +51,7 @@ export type TeacherDetail = {
 
 export type ReportItem = {
   id: string;
-  targetType: 'REVIEW' | 'USER' | 'MESSAGE';
+  targetType: 'REVIEW' | 'USER' | 'MESSAGE' | 'CLASS_FILE';
   targetId: string;
   reason: string;
   note: string;
@@ -64,3 +64,5 @@ export type PeopleResponse = {
   total: number;
   items: { id: string; name: string | null; email: string; role: string; status: string; createdAt: string; teacherProfileId: string | null; verificationStatus: string | null }[];
 };
+
+export type StorageInfo = { totalBytes: number; freeBytes: number; usedBytes: number; minFreeBytes: number; classFilesBytes: number } | { unavailable: true };
