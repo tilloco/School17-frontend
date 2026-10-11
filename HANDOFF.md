@@ -1,10 +1,9 @@
-GATE REACHED: A1-A6 done. Send S17-CLASSROOM-V1.
-STEP1 done. Prompts applied: S17-RESUME-V5.
+STEP1 done. Prompts applied: S17-RESUME-V5, S17-GATE1-NOTE, S17-CLASSROOM-V1.
 (A7, A8 also done before the gate; next after the gate: A9.)
 # HANDOFF
 Branch `claude/school17-features` (local only, nothing pushed). Commit in `backend/` first, then in the parent.
 - Last finished: Step 1 + plan (spec v2 saved, repo map below). Full suite 261/261 at commit d6a323f6-ish. S1-S11 done; S12 docs still LAST.
-- A1-A8 done. In progress: nothing. Next: A9 push token registration behind EXPO_PUSH_ENABLED (`grep -n "^A9 " NEW_FEATURES_SPEC.md`). Admin e2e needs `cd admin && npm run build` first.
+- A1-A8 done; full suite 327/327 + mobile tsc clean. In progress: R0 (VIDEO_STATUS.md). Next: R1 class model. Order in CLASSROOM_SPEC.md.
 - Next: see `grep -n "\[ \]" PROGRESS.md | head -5`, spec: `grep -n "^A1 " NEW_FEATURES_SPEC.md`.
 - Unverified: mobile screens, LiveKit/Expo-push/ClamAV adapters never run on devices/real services. Payments code is dormant/mock.
 - Start test DB first: `bash backend/scripts/dev-db.sh start`. Never kill processes you did not start.
