@@ -8,7 +8,7 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 - [x] S3 Booking
 - [x] S4 (server + shared state machine + smoke test tested; native RTC driver UNTESTED, see KNOWN_GAPS) Video calls
 - [x] S5 Messaging and files
-- [ ] S6 Discovery
+- [x] S6 Discovery
 - [ ] S7 Ratings and reviews
 - [ ] S8 Earnings
 - [ ] S9 Safety

@@ -26,3 +26,9 @@
 - Mobile chat UI and file picker/upload progress UI are NOT built yet (backend + API only); see S11 note.
 - Typing indicators, message delete/edit, search and push notifications for messages are not built.
 - Unread counts are computed by queries (fine for current scale, no caching).
+
+## S6 Discovery
+- Tested with 600 generated teachers on a local DB (21 ms). Behaviour at real data sizes, with real text (Uzbek Cyrillic/Latin transliteration, typos) is untested; ILIKE does not do stemming or transliteration.
+- The availability filter evaluates at most 300 candidates per request (sorted first); beyond that, matching teachers can be missed.
+- Blocked-user exclusion is wired (hiddenFor) but empty until S9.
+- No mobile search/filters UI yet (API only).
