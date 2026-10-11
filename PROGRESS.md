@@ -20,7 +20,7 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 - [x] A3 Direct payment tracking
 - [x] A5 Teacher setup on mobile
 - [x] A6 Admin web
-- [ ] A4 Teacher money board
+- [x] A4 Teacher money board
 - [ ] A7 Reviews + reschedule on mobile
 - [ ] A8 Chat attachments on mobile
 - [ ] A9 Push token registration

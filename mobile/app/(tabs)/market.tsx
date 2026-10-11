@@ -34,9 +34,10 @@ export default function MarketHome() {
           { label: t('setup.requests'), to: '/market/requests' },
           { label: t('setup.profile'), to: '/market/profile-edit' },
           { label: t('setup.availability'), to: '/market/availability' },
+          { label: t('money.menu'), to: '/market/money' },
           { label: t('market.card'), to: '/market/card' },
         ]
-      : []),
+      : [{ label: t('mypay.menu'), to: '/market/my-payments' }]),
     { label: t('market.safety'), to: '/market/safety' },
   ];
   return (

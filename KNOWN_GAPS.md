@@ -101,3 +101,7 @@
 - The old exam-app admin pages (/, /users, /users/[id]) call /admin/stats and /admin/users, which I did not test; they compile but may not match the current backend guards.
 - `next build` downloads Google Fonts at build time (needs internet). Login has no brute-force limit in the web layer beyond the backend's throttle. No two-factor, no per-admin permissions beyond the existing SUPERADMIN/EDITOR roles.
 - The panel shows the first 20/50 items per page with simple prev/next links; no bulk actions.
+
+## A4 money board
+- Mobile money.tsx and my-payments.tsx are type-checked only, never run on a device; Share sheet CSV not tried.
+- Income and reminders count only marks, not real money; the platform cannot verify any payment.

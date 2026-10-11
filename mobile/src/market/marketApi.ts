@@ -1,4 +1,4 @@
-import { apiRequest } from '../lib/api';
+import { API_URL, ApiError, apiRequest } from '../lib/api';
 
 // Bozor (marketplace) API: backend/src/marketplace. Turlar faqat ekranlar ishlatadigan maydonlarni qamrab oladi.
 
@@ -179,6 +179,15 @@ export const market = {
   setPaymentInfo: (token: string, cardNumber: string, holderName: string) =>
     apiRequest<{ set: boolean; cardLast4: string; holderName: string }>('/teachers/me/payment-info', { method: 'PUT', token, body: { cardNumber, holderName } }),
   removePaymentInfo: (token: string) => apiRequest<{ set: boolean }>('/teachers/me/payment-info', { method: 'DELETE', token }),
+  owed: (token: string) => apiRequest<OwedGroup[]>('/teachers/me/money/owed', { token }),
+  remind: (token: string, bookingId: string) => apiRequest<{ reminded: number }>('/teachers/me/money/remind', { method: 'POST', token, body: { bookingId } }),
+  income: (token: string, month: string) => apiRequest<IncomeView>(`/teachers/me/money/income?month=${month}`, { token }),
+  myPayments: (token: string) => apiRequest<MyPaymentRow[]>('/direct-payments/mine', { token }),
+  exportCsv: async (token: string, from: string, to: string) => {
+    const res = await fetch(`${API_URL}/teachers/me/money/export.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { headers: { authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new ApiError({ message: 'Export failed', code: 'EXPORT_FAILED' } as never, res.status);
+    return res.text();
+  },
   directPayment: (token: string, bookingId: string) => apiRequest<DirectPaymentView>(`/bookings/${bookingId}/direct-payment`, { token }),
   directAction: (token: string, bookingId: string, what: 'paid' | 'received' | 'not-received' | 'waive', body: object = {}) =>
     apiRequest<DirectPaymentView>(`/bookings/${bookingId}/direct-payment/${what}`, { method: 'POST', token, body }),
@@ -211,3 +220,7 @@ export const market = {
   exportData: (token: string) => apiRequest<Record<string, unknown>>('/me/export', { token }),
   deleteAccount: (token: string) => apiRequest<{ ok: boolean }>('/me/delete', { method: 'POST', token, body: { confirm: 'DELETE' } }),
 };
+
+export interface OwedGroup { pupilName: string; count: number; totalMinor: number; remindBookingId: string; canRemind: boolean; lessons: { bookingId: string; startAt: string; amountMinor: number }[] }
+export interface IncomeView { month: string; timezone: string; confirmedCount: number; confirmedMinor: number; awaitingConfirmation: number; unpaidLessons: number }
+export interface MyPaymentRow { bookingId: string; status: string; amountMinor: number; startAt: string; teacher: { id: string; name: string } }

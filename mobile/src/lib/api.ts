@@ -14,7 +14,7 @@ import type {
   VerifyOtpResponse,
 } from '../types/api';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 const DEFAULT_TIMEOUT_MS = 15000;
 export class ApiError extends Error {
   statusCode: number;
