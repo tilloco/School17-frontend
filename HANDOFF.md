@@ -1,3 +1,6 @@
+GATE REACHED: A1-A6 done. Send S17-CLASSROOM-V1.
+STEP1 done. Prompts applied: S17-RESUME-V5.
+(A7, A8 also done before the gate; next after the gate: A9.)
 # HANDOFF
 Branch `claude/school17-features` (local only, nothing pushed). Commit in `backend/` first, then in the parent.
 - Last finished: Step 1 + plan (spec v2 saved, repo map below). Full suite 261/261 at commit d6a323f6-ish. S1-S11 done; S12 docs still LAST.
