@@ -67,6 +67,7 @@ export default function ClassRoomScreen() {
               {live && <Text style={styles.help}>{t('room.stageCount', { n: st.stageCount, max: st.stageMax })}</Text>}
               {live && <Text style={styles.help}>{t('room.mediaNote')}</Text>}
             </View>
+            {(st.status === 'SCHEDULED' || st.status === 'LOBBY') && <PrimaryButton title={t('pre.title')} variant="outline" onPress={() => router.push('/market/precheck' as never)} />}
             {(live || st.status === 'LOBBY') && <PrimaryButton title={t('cchat.title')} variant="outline" onPress={() => router.push(`/market/class-chat/${sid}` as never)} />}
             {teacher && st.status === 'LOBBY' && <PrimaryButton title={t('room.start')} onPress={() => act(() => market.roomStart(token as string, sid))} />}
             {teacher && live && (

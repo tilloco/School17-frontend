@@ -121,3 +121,6 @@
 
 ## R3 class chat and questions
 - Realtime push events are emitted but only the polling path is tested. Mobile chat screen is type-checked only. The two-browser smoke test failed once in the full suite ("billable is capped at the scheduled hour") and passed alone: the known load flake.
+
+## R4 quality engine
+- Thresholds (1500/400/60 kbps, loss 3/8/20 %, rtt 400/800/2500 ms, 15 s recovery) are starting guesses, not measured. Codec preference (H.264 then VP8) must be re-checked against current LiveKit docs on a real device. Foreground service, iOS background audio, Bluetooth routing and incoming-call handling are only configured in app.json, never tested. Mic level meter and device picker are missing (need the media SDK).
