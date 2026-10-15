@@ -15,7 +15,11 @@ function Start-Tunnel($port, $name) {
   $script:procs += $p
   for ($i = 0; $i -lt 45; $i++) {
     Start-Sleep -Seconds 1
-    if (Test-Path $log) { $m = Select-String -Path $log -Pattern 'https://[a-z0-9-]+\.trycloudflare\.com' | Select-Object -First 1; if ($m) { return $m.Matches[0].Value } }
+    if (Test-Path $log) {
+      # cloudflared also prints its own API address (https://api.trycloudflare.com); the tunnel address is the other one
+      $m = Select-String -Path $log -Pattern 'https://[a-z0-9-]+\.trycloudflare\.com' -AllMatches | ForEach-Object { $_.Matches } | Where-Object { $_.Value -ne 'https://api.trycloudflare.com' } | Select-Object -First 1
+      if ($m) { return $m.Value }
+    }
   }
   throw "No tunnel address for $name (see $log)"
 }
