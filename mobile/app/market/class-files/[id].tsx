@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import * as DocumentPicker from 'expo-document-picker';
+import { documentPicker } from '../../../src/lib/native';
 import { Screen } from '../../../src/components/Screen';
 import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
@@ -26,7 +26,9 @@ export default function ClassFilesScreen() {
   const fail = (e: unknown) => Alert.alert(t('common.error'), e instanceof ApiError ? e.message : uploadErrorText(e));
 
   const upload = async () => {
-    const r = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+    const DP = documentPicker();
+    if (!DP) return;
+    const r = await DP.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
     const a = r.canceled ? null : r.assets[0];
     if (!a) return;
     setProgress(0);

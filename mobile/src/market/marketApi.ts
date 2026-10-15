@@ -239,6 +239,10 @@ export const market = {
   createHomework: (token: string, id: string, body: { title: string; text: string; dueAt: string }) => apiRequest(`/classes/${id}/homework`, { method: 'POST', token, body }),
   submitHomework: (token: string, id: string, hid: string, body: { text?: string; fileId?: string; studentId?: string }) => apiRequest(`/classes/${id}/homework/${hid}/submit`, { method: 'POST', token, body }),
   markHomework: (token: string, id: string, hid: string, pupilId: string, score: number) => apiRequest(`/classes/${id}/homework/${hid}/submissions/${pupilId}/mark`, { method: 'POST', token, body: { score } }),
+  pollCurrent: (token: string, sid: string) => apiRequest<PollView | null>(`/class-sessions/${sid}/polls/current`, { token }),
+  pollOpen: (token: string, sid: string, question: string, options: string[]) => apiRequest<PollView>(`/class-sessions/${sid}/polls`, { method: 'POST', token, body: { question, options } }),
+  pollClose: (token: string, sid: string, pid: string) => apiRequest<PollView>(`/class-sessions/${sid}/polls/${pid}/close`, { method: 'POST', token, body: {} }),
+  pollVote: (token: string, sid: string, pid: string, option: number) => apiRequest(`/class-sessions/${sid}/polls/${pid}/vote`, { method: 'POST', token, body: { option } }),
   owed: (token: string) => apiRequest<OwedGroup[]>('/teachers/me/money/owed', { token }),
   remind: (token: string, bookingId: string) => apiRequest<{ reminded: number }>('/teachers/me/money/remind', { method: 'POST', token, body: { bookingId } }),
   income: (token: string, month: string) => apiRequest<IncomeView>(`/teachers/me/money/income?month=${month}`, { token }),
@@ -327,3 +331,4 @@ export interface ClassRecap {
 export interface HomeworkSub { id: string; pupilId: string; text: string; fileId: string | null; late: boolean; score: number | null; comment: string | null; marked: boolean }
 export interface HomeworkItem { id: string; title: string; text: string; dueAt: string; overdue: boolean; submitted?: number; marked?: number; mine?: HomeworkSub[] }
 export interface HomeworkDetail { id: string; pupils?: { pupilId: string; name: string | null; submission: HomeworkSub | null }[]; mine?: HomeworkSub[] }
+export interface PollView { id: string; question: string; status: 'OPEN' | 'CLOSED'; options: { text: string; votes?: number }[]; total?: number; myVote: number | null }

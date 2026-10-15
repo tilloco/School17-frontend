@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
+import { imagePicker } from '../../../src/lib/native';
 import { Screen } from '../../../src/components/Screen';
 import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
@@ -46,9 +46,11 @@ export default function ClassHomeworkScreen() {
     }
   };
   const photo = async (hw: HomeworkItem) => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const IP = imagePicker();
+    if (!IP) return;
+    const perm = await IP.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return Alert.alert(t('attach.permission'));
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+    const r = await IP.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
     const a = r.canceled ? null : r.assets[0];
     if (!a) return;
     try {

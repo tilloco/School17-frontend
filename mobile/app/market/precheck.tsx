@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
-import { requestRecordingPermissionsAsync } from 'expo-audio';
+import { audioModule } from '../../src/lib/native';
 import { Screen } from '../../src/components/Screen';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { API_URL } from '../../src/lib/api';
@@ -28,7 +28,7 @@ export default function PrecheckScreen() {
     setFailed(false);
     setRes(null);
     try {
-      const mic = (await requestRecordingPermissionsAsync()).granted;
+      const mic = !!(await audioModule()?.requestRecordingPermissionsAsync())?.granted;
       const auth = { authorization: `Bearer ${token}` };
       // RTT: median of 3 tiny requests
       const rtts: number[] = [];

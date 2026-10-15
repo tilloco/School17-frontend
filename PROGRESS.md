@@ -30,7 +30,7 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 - [x] R6 Whiteboard + screen share
 - [x] R7 Class payments
 - [x] R8 Recap + class feed
-- [ ] R9 Live poll
+- [x] R9 Live poll
 - [ ] R10 Quality telemetry
 - [ ] R11 Deploy, load test, cost
 - [ ] R12 Scale-ready backend

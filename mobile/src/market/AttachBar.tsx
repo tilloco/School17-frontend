@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Text, View, StyleSheet } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
+import { documentPicker, imagePicker } from '../lib/native';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ApiError } from '../lib/api';
 import { t } from '../i18n';
@@ -53,14 +52,18 @@ export function AttachBar({ token, disabled, onUploaded }: { token: string; disa
   };
 
   const pickPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const IP = imagePicker();
+    if (!IP) return;
+    const perm = await IP.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return setError(t('attach.permission'));
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
+    const r = await IP.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
     const a = r.canceled ? null : r.assets[0];
     if (a) await run({ uri: a.uri, name: a.fileName || 'photo.jpg', mime: a.mimeType || 'image/jpeg' });
   };
   const pickPdf = async () => {
-    const r = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+    const DP = documentPicker();
+    if (!DP) return;
+    const r = await DP.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
     const a = r.canceled ? null : r.assets[0];
     if (a) await run({ uri: a.uri, name: a.name || 'document.pdf', mime: 'application/pdf' });
   };

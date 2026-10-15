@@ -139,3 +139,7 @@
 ## R8 recap and feed
 - Notification type for the 30-minute reminder is class.reminder_soon (the template test only recognises letters, underscores and dots). Class homework has no quiz mode. Recap polls are an empty list until R9. Recap/feed/homework screens are type-checked only.
 - Run several DB test files with --test-concurrency=1: ClassRoomService.sweep() and other helpers touch every row in the shared test DB.
+
+## R9 polls and the startup crash
+- Poll panel is type-checked only. The startup crash fix was found by reasoning (new native modules vs the old dev build in mobile/android), not by reading the device error; if the app still fails, the exact red-screen text is needed.
+- To use photo/PDF pickers and clipboard the development build must be rebuilt (expo run:android or an EAS dev build).

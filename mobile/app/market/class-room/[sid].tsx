@@ -9,6 +9,7 @@ import { useAuth } from '../../../src/lib/auth-context';
 import { t } from '../../../src/i18n';
 import { ClassRoomState, market, RosterRow } from '../../../src/market/marketApi';
 import { ClassPayGate } from '../../../src/market/ClassPayGate';
+import { PollPanel } from '../../../src/market/PollPanel';
 import { PresentationPanel } from '../../../src/market/PresentationPanel';
 import { colors, radius, spacing } from '../../../src/theme/colors';
 
@@ -72,6 +73,7 @@ export default function ClassRoomScreen() {
             {(st.status === 'SCHEDULED' || st.status === 'LOBBY') && <PrimaryButton title={t('pre.title')} variant="outline" onPress={() => router.push('/market/precheck' as never)} />}
             {live && <PrimaryButton title={t('wb.title')} variant="outline" onPress={() => router.push(`/market/class-whiteboard/${sid}` as never)} />}
             {(live || st.status === 'LOBBY') && <PrimaryButton title={t('cchat.title')} variant="outline" onPress={() => router.push(`/market/class-chat/${sid}` as never)} />}
+            {live && <PollPanel token={token as string} sessionId={sid} teacher={teacher} />}
             {live && <PresentationPanel token={token as string} classId={st.classId} sessionId={sid} state={st} teacher={teacher} onChanged={load} />}
             {teacher && st.status === 'LOBBY' && <PrimaryButton title={t('room.start')} onPress={() => act(() => market.roomStart(token as string, sid))} />}
             {teacher && live && (

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
-import * as ImagePicker from 'expo-image-picker';
 import { Stack, useLocalSearchParams } from 'expo-router';
+import { clipboard, imagePicker } from '../../../src/lib/native';
 import { Screen } from '../../../src/components/Screen';
 import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
@@ -59,11 +58,15 @@ export default function PayScreen() {
   };
   const copy = async () => {
     if (!card) return;
-    await Clipboard.setStringAsync(card.cardNumber.replace(/\s/g, ''));
+    const CB = clipboard();
+    if (!CB) return;
+    await CB.setStringAsync(card.cardNumber.replace(/\s/g, ''));
     Alert.alert(t('pay.copied'));
   };
   const pickReceipt = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+    const IP = imagePicker();
+    if (!IP) return;
+    const res = await IP.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
     if (res.canceled || !res.assets[0]) return;
     const a = res.assets[0];
     try {
