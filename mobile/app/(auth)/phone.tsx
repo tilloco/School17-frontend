@@ -7,6 +7,7 @@ import { ErrorText } from '../../src/components/ErrorText';
 import { api, ApiError } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth-context';
 import { signInWithGoogle } from '../../src/lib/google-auth';
+import { API_URL } from '../../src/lib/api';
 import { colors, spacing } from '../../src/theme/colors';
 
 const EXAM_DATE = '2026-12-23';
@@ -16,6 +17,20 @@ export default function PhoneScreen() {
   const { signIn } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Local testing only: shown when the app was started by scripts/dev-tunnel.ps1 (EXPO_PUBLIC_DEV_LOGIN=1) against the throwaway local backend.
+  const devLogin = async (role: 'STUDENT' | 'TEACHER' | 'GUARDIAN') => {
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/dev/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role }) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const j = await res.json();
+      await signIn(j.accessToken);
+      router.replace('/(tabs)/market');
+    } catch (e) {
+      setError(`Dev login failed: ${(e as Error).message}`);
+    }
+  };
 
   const onGooglePress = async () => {
     setGoogleLoading(true);
@@ -46,6 +61,15 @@ export default function PhoneScreen() {
         loading={googleLoading}
         disabled={false}
       />
+
+      {process.env.EXPO_PUBLIC_DEV_LOGIN === '1' && (
+        <>
+          <Text style={styles.subtitle}>Local test accounts (dev only)</Text>
+          <PrimaryButton title="Test pupil" variant="outline" onPress={() => devLogin('STUDENT')} />
+          <PrimaryButton title="Test teacher" variant="outline" onPress={() => devLogin('TEACHER')} />
+          <PrimaryButton title="Test guardian" variant="outline" onPress={() => devLogin('GUARDIAN')} />
+        </>
+      )}
 
       <ErrorText message={error} />
     </Screen>

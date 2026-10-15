@@ -3,6 +3,10 @@
 let configured = false;
 
 function google() {
+  // Metro reports a missing native module as a fatal red screen even when the error is caught, so check first without requiring the package.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { TurboModuleRegistry } = require('react-native') as typeof import('react-native');
+  if (!TurboModuleRegistry.get('RNGoogleSignin')) throw new Error('RNGoogleSignin missing');
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { GoogleSignin } = require('@react-native-google-signin/google-signin') as typeof import('@react-native-google-signin/google-signin');
   if (!configured) {
