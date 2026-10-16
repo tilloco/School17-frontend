@@ -4,24 +4,35 @@
 # Then in Expo Go: "Enter URL manually" -> the exp:// address printed below. On the login screen use "Test teacher" / "Test pupil" / "Test guardian".
 $root = Split-Path -Parent $PSScriptRoot
 $cf = Join-Path $root 'tools\cloudflared.exe'
-$apiPort = 3100
-$metroPort = 8090
+function Find-FreePort($start) { for ($p = $start; $p -lt $start + 50; $p++) { if (-not (Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue)) { return $p } }; throw "No free port near $start" }
+# Old servers from earlier runs may still hold ports; pick free ones so this run always uses the CURRENT code.
+$apiPort = Find-FreePort 3100
+$metroPort = Find-FreePort 8090
 $procs = @()
 
 function Start-Tunnel($port, $name) {
-  $log = Join-Path $env:TEMP "cloudflared-$name.log"
-  Remove-Item $log -ErrorAction SilentlyContinue
-  $p = Start-Process -FilePath $cf -ArgumentList "tunnel --url http://localhost:$port --no-autoupdate" -RedirectStandardError $log -PassThru -WindowStyle Hidden
-  $script:procs += $p
-  for ($i = 0; $i -lt 45; $i++) {
-    Start-Sleep -Seconds 1
-    if (Test-Path $log) {
-      # cloudflared also prints its own API address (https://api.trycloudflare.com); the tunnel address is the other one
-      $m = Select-String -Path $log -Pattern 'https://[a-z0-9-]+\.trycloudflare\.com' -AllMatches | ForEach-Object { $_.Matches } | Where-Object { $_.Value -ne 'https://api.trycloudflare.com' } | Select-Object -First 1
-      if ($m) { return $m.Value }
+  # http2 (TCP) is far more reliable than the default QUIC (UDP) on phone tethering and strict networks.
+  # The address only counts once cloudflared says "Registered tunnel connection"; otherwise the tunnel is restarted (up to 4 tries).
+  for ($try = 1; $try -le 4; $try++) {
+    $log = Join-Path $env:TEMP "cloudflared-$name.log"
+    Remove-Item $log -ErrorAction SilentlyContinue
+    $p = Start-Process -FilePath $cf -ArgumentList "tunnel --url http://localhost:$port --no-autoupdate --protocol http2" -RedirectStandardError $log -PassThru -WindowStyle Hidden
+    $url = $null
+    for ($i = 0; $i -lt 40; $i++) {
+      Start-Sleep -Seconds 1
+      if (-not (Test-Path $log)) { continue }
+      $text = Get-Content $log -Raw -ErrorAction SilentlyContinue
+      if (-not $text) { continue }
+      if (-not $url) {
+        $m = [regex]::Matches($text, 'https://[a-z0-9-]+\.trycloudflare\.com') | Where-Object { $_.Value -ne 'https://api.trycloudflare.com' } | Select-Object -First 1
+        if ($m) { $url = $m.Value }
+      }
+      if ($url -and $text -match 'Registered tunnel connection') { $script:procs += $p; return $url }
     }
+    Write-Host "  tunnel $name not ready (try $try of 4), retrying..."
+    Stop-Process -Id $p.Id -ErrorAction SilentlyContinue
   }
-  throw "No tunnel address for $name (see $log)"
+  throw "No working tunnel for $name (see $log)"
 }
 
 try {
