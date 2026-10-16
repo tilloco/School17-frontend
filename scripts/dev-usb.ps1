@@ -37,9 +37,9 @@ try {
   $env:REACT_NATIVE_PACKAGER_HOSTNAME = 'localhost'
   Write-Host "4/4 Starting the app (first load takes a minute or two). It opens on the phone by itself; if not, open Expo Go > Enter URL manually > exp://localhost:$metroPort"
   # Open Expo Go on the project a few seconds after Metro starts
-  $opener = Start-Job -ScriptBlock { param($adb, $port) Start-Sleep -Seconds 25; & $adb shell am start -a android.intent.action.VIEW -d "exp://localhost:$port" host.exp.exponent | Out-Null } -ArgumentList $adb, $metroPort
+  $opener = Start-Job -ScriptBlock { param($adb, $port) Start-Sleep -Seconds 25; & $adb shell am start -a android.intent.action.VIEW -d "exp://127.0.0.1:$port" host.exp.exponent | Out-Null } -ArgumentList $adb, $metroPort
   Set-Location (Join-Path $root 'mobile')
-  npx expo start -c --localhost --port $metroPort
+  npx expo start -c --port $metroPort
 } catch {
   Write-Host ''
   Write-Host $_.Exception.Message -ForegroundColor Yellow
