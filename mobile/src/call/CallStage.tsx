@@ -67,7 +67,7 @@ const Row = ({ label, value }: { label: string; value: string }) => (
  *  - otherwise the other person's camera fills the stage and my camera is a small tile;
  *  - while I share my own screen, a card says so (showing my screen to myself would only mirror it forever).
  */
-export function CallStage({ media, otherName, waiting, sharingMine, onStopShare, cameraOff }: { media: CallMedia; otherName: string; waiting: boolean; sharingMine: boolean; onStopShare: () => void; cameraOff: boolean }) {
+export function CallStage({ media, otherName, waiting, sharingMine, onStopShare, cameraOff, onTapStage, onFlip, hideTiles }: { onTapStage?: () => void; onFlip?: () => void; hideTiles?: boolean; media: CallMedia; otherName: string; waiting: boolean; sharingMine: boolean; onStopShare: () => void; cameraOff: boolean }) {
   const hasScreen = !!media.remoteScreen;
   const main = hasScreen ? media.remoteScreen : media.remoteCamera;
   const pulse = useRef(new Animated.Value(0)).current;
@@ -76,7 +76,8 @@ export function CallStage({ media, otherName, waiting, sharingMine, onStopShare,
   }, [pulse]);
   return (
     <View style={styles.stage}>
-      <Video track={main} style={StyleSheet.absoluteFill} cover={!hasScreen} />
+      <Pressable style={StyleSheet.absoluteFill} onPress={onTapStage} accessible={false} />
+      <View style={StyleSheet.absoluteFill} pointerEvents="none"><Video track={main} style={StyleSheet.absoluteFill} cover={!hasScreen} /></View>
       {!main && (
         <View style={styles.center}>
           <Animated.View style={[styles.avatar, { opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }]}>
@@ -87,10 +88,12 @@ export function CallStage({ media, otherName, waiting, sharingMine, onStopShare,
         </View>
       )}
       {hasScreen && <View style={styles.tag}><Ionicons name="desktop" size={13} color="#fff" /><Text style={styles.tagText}>{t('call.theirScreen', { name: otherName })}</Text></View>}
-      <View style={styles.tiles} pointerEvents="none">
-        {hasScreen && media.remoteCamera ? <View style={styles.tile}><Video track={media.remoteCamera} style={styles.tileVideo} /></View> : null}
-        {media.localCamera && !cameraOff ? <View style={styles.tile}><Video track={media.localCamera} style={styles.tileVideo} mirror /></View> : null}
-      </View>
+      {!hideTiles && (
+        <View style={styles.tiles} pointerEvents="box-none">
+          {hasScreen && media.remoteCamera ? <View style={styles.tile} pointerEvents="none"><Video track={media.remoteCamera} style={styles.tileVideo} /></View> : null}
+          {media.localCamera && !cameraOff ? <Pressable accessibilityRole="button" accessibilityLabel="flip" onPress={onFlip} style={styles.tile}><View style={styles.tileVideo} pointerEvents="none"><Video track={media.localCamera} style={styles.tileVideo} mirror /></View></Pressable> : null}
+        </View>
+      )}
       {media.remoteMicMuted && main ? <View style={styles.muted}><Ionicons name="mic-off" size={14} color="#fff" /></View> : null}
       {sharingMine && (
         <View style={styles.sharing}>
@@ -103,10 +106,10 @@ export function CallStage({ media, otherName, waiting, sharingMine, onStopShare,
   );
 }
 
-export function RoundButton({ icon, label, onPress, active = true, danger = false, accent = false, size = 58 }: { icon: Icon; label: string; onPress: () => void; active?: boolean; danger?: boolean; accent?: boolean; size?: number }) {
+export function RoundButton({ icon, label, onPress, active = true, danger = false, accent = false, size = 54 }: { icon: Icon; label: string; onPress: () => void; active?: boolean; danger?: boolean; accent?: boolean; size?: number }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.round, { width: size, height: size, borderRadius: size / 2 }, !active && styles.roundOff, accent && styles.roundAccent, danger && styles.roundDanger, pressed && { opacity: 0.8, transform: [{ scale: 0.95 }] }]}>
-      <Ionicons name={icon} size={Math.round(size * 0.41)} color={danger || accent || active ? '#fff' : '#1C1C1E'} />
+      <Ionicons name={icon} size={Math.round(size * 0.42)} color={danger || accent || active ? '#fff' : '#1C1C1E'} />
     </Pressable>
   );
 }
@@ -120,8 +123,8 @@ const styles = StyleSheet.create({
   sub: { color: 'rgba(255,255,255,0.7)', fontSize: 15 },
   tag: { position: 'absolute', left: 12, top: 84, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
   tagText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  tiles: { position: 'absolute', right: 12, bottom: 14, gap: 10, alignItems: 'flex-end' },
-  tile: { width: 104, height: 144, borderRadius: 16, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)', backgroundColor: '#111' },
+  tiles: { position: 'absolute', right: 12, bottom: 110, gap: 10, alignItems: 'flex-end' },
+  tile: { width: 92, height: 128, borderRadius: 16, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)', backgroundColor: '#111' },
   tileVideo: { flex: 1 },
   muted: { position: 'absolute', left: 14, bottom: 14, width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,69,58,0.9)', alignItems: 'center', justifyContent: 'center' },
   sharing: { position: 'absolute', left: 12, right: 12, top: 84, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(0,122,255,0.92)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 9 },

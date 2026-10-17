@@ -68,6 +68,8 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
   return (
     <View style={[styles.box, { height: big ? 520 : 280 }]}>
       <CallStage
+        hideTiles={cs.clean}
+        onFlip={() => void driver.current?.flipCamera()}
         media={media}
         otherName={teacher ? t('room.title') : teacherName}
         waiting={state === 'live' && !media.remoteCamera && !media.remoteScreen}
@@ -86,7 +88,6 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
         <View style={styles.controls}>
           <RoundButton size={42} icon={mic ? 'mic' : 'mic-off'} label={mic ? t('call.mute') : t('call.unmute')} active={mic} onPress={() => { setMic(!mic); void driver.current?.setMic(!mic); }} />
           <RoundButton size={42} icon={cam ? 'videocam' : 'videocam-off'} label={cam ? t('call.cameraOff') : t('call.cameraOn')} active={cam} onPress={() => { setCam(!cam); void driver.current?.setCamera(!cam); }} />
-          <RoundButton size={42} icon="camera-reverse" label={t('call.flip')} onPress={() => void driver.current?.flipCamera()} />
           {teacher && <RoundButton size={42} icon="desktop" label={sharing ? t('call.stopShare') : t('call.share')} accent={sharing} onPress={() => { const on = !sharing; setSharing(on); void driver.current?.setScreenShare(on).catch(() => setSharing(false)); }} />}
         </View>
       )}

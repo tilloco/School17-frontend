@@ -26,6 +26,15 @@ export default function CallScreen() {
   const call = useCall(bookingId, token);
   const insets = useSafeAreaInsets();
   const cs = useCleanScreen();
+  const [ui, setUi] = useState(true);
+  const hide = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** show the controls and hide them again after 5 s without a touch */
+  const poke = () => {
+    setUi(true);
+    if (hide.current) clearTimeout(hide.current);
+    hide.current = setTimeout(() => setUi(false), 5000);
+  };
+  useEffect(() => { poke(); return () => { if (hide.current) clearTimeout(hide.current); }; }, [call.ctx.state]); // eslint-disable-line react-hooks/exhaustive-deps
   const [elapsed, setElapsed] = useState(0);
   const startedAt = React.useRef<number | null>(null);
   useEffect(() => {
@@ -36,8 +45,6 @@ export default function CallScreen() {
   }, [call.ctx.state]);
   const [netMs, setNetMs] = useState<number | null>(null);
   const [netBusy, setNetBusy] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [draft, setDraft] = useState('');
 
   useEffect(() => {
     call.enterLobby();
@@ -142,46 +149,28 @@ export default function CallScreen() {
     return (
       <View style={styles.callRoot}>
         <Stack.Screen options={{ headerShown: false }} />
-        <CallStage media={call.media} otherName={lobby.other.name} waiting={!call.remoteJoined && ctx.state === 'connected'} sharingMine={ctx.screenSharing} onStopShare={call.toggleShare} cameraOff={ctx.cameraOff || ctx.audioOnlyAuto} />
-        {!cs.clean && <View style={[styles.topBar, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
+        <CallStage onTapStage={() => (ui ? setUi(false) : poke())} onFlip={call.flipCamera} hideTiles={cs.clean} media={call.media} otherName={lobby.other.name} waiting={!call.remoteJoined && ctx.state === 'connected'} sharingMine={ctx.screenSharing} onStopShare={call.toggleShare} cameraOff={ctx.cameraOff || ctx.audioOnlyAuto} />
+        {!cs.clean && ui && <View style={[styles.topBar, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
           <View>
             <Text style={styles.topName} numberOfLines={1}>{lobby.other.name}</Text>
             <Text style={styles.topTime}>{ctx.state === 'connecting' ? t('state.loading') : fmtElapsed(elapsed)}</Text>
           </View>
           <QualityBadge q={q} />
         </View>}
-        {banner && (
+        {banner && !cs.clean && (
           <View accessibilityLiveRegion="polite" style={[styles.banner, { top: insets.top + 64 }, ctx.banner === 'failed' && { backgroundColor: colors.danger }]}>
             <Text style={styles.bannerText}>{banner}</Text>
           </View>
         )}
-        {chatOpen && !cs.clean && (
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.chat}>
-            <Text style={styles.chatNote}>{t('call.chatNotSaved')}</Text>
-            <FlatList
-              data={call.chat}
-              keyExtractor={(m) => String(m.id)}
-              renderItem={({ item }) => <Text style={[styles.chatLine, item.mine && styles.chatMine]}>{item.text}</Text>}
-            />
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              onSubmitEditing={() => { call.sendChat(draft); setDraft(''); }}
-              placeholderTextColor={colors.textMuted} placeholder={t('call.chat')}
-              style={styles.chatInput}
-              maxLength={500}
-            />
-          </KeyboardAvoidingView>
+        {!cs.clean && ui && (
+          <View style={[styles.pill, { bottom: insets.bottom + 18 }]}>
+            <RoundButton icon={ctx.micMuted ? 'mic-off' : 'mic'} label={ctx.micMuted ? t('call.unmute') : t('call.mute')} active={!ctx.micMuted} onPress={() => { poke(); call.toggleMic(); }} />
+            <RoundButton icon={ctx.cameraOff ? 'videocam-off' : 'videocam'} label={ctx.cameraOff ? t('call.cameraOn') : t('call.cameraOff')} active={!ctx.cameraOff} onPress={() => { poke(); call.toggleCamera(); }} />
+            <RoundButton icon="desktop" label={ctx.screenSharing ? t('call.stopShare') : t('call.share')} accent={ctx.screenSharing} onPress={() => { poke(); call.toggleShare(); }} />
+            <RoundButton icon="eye-off" label={t('clean.enter')} onPress={cs.enter} />
+            <RoundButton icon="call" label={t('call.leave')} danger onPress={call.leave} />
+          </View>
         )}
-        {!cs.clean && <View style={[styles.controlsBar, { paddingBottom: insets.bottom + 12 }]}>
-          <RoundButton icon={ctx.micMuted ? 'mic-off' : 'mic'} label={ctx.micMuted ? t('call.unmute') : t('call.mute')} active={!ctx.micMuted} onPress={call.toggleMic} />
-          <RoundButton icon={ctx.cameraOff ? 'videocam-off' : 'videocam'} label={ctx.cameraOff ? t('call.cameraOn') : t('call.cameraOff')} active={!ctx.cameraOff} onPress={call.toggleCamera} />
-          <RoundButton icon="camera-reverse" label={t('call.flip')} onPress={call.flipCamera} />
-          <RoundButton icon="desktop" label={ctx.screenSharing ? t('call.stopShare') : t('call.share')} accent={ctx.screenSharing} onPress={call.toggleShare} />
-          <RoundButton icon="chatbubble-ellipses" label={t('call.chat')} active={!chatOpen} onPress={() => setChatOpen((v) => !v)} />
-          <RoundButton icon="eye-off" label={t('clean.enter')} onPress={cs.enter} />
-          <RoundButton icon="call" label={t('call.leave')} danger onPress={call.leave} />
-        </View>}
         <CleanHint show={cs.hint && !cs.clean} onClose={cs.dismissHint} />
         <CleanCatcher show={cs.clean} onTap={cs.onTap} />
       </View>
@@ -227,6 +216,7 @@ const styles = StyleSheet.create({
   topBar: { position: 'absolute', left: 0, right: 0, top: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 14, paddingBottom: 10 },
   topName: { color: '#fff', fontSize: 16, fontWeight: '800', maxWidth: 200 },
   topTime: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontVariant: ['tabular-nums'] },
+  pill: { position: 'absolute', alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 40, backgroundColor: 'rgba(20,22,26,0.62)' },
   controlsBar: { flexDirection: 'row', justifyContent: 'space-evenly', alignItems: 'center', paddingTop: 12, paddingHorizontal: 8, backgroundColor: 'rgba(0,0,0,0.78)' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   lobby: { flex: 1, paddingTop: spacing.lg, gap: spacing.md },
