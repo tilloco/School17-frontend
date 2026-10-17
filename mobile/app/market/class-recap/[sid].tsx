@@ -8,6 +8,7 @@ import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
 import { ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
+import { useSessionProtect } from '../../../src/lib/protect';
 import { t } from '../../../src/i18n';
 import { market } from '../../../src/market/marketApi';
 import { useAsync } from '../../../src/market/useAsync';
@@ -18,6 +19,7 @@ const mins = (sec: number) => Math.round(sec / 60);
 /** Session recap. Teacher: full attendance, unanswered questions (with late answers) and the lesson note. Pupil / guardian: own attendance, answered Q&A, files, note. */
 export default function RecapScreen() {
   const { sid } = useLocalSearchParams<{ sid: string }>();
+  useSessionProtect(sid);
   const { token } = useAuth();
   const r = useAsync(() => market.classRecap(token as string, sid), [token, sid]);
   const [note, setNote] = useState({ topic: '', homework: '', nextStep: '' });

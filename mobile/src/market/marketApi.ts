@@ -342,11 +342,11 @@ export interface ClassItem {
   next: { id: string; startAt: string; isTrial: boolean } | null;
 }
 export interface ClassDetail {
-  id: string; title: string; subject: string; description: string; capacity: number; enrolled: number; priceMinor: number; status: string; role: 'teacher' | 'pupil';
+  id: string; title: string; subject: string; description: string; capacity: number; enrolled: number; priceMinor: number; status: string; role: 'teacher' | 'pupil'; protectContent?: boolean;
   pupils?: { id: string; name: string | null }[]; classmates?: { name: string }[]; mySeats?: string[];
 }
 export interface ClassRoomState {
-  id: string; role: 'teacher' | 'pupil'; status: string; startAt: string; lobbyOpensAt: string; stageMode: 'LISTEN_ONLY' | 'HAND_RAISE' | 'OPEN_STAGE'; locked: boolean;
+  id: string; protectContent?: boolean; role: 'teacher' | 'pupil'; status: string; startAt: string; lobbyOpensAt: string; stageMode: 'LISTEN_ONLY' | 'HAND_RAISE' | 'OPEN_STAGE'; locked: boolean;
   teacherReconnecting: boolean; teacherNoShow: boolean; stageCount: number; stageMax: number;
   whiteboardRev: number;
   presentation: { fileId: string; name: string; page: number; pageCount: number; renderedPages: number; renderStatus: string } | null;

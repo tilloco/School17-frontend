@@ -8,6 +8,7 @@ import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
 import { ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
+import { useSessionProtect } from '../../../src/lib/protect';
 import { t } from '../../../src/i18n';
 import { BoardStroke, market } from '../../../src/market/marketApi';
 import { colors, radius, spacing } from '../../../src/theme/colors';
@@ -23,6 +24,7 @@ const MAX_POINTS = 4900; // keep under the server cap (5000 points)
  */
 export default function WhiteboardScreen() {
   const { sid } = useLocalSearchParams<{ sid: string }>();
+  useSessionProtect(sid);
   const { token } = useAuth();
   const [role, setRole] = useState<'teacher' | 'pupil' | null>(null);
   const [strokes, setStrokes] = useState<BoardStroke[]>([]);

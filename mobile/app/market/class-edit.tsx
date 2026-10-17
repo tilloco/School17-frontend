@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, View } from 'react-native';
 import { Text, TextInput } from '../../src/ui/Text';
+import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { API_URL, ApiError } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth-context';
@@ -24,12 +25,13 @@ export default function ClassEditScreen() {
   const [limit, setLimit] = useState('');
   const [price, setPrice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [protect, setProtect] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     market.classDetail(token as string, id).then((c) => {
       setTitle(c.title); setSubject(c.subject); setDescription(c.description);
-      setLimit(c.capacity >= 500 ? '' : String(c.capacity)); setPrice(c.priceMinor ? String(Math.round(c.priceMinor / 100)) : '');
+      setProtect(!!c.protectContent); setLimit(c.capacity >= 500 ? '' : String(c.capacity)); setPrice(c.priceMinor ? String(Math.round(c.priceMinor / 100)) : '');
     }).catch(() => undefined);
   }, [id, token]);
 
@@ -39,7 +41,7 @@ export default function ClassEditScreen() {
     if (title.trim().length < 2 || subject.trim().length < 2 || (cap !== undefined && !(cap >= 1)) || Number.isNaN(p)) return Alert.alert(t('common.error'), t('class.formInvalid'));
     setBusy(true);
     try {
-      const body: Record<string, unknown> = { title: title.trim(), subject: subject.trim(), description: description.trim(), priceMinor: p * 100, ...(cap ? { capacity: cap } : {}) };
+      const body: Record<string, unknown> = { title: title.trim(), subject: subject.trim(), description: description.trim(), priceMinor: p * 100, protectContent: protect, ...(cap ? { capacity: cap } : {}) };
       if (id) {
         await market.updateClass(token as string, id, body);
         router.back();
@@ -84,6 +86,15 @@ export default function ClassEditScreen() {
             <Text style={styles.help}>{t('class.priceNote')}</Text>
           </>
         )}
+        <View style={styles.protect}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <Ionicons name="lock-closed" size={20} color={colors.primary} />
+            <Text style={[styles.label, { flex: 1 }]}>{t('protect.title')}</Text>
+            <Switch value={protect} onValueChange={setProtect} trackColor={{ true: colors.success }} />
+          </View>
+          <Text style={styles.help}>{t('protect.text')}</Text>
+          <Text style={styles.help}>{t('protect.limit')}</Text>
+        </View>
         <Action label={busy ? t('state.loading') : t(id ? 'common.save' : 'class.create')} kind="accent" onPress={save} disabled={busy} />
       </ScrollView>
     </KeyboardAvoidingView>
@@ -92,6 +103,7 @@ export default function ClassEditScreen() {
 
 const styles = StyleSheet.create({
   body: { padding: spacing.lg, gap: spacing.md },
+  protect: { backgroundColor: colors.surface, borderRadius: 18, padding: spacing.md, gap: 6 },
   lead: { color: colors.textMuted, fontSize: 15, lineHeight: 21 },
   label: { fontWeight: '700', color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },

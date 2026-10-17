@@ -8,6 +8,7 @@ import { API_URL, ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
 import { inviteLink } from '../../../src/lib/pending-join';
 import { useRealtime } from '../../../src/lib/realtime';
+import { useClassProtect } from '../../../src/lib/protect';
 import { t } from '../../../src/i18n';
 import { Bubble, Composer } from '../../../src/chat/chat-ui';
 import { ChannelPost, market } from '../../../src/market/marketApi';
@@ -28,6 +29,7 @@ const POLL_MS = 15000; // safety net; new posts arrive instantly over the live c
 export default function ClassChannelScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
+  useClassProtect(id);
   const kb = useKeyboardPadding();
   const router = useRouter();
   const cls = useAsync(() => market.classDetail(token as string, id), [token, id]);

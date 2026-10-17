@@ -8,6 +8,7 @@ import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
 import { API_URL, ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
+import { useClassProtect } from '../../../src/lib/protect';
 import { t } from '../../../src/i18n';
 import { uploadErrorText } from '../../../src/market/AttachBar';
 import { market } from '../../../src/market/marketApi';
@@ -27,6 +28,7 @@ function fmtBytes(n?: number | null) {
 export default function ClassFilesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
+  useClassProtect(id);
   const [q, setQ] = useState('');
   const me = useAsync(() => market.me(token as string), [token]);
   const files = useAsync(() => market.classFiles(token as string, id, q), [token, id, q]);

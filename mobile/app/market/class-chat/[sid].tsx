@@ -7,6 +7,7 @@ import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
 import { ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
+import { useSessionProtect } from '../../../src/lib/protect';
 import { t } from '../../../src/i18n';
 import { ClassMsg, ClassQuestionItem, market } from '../../../src/market/marketApi';
 import { colors, radius, spacing } from '../../../src/theme/colors';
@@ -25,6 +26,7 @@ function errText(e: unknown): string {
 /** Class chat + question queue (pupils) and moderation (teacher). */
 export default function ClassChatScreen() {
   const { sid } = useLocalSearchParams<{ sid: string }>();
+  useSessionProtect(sid);
   const { token } = useAuth();
   const [tab, setTab] = useState<'chat' | 'questions'>('chat');
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');

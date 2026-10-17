@@ -9,6 +9,7 @@ import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
 import { ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
+import { useSessionProtect } from '../../../src/lib/protect';
 import { t } from '../../../src/i18n';
 import { ClassRoomState, market, RosterRow } from '../../../src/market/marketApi';
 import { ClassPayGate } from '../../../src/market/ClassPayGate';
@@ -21,6 +22,7 @@ const POLL_MS = 3000; // control plane polling; media itself needs the LiveKit c
 /** Class room control plane: lobby / live state, hand raise, stage, teacher controls and roster. Media is not connected here yet. */
 export default function ClassRoomScreen() {
   const { sid } = useLocalSearchParams<{ sid: string }>();
+  useSessionProtect(sid);
   const { token } = useAuth();
   const router = useRouter();
   const [st, setSt] = useState<ClassRoomState | null>(null);
