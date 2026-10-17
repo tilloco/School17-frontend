@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '../../../src/ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -11,7 +11,8 @@ import { market } from '../../../src/market/marketApi';
 import { useAsync } from '../../../src/market/useAsync';
 import { colors, radius, spacing } from '../../../src/theme/colors';
 import { fmtDay, fmtTime, fmtDayShort } from '../../../src/ui/format';
-import { Action, Avatar, Card, Pill, SectionTitle, Stars } from '../../../src/ui';
+import { Action, Avatar, AuthImage, Card, Pill, SectionTitle, Stars } from '../../../src/ui';
+import { VerifiedBadge, VerifiedPill, VERIFIED_BLUE } from '../../../src/ui/Verified';
 import { Sheet } from '../../../src/ui/Sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -31,6 +32,8 @@ export default function TeacherScreen() {
   const [reportFor, setReportFor] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [menu, setMenu] = useState(false);
+  const [stars, setStars] = useState(0);
+  const [cert, setCert] = useState<string | null>(null);
 
   const teacher = useAsync(() => market.teacher(token as string, id), [token, id]);
   const reviews = useAsync(() => market.reviewsAll(token as string, id), [token, id]);
@@ -57,9 +60,11 @@ export default function TeacherScreen() {
     }
   };
   const sendComment = async () => {
+    if (!stars) return Alert.alert(t('comment.starsFirst'));
     try {
-      await market.writeComment(token as string, id, draft.trim());
+      await market.writeComment(token as string, id, draft.trim(), stars);
       setDraft('');
+      setStars(0);
       comments.reload();
     } catch (e) { fail(e); }
   };
@@ -85,24 +90,24 @@ export default function TeacherScreen() {
     <KeyboardAvoidingView style={styles.root} behavior={undefined}>
       {header}
       <ScrollView contentContainerStyle={[styles.body, { paddingBottom: spacing.xl + insets.bottom }]} keyboardShouldPersistTaps="handled">
+        <View style={styles.cover}><View style={styles.dotA} /><View style={styles.dotB} /></View>
         <View style={styles.top}>
-          <Avatar name={p.name} size={96} photoOf={p.hasPhoto ? p.id : null} />
+          <View style={styles.ring}><Avatar name={p.name} size={104} photoOf={p.hasPhoto ? p.id : null} /></View>
           <View style={styles.nameRow}>
             <Text style={styles.name}>{p.name}</Text>
-            <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+            <VerifiedBadge size={24} />
           </View>
           {!!p.username && <Text style={styles.username}>@{p.username}</Text>}
           <Text style={styles.headline}>{p.headline}</Text>
-          <View style={styles.starsRow}>
-            <Stars value={p.rating.average ?? 0} size={20} />
-            <Text style={styles.ratingText}>{p.rating.count ? `${(p.rating.average ?? 0).toFixed(1)} · ${t('home.ratingCount', { n: p.rating.count })}` : t('teacher.noReviews')}</Text>
-          </View>
+          {!!p.city && <View style={styles.cityRow}><Ionicons name="location" size={14} color={colors.textMuted} /><Text style={styles.cityText}>{p.city}</Text></View>}
+          <VerifiedPill since={p.verifiedAt ? fmtDay(p.verifiedAt) : null} />
         </View>
 
         <View style={styles.statRow}>
-          <View style={styles.stat}><Text style={styles.statValue}>{Math.round(p.priceMinor / 100).toLocaleString('en-US').replace(/,/g, ' ')}</Text><Text style={styles.statLabel}>{t('teacher.perHourShort')}</Text></View>
-          <View style={styles.stat}><Text style={styles.statValue}>{p.subjects.length}</Text><Text style={styles.statLabel}>{t('profile.subjects')}</Text></View>
-          <View style={styles.stat}><Text style={styles.statValue}>{p.languages.map((l) => l.toUpperCase()).join(' ')}</Text><Text style={styles.statLabel}>{t('profile.languages')}</Text></View>
+          <View style={styles.stat}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}><Ionicons name="star" size={15} color="#F5B301" /><Text style={styles.statValue}>{p.rating.count ? (p.rating.average ?? 0).toFixed(1) : '–'}</Text></View><Text style={styles.statLabel}>{t('teacher.statRating')}</Text></View>
+          <View style={styles.stat}><Text style={styles.statValue}>{p.stats.students}</Text><Text style={styles.statLabel}>{t('teacher.statPupils')}</Text></View>
+          <View style={styles.stat}><Text style={styles.statValue}>{p.stats.lessons}</Text><Text style={styles.statLabel}>{t('teacher.statLessons')}</Text></View>
+          <View style={styles.stat}><Text style={styles.statValue}>{p.experienceYears ?? '–'}</Text><Text style={styles.statLabel}>{t('teacher.statYears')}</Text></View>
         </View>
 
         <View style={styles.actions}>
@@ -113,6 +118,34 @@ export default function TeacherScreen() {
         <Card><Text style={styles.bio}>{p.bio}</Text>
           <View style={styles.chips}>{p.subjects.map((s) => <Pill key={s} label={t(`subj.${s}`)} tone="primary" />)}</View>
         </Card>
+
+        {!!p.education && (<>
+          <SectionTitle title={t('teacher.education')} />
+          <Card style={styles.eduCard}><Ionicons name="school" size={22} color={colors.primary} /><Text style={[styles.bio, { flex: 1 }]}>{p.education}</Text></Card>
+        </>)}
+
+        {p.credentials.length > 0 && (<>
+          <SectionTitle title={t('teacher.certs')} />
+          <Text style={styles.meta}>{t('teacher.certHint')}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+            {p.credentials.map((c) => (
+              <Pressable key={c.id} accessibilityRole="button" accessibilityLabel={c.title} onPress={() => setCert(c.id)} style={styles.certCard}>
+                {token && <AuthImage url={`${API_URL}/teachers/${id}/credentials/${c.id}/image`} token={token} style={styles.certImg} onFail={() => undefined} />}
+                <View style={styles.certTitleRow}><Ionicons name="ribbon" size={14} color={VERIFIED_BLUE} /><Text style={styles.certTitle} numberOfLines={2}>{c.title}</Text></View>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </>)}
+
+        {(reviews.data?.items.length ?? 0) + exComments.length > 0 && (<>
+          <SectionTitle title={t('teacher.formerHighlight')} />
+          {(reviews.data?.items ?? []).slice(0, 2).map((r) => (
+            <Card key={`hl${r.id}`} style={{ gap: 4 }}>
+              <View style={styles.reviewHead}><View style={styles.exRow}><Text style={styles.author}>{r.author}</Text><View style={styles.exBadge}><Text style={styles.exBadgeText}>{t('comment.formerBadge')}</Text></View></View><Stars value={r.rating} size={14} /></View>
+              {!!r.text && !r.textHidden && <Text style={styles.text}>{r.text}</Text>}
+            </Card>
+          ))}
+        </>)}
 
         <SectionTitle title={t('teacher.chooseTime')} />
         <Text style={styles.meta}>{t('teacher.timezone', { tz: slots.data?.timezone ?? p.timezone })}</Text>
@@ -160,7 +193,7 @@ export default function TeacherScreen() {
           <>
             {(reviews.data?.items ?? []).map((r) => (
               <Card key={r.id} style={{ gap: 4 }}>
-                <View style={styles.reviewHead}><Text style={styles.author}>{r.author}</Text><Stars value={r.rating} size={14} /></View>
+                <View style={styles.reviewHead}><View style={styles.exRow}><Text style={styles.author}>{r.author}</Text><View style={styles.exBadge}><Text style={styles.exBadgeText}>{t('comment.formerBadge')}</Text></View></View><Stars value={r.rating} size={14} /></View>
                 {r.textHidden ? <Text style={styles.hiddenText}>{t('comment.textHidden')}</Text> : !!r.text && <Text style={styles.text}>{r.text}</Text>}
                 {r.reply && <Text style={styles.reply}>↳ {r.reply.text}</Text>}
                 <Text style={styles.date}>{fmtDay(r.createdAt)}</Text>
@@ -168,7 +201,7 @@ export default function TeacherScreen() {
             ))}
             {exComments.map((c) => (
               <Card key={c.id} style={{ gap: 4 }}>
-                <Text style={styles.author}>{c.author}</Text>
+                <View style={styles.reviewHead}><View style={styles.exRow}><Text style={styles.author}>{c.author}</Text><View style={styles.exBadge}><Text style={styles.exBadgeText}>{t('comment.formerBadge')}</Text></View></View>{c.rating ? <Stars value={c.rating} size={14} /> : null}</View>
                 <Text style={styles.text}>{c.text}</Text>
                 <Text style={styles.date}>{fmtDay(c.at)}</Text>
               </Card>
@@ -180,16 +213,26 @@ export default function TeacherScreen() {
           <>
             {otherComments.map((c) => (
               <Card key={c.id} style={{ gap: 4 }}>
-                <View style={styles.reviewHead}><Text style={styles.author}>{c.author}</Text>{c.mine ? <Pressable onPress={removeComment} hitSlop={8}><Text style={styles.del}>{t('common.delete')}</Text></Pressable> : <Pressable onPress={() => setReportFor(c.id)} hitSlop={8}><Text style={styles.report}>{t('chat.report')}</Text></Pressable>}</View>
+                <View style={styles.reviewHead}><View style={styles.exRow}><Text style={styles.author}>{c.author}</Text>{c.rating ? <Stars value={c.rating} size={13} /> : null}</View>{c.mine ? <Pressable onPress={removeComment} hitSlop={8}><Text style={styles.del}>{t('common.delete')}</Text></Pressable> : <Pressable onPress={() => setReportFor(c.id)} hitSlop={8}><Text style={styles.report}>{t('chat.report')}</Text></Pressable>}</View>
                 <Text style={styles.text}>{c.text}</Text>
                 <Text style={styles.date}>{fmtDay(c.at)}</Text>
               </Card>
             ))}
             {!otherComments.length && <Text style={styles.empty}>{t('comment.noneOther')}</Text>}
+            {!!comments.data?.summary.count && <Text style={styles.meta}>{t('comment.community', { avg: (comments.data.summary.average ?? 0).toFixed(1), n: comments.data.summary.count })}</Text>}
+            <Text style={styles.meta}>{t('comment.cannotDelete')}</Text>
             {!mine && (
+              <View style={{ gap: 8 }}>
+                <View style={styles.pick}>
+                  <Text style={styles.meta}>{t('comment.rate')}</Text>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Pressable key={n} accessibilityRole="button" accessibilityLabel={`${n}`} onPress={() => setStars(n)} hitSlop={4}><Ionicons name={n <= stars ? 'star' : 'star-outline'} size={30} color="#F5B301" /></Pressable>
+                  ))}
+                </View>
               <View style={styles.write}>
                 <TextInput value={draft || (myComment && !draft ? '' : draft)} onChangeText={setDraft} placeholder={myComment ? t('comment.editHint') : t('comment.placeholder')} placeholderTextColor={colors.textMuted} multiline maxLength={500} style={styles.input} accessibilityLabel={t('comment.placeholder')} />
                 <Pressable accessibilityRole="button" accessibilityLabel={t('chat.send')} onPress={sendComment} disabled={draft.trim().length < 3} style={[styles.send, draft.trim().length < 3 && { opacity: 0.4 }]}><Ionicons name="send" size={20} color="#fff" /></Pressable>
+              </View>
               </View>
             )}
           </>
@@ -197,6 +240,12 @@ export default function TeacherScreen() {
         </>)}
         <Text style={styles.meta}>{t('free.notice')}</Text>
       </ScrollView>
+      <Modal visible={!!cert} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setCert(null)}>
+        <Pressable style={styles.certModal} onPress={() => setCert(null)} accessibilityRole="button" accessibilityLabel={t('common.close')}>
+          {cert && token && <AuthImage url={`${API_URL}/teachers/${id}/credentials/${cert}/image`} token={token} style={styles.certBig} onFail={() => setCert(null)} />}
+          <Text style={styles.certBigTitle}>{p.credentials.find((c) => c.id === cert)?.title}</Text>
+        </Pressable>
+      </Modal>
       <Sheet visible={!!reportFor} onClose={() => setReportFor(null)} title={t('chat.report')} actions={(['ABUSE', 'SPAM', 'PERSONAL_DATA', 'OTHER'] as const).map((reason) => ({ label: t(`report.${reason}`), icon: 'flag' as const, onPress: () => { const cid = reportFor!; market.reportComment(token as string, id, cid, reason).then(() => Alert.alert(t('report.sent'))).catch(fail); } }))} />
       <Sheet visible={menu} onClose={() => setMenu(false)} title={p.name ?? ''} actions={[
         { label: t('share.telegram'), icon: 'paper-plane', onPress: share },
@@ -209,7 +258,25 @@ export default function TeacherScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   body: { padding: spacing.md, gap: spacing.md },
-  top: { alignItems: 'center', gap: 4 },
+  cover: { height: 96, borderRadius: 24, backgroundColor: colors.primary, overflow: 'hidden', marginBottom: -52 },
+  dotA: { position: 'absolute', width: 150, height: 150, borderRadius: 75, backgroundColor: 'rgba(255,255,255,0.14)', right: -30, top: -60 },
+  dotB: { position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(255,255,255,0.10)', left: -20, bottom: -40 },
+  ring: { padding: 4, borderRadius: 60, backgroundColor: colors.background },
+  cityRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  cityText: { color: colors.textMuted, fontSize: 14 },
+  top: { alignItems: 'center', gap: 6 },
+  eduCard: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  certCard: { width: 150, backgroundColor: colors.surface, borderRadius: 18, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  certImg: { width: 150, height: 108, backgroundColor: colors.neutralSoft },
+  certTitleRow: { flexDirection: 'row', gap: 5, padding: 8, alignItems: 'flex-start' },
+  certTitle: { flex: 1, fontSize: 12, fontWeight: '700', color: colors.text },
+  certModal: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center', padding: 16, gap: 14 },
+  certBig: { width: '100%', height: '75%', resizeMode: 'contain' },
+  certBigTitle: { color: '#fff', fontWeight: '700', fontSize: 16, textAlign: 'center' },
+  exRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
+  exBadge: { backgroundColor: 'rgba(29,155,240,0.14)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  exBadgeText: { color: VERIFIED_BLUE, fontSize: 11, fontWeight: '800' },
+  pick: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
   name: { fontSize: 24, fontWeight: '800', color: colors.text },
   username: { color: colors.primaryLight, fontWeight: '600', fontSize: 15 },

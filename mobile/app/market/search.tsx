@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '../../src/ui/Text';
+import { VerifiedBadge } from '../../src/ui/Verified';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StateView } from '../../src/components/StateView';
@@ -94,7 +95,7 @@ export default function SearchScreen() {
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-                  {item.verified && <Ionicons name="checkmark-circle" size={16} color={colors.success} />}
+                  {item.verified && <VerifiedBadge size={17} />}
                 </View>
                 {!!item.username && <Text style={styles.username}>@{item.username}</Text>}
                 <Text style={styles.headline} numberOfLines={2}>{item.headline}</Text>

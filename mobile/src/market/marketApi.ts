@@ -48,7 +48,12 @@ export interface TeacherDetail extends TeacherCard {
   levels: string[];
   timezone: string;
   introVideoUrl: string | null;
-  credentials: { kind: string; title: string }[];
+  credentials: { id: string; kind: string; title: string }[];
+  verifiedAt: string | null;
+  experienceYears: number | null;
+  education: string;
+  city: string;
+  stats: { students: number; lessons: number };
 }
 
 export type DirectStatus = 'UNPAID' | 'PUPIL_MARKED_PAID' | 'TEACHER_CONFIRMED' | 'NOT_RECEIVED' | 'WAIVED';
@@ -79,6 +84,10 @@ export interface OwnProfile {
   introVideoUrl: string | null;
   instantBooking: boolean;
   paymentTiming: 'PAY_BEFORE' | 'PAY_AFTER';
+  experienceYears: number | null;
+  education: string;
+  city: string;
+  credentials: { id: string; kind: string; title: string; status: 'PENDING' | 'APPROVED' | 'REJECTED'; reviewNote: string | null }[];
   hasPhoto: boolean;
   verificationStatus: 'DRAFT' | 'PENDING' | 'VERIFIED' | 'REJECTED' | 'SUSPENDED';
   rejectionReason: string | null;
@@ -170,7 +179,9 @@ export const market = {
   teacher: (token: string, id: string) => apiRequest<TeacherDetail>(`/teachers/${id}`, { token }),
   reviewsAll: (token: string, id: string) => apiRequest<ReviewList>(`/teachers/${id}/reviews?pageSize=30`, { token }),
   comments: (token: string, id: string) => apiRequest<CommentList>(`/teachers/${id}/comments`, { token }),
-  writeComment: (token: string, id: string, text: string) => apiRequest(`/teachers/${id}/comments`, { method: 'POST', token, body: { text } }),
+  writeComment: (token: string, id: string, text: string, rating: number) => apiRequest(`/teachers/${id}/comments`, { method: 'POST', token, body: { text, rating } }),
+  addCredential: (token: string, body: { kind: string; title: string; fileId: string }) => apiRequest('/teachers/me/credentials', { method: 'POST', token, body }),
+  removeCredential: (token: string, id: string) => apiRequest(`/teachers/me/credentials/${id}`, { method: 'DELETE', token }),
   deleteComment: (token: string, id: string) => apiRequest(`/teachers/${id}/comments/mine`, { method: 'DELETE', token }),
   findPupils: (token: string, q: string) => apiRequest<{ username: string; name: string }[]>(`/teachers/me/find-students?q=${encodeURIComponent(q)}`, { token }),
   reviews: (token: string, id: string) => apiRequest<ReviewList>(`/teachers/${id}/reviews?pageSize=3`, { token }),
@@ -435,8 +446,9 @@ export interface ChannelPost {
 }
 
 export interface CommentList {
-  items: { id: string; text: string; at: string; author: string; exStudent: boolean; mine: boolean }[];
-  mine: { id: string; text: string } | null;
+  items: { id: string; text: string; rating: number | null; at: string; author: string; exStudent: boolean; mine: boolean }[];
+  mine: { id: string; text: string; rating: number | null } | null;
+  summary: { count: number; average: number | null };
 }
 
 export interface PersonHit { userId: string; name: string | null; username: string; role: string; hasPhoto: boolean }

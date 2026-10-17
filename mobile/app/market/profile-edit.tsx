@@ -13,6 +13,7 @@ import { market, OwnProfile } from '../../src/market/marketApi';
 import { UploadError, uploadFile } from '../../src/market/uploader';
 import { useAsync } from '../../src/market/useAsync';
 import { colors, radius, spacing } from '../../src/theme/colors';
+import { Avatar } from '../../src/ui';
 
 const label = (o: string) => { const k = [`subj.${o}`, `level.${o}`, `lang.${o}`].find((x) => t(x) !== x); return k ? t(k) : o.toUpperCase().length <= 3 ? o.toUpperCase() : o.replace(/_/g, ' '); };
 function Chips({ options, value, onChange }: { options: string[]; value: string[]; onChange: (v: string[]) => void }) {
@@ -35,14 +36,17 @@ export default function ProfileEditScreen() {
   const { token } = useAuth();
   const cat = useAsync(() => market.catalogFull(token as string), [token]);
   const prof = useAsync(() => market.ownProfile(token as string).catch((e) => { if (e instanceof ApiError && e.statusCode === 404) return null; throw e; }), [token]);
-  const [f, setF] = useState({ headline: '', bio: '', subjects: [] as string[], levels: [] as string[], languages: [] as string[], price: '', introVideoUrl: '', instantBooking: false, paymentTiming: 'PAY_AFTER' as 'PAY_BEFORE' | 'PAY_AFTER' });
+  const [f, setF] = useState({ headline: '', bio: '', subjects: [] as string[], levels: [] as string[], languages: [] as string[], price: '', exp: '', edu: '', city: '', introVideoUrl: '', instantBooking: false, paymentTiming: 'PAY_AFTER' as 'PAY_BEFORE' | 'PAY_AFTER' });
   const [busy, setBusy] = useState(false);
   const [missing, setMissing] = useState<string[]>([]);
   const [photoState, setPhotoState] = useState<string | null>(null);
+  const [credTitle, setCredTitle] = useState('');
+  const [credState, setCredState] = useState<string | null>(null);
+  const [photoV, setPhotoV] = useState(0);
 
   useEffect(() => {
     const p: OwnProfile | null = prof.data;
-    if (p) setF({ headline: p.headline, bio: p.bio, subjects: p.subjects, levels: p.levels, languages: p.languages, price: p.priceMinor ? String(Math.round(p.priceMinor / 100)) : '', introVideoUrl: p.introVideoUrl ?? '', instantBooking: p.instantBooking, paymentTiming: p.paymentTiming });
+    if (p) setF({ headline: p.headline, bio: p.bio, subjects: p.subjects, levels: p.levels, languages: p.languages, price: p.priceMinor ? String(Math.round(p.priceMinor / 100)) : '', exp: p.experienceYears != null ? String(p.experienceYears) : '', edu: p.education ?? '', city: p.city ?? '', introVideoUrl: p.introVideoUrl ?? '', instantBooking: p.instantBooking, paymentTiming: p.paymentTiming });
   }, [prof.data]);
 
   const header = <Stack.Screen options={{ headerShown: true, title: t('profile.title'), headerBackTitle: t('common.back') }} />;
@@ -53,6 +57,7 @@ export default function ProfileEditScreen() {
   const body = () => ({
     headline: f.headline.trim(), bio: f.bio.trim(), subjects: f.subjects, levels: f.levels, languages: f.languages,
     ...(f.price ? { priceMinor: Math.round(Number(f.price.replace(/\s/g, '')) * 100) } : {}),
+    experienceYears: f.exp.trim() ? Math.min(70, Number(f.exp)) : null, education: f.edu.trim(), city: f.city.trim(),
     introVideoUrl: f.introVideoUrl.trim() || null, instantBooking: f.instantBooking, paymentTiming: f.paymentTiming,
   });
   const fail = (e: unknown) => Alert.alert(t('common.error'), e instanceof ApiError ? e.message : t('state.error'));
@@ -94,12 +99,35 @@ export default function ProfileEditScreen() {
       const up = await uploadFile({ token: token as string, uri: a.uri, name: a.fileName ?? 'photo.jpg', mime: a.mimeType ?? 'image/jpeg', purpose: 'AVATAR', onProgress: (x) => setPhotoState(`${Math.round(x * 100)}%`) });
       await market.setPhoto(token as string, up.fileId);
       setPhotoState(t('profile.photoSet'));
+      setPhotoV((v) => v + 1);
       prof.reload();
     } catch (e) {
       setPhotoState(null);
       Alert.alert(t('common.error'), e instanceof UploadError ? e.message : t('state.error'));
     }
   };
+
+  const addCred = async () => {
+    const title = credTitle.trim();
+    if (title.length < 2) return;
+    const IP = imagePicker();
+    if (!IP) return;
+    const res = await IP.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
+    if (res.canceled || !res.assets[0]) return;
+    const a = res.assets[0];
+    try {
+      setCredState(t('profile.credUploading'));
+      const up = await uploadFile({ token: token as string, uri: a.uri, name: a.fileName ?? 'certificate.jpg', mime: a.mimeType ?? 'image/jpeg', purpose: 'CREDENTIAL' });
+      await market.addCredential(token as string, { kind: /diplom|bakalavr|bachelor|master|magistr|бакалавр|диплом|магистр/i.test(title) ? 'DEGREE' : 'CERTIFICATE', title, fileId: up.fileId });
+      setCredTitle('');
+      setCredState(null);
+      prof.reload();
+    } catch (e) {
+      setCredState(null);
+      Alert.alert(t('common.error'), e instanceof UploadError || e instanceof ApiError ? e.message : t('state.error'));
+    }
+  };
+  const removeCred = (id: string) => market.removeCredential(token as string, id).then(prof.reload).catch(fail);
 
   return (
     <Screen>
@@ -111,13 +139,24 @@ export default function ProfileEditScreen() {
         {missing.length > 0 && <Text style={styles.err} accessibilityRole="alert">{t('profile.missing', { items: missing.join(', ') })}</Text>}
 
         <Text style={styles.label}>{t('profile.photo')}</Text>
-        <PrimaryButton title={t('profile.photoChange')} variant="outline" onPress={pickPhoto} />
-        {photoState && <Text style={styles.help}>{photoState}</Text>}
+        <View style={styles.photoRow}>
+          <Avatar name="?" size={84} photoOf={prof.data?.hasPhoto ? prof.data.id : null} v={photoV} />
+          <View style={{ flex: 1, gap: 6 }}>
+            <PrimaryButton title={t('profile.photoChange')} variant="outline" onPress={pickPhoto} />
+            <Text style={prof.data?.hasPhoto ? styles.help : styles.err}>{photoState ?? (prof.data?.hasPhoto ? t('profile.photoOk') : t('profile.photoRequired'))}</Text>
+          </View>
+        </View>
 
         <Text style={styles.label}>{t('profile.headline')}</Text>
         <TextInput accessibilityLabel={t('profile.headline')} value={f.headline} onChangeText={(v) => setF({ ...f, headline: v })} maxLength={120} style={styles.input} />
         <Text style={styles.label}>{t('profile.bio')}</Text>
         <TextInput accessibilityLabel={t('profile.bio')} value={f.bio} onChangeText={(v) => setF({ ...f, bio: v })} multiline maxLength={2000} style={[styles.input, { minHeight: 110 }]} />
+        <Text style={styles.label}>{t('profile.exp')}</Text>
+        <TextInput accessibilityLabel={t('profile.exp')} value={f.exp} onChangeText={(v) => setF({ ...f, exp: v.replace(/\D/g, '').slice(0, 2) })} keyboardType="number-pad" style={styles.input} />
+        <Text style={styles.label}>{t('profile.city')}</Text>
+        <TextInput accessibilityLabel={t('profile.city')} value={f.city} onChangeText={(v) => setF({ ...f, city: v })} maxLength={60} style={styles.input} />
+        <Text style={styles.label}>{t('profile.edu')}</Text>
+        <TextInput accessibilityLabel={t('profile.edu')} value={f.edu} onChangeText={(v) => setF({ ...f, edu: v })} multiline maxLength={600} style={[styles.input, { minHeight: 70 }]} />
         <Text style={styles.label}>{t('profile.subjects')}</Text>
         <Chips options={cat.data?.subjects ?? []} value={f.subjects} onChange={(v) => setF({ ...f, subjects: v })} />
         <Text style={styles.label}>{t('profile.levels')}</Text>
@@ -133,6 +172,20 @@ export default function ProfileEditScreen() {
           <Text style={{ flex: 1 }}>{t('profile.instant')}</Text>
           <Switch accessibilityLabel={t('profile.instant')} value={f.instantBooking} onValueChange={(v) => setF({ ...f, instantBooking: v })} />
         </View>
+        <Text style={styles.label}>{t('profile.creds')}</Text>
+        <Text style={styles.help}>{t('profile.credHint')}</Text>
+        {(prof.data?.credentials ?? []).map((c) => (
+          <View key={c.id} style={styles.credRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontWeight: '700' }} numberOfLines={1}>{c.title}</Text>
+              <Text style={c.status === 'REJECTED' ? styles.err : styles.help}>{t(`profile.credStatus.${c.status}`)}{c.status === 'REJECTED' && c.reviewNote ? ` · ${c.reviewNote}` : ''}</Text>
+            </View>
+            <Pressable accessibilityRole="button" onPress={() => removeCred(c.id)} hitSlop={8}><Text style={styles.err}>{t('profile.credRemove')}</Text></Pressable>
+          </View>
+        ))}
+        <TextInput accessibilityLabel={t('profile.credTitle')} placeholder={t('profile.credTitle')} placeholderTextColor={colors.textMuted} value={credTitle} onChangeText={setCredTitle} maxLength={120} style={styles.input} />
+        <PrimaryButton title={credState ?? t('profile.credAdd')} variant="outline" onPress={addCred} disabled={credTitle.trim().length < 2 || !!credState} />
+
         <Text style={styles.label}>{t('profile.video')}</Text>
         <TextInput accessibilityLabel={t('profile.video')} value={f.introVideoUrl} onChangeText={(v) => setF({ ...f, introVideoUrl: v })} autoCapitalize="none" keyboardType="url" style={styles.input} />
 
@@ -155,4 +208,6 @@ const styles = StyleSheet.create({
   chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface, minHeight: 40, justifyContent: 'center' },
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  photoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  credRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: 16, padding: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
 });

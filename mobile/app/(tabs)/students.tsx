@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, Share, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '../../src/ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StateView } from '../../src/components/StateView';
-import { ApiError } from '../../src/lib/api';
+import { API_URL, ApiError } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth-context';
 import { t } from '../../src/i18n';
 import { market } from '../../src/market/marketApi';
@@ -15,9 +15,11 @@ import { Avatar, Card, Empty, Page, Pill, SectionTitle } from '../../src/ui';
 
 /** Teacher: every pupil in one list with what needs attention (unpaid marks, work to mark, no activity). Tap for the full picture. */
 export default function StudentsScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
   const res = useAsync(() => market.students(token as string), [token]);
+  const own = useAsync(() => market.ownProfile(token as string).catch(() => null), [token]);
+  const invite = () => own.data && Share.share({ message: t('invite.message', { name: user?.name ?? '', link: `${API_URL.replace(/\/+$/, '')}/p/${own.data.id}` }) });
   const [q, setQ] = useState('');
   const rows = useMemo(() => (res.data ?? []).filter((r) => !q.trim() || (r.name ?? '').toLowerCase().includes(q.trim().toLowerCase())), [res.data, q]);
   const attention = rows.filter((r) => r.attention);
@@ -60,6 +62,16 @@ export default function StudentsScreen() {
   return (
     <Page onRefresh={res.reload}>
       <Text style={styles.h1}>{t('stu.title')}</Text>
+      {own.data && (
+        <Pressable accessibilityRole="button" onPress={invite} style={styles.invite}>
+          <View style={styles.inviteIcon}><Ionicons name="person-add" size={22} color="#fff" /></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.inviteTitle}>{t('invite.title')}</Text>
+            <Text style={styles.inviteText}>{t('invite.text')}</Text>
+          </View>
+          <Ionicons name="share-outline" size={22} color={colors.primary} />
+        </Pressable>
+      )}
       <TextInput value={q} onChangeText={setQ} placeholderTextColor={colors.textMuted} placeholder={t('stu.search')} accessibilityLabel={t('stu.search')} style={styles.search} />
       {res.state !== 'ready' || !res.data ? (
         <StateView state={res.state === 'ready' ? 'loading' : res.state} onRetry={res.reload} />
@@ -78,6 +90,10 @@ export default function StudentsScreen() {
 }
 
 const styles = StyleSheet.create({
+  invite: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.primarySoft, borderRadius: 20, padding: 14 },
+  inviteIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  inviteTitle: { fontWeight: '800', color: colors.text, fontSize: 15 },
+  inviteText: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
   h1: { fontSize: 28, fontWeight: '800', color: colors.text },
   search: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, paddingHorizontal: spacing.md, minHeight: 48, color: colors.text },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
