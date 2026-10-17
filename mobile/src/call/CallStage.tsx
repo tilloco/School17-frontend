@@ -67,10 +67,13 @@ const Row = ({ label, value }: { label: string; value: string }) => (
  *  - otherwise the other person's camera fills the stage and my camera is a small tile;
  *  - while I share my own screen, a card says so (showing my screen to myself would only mirror it forever).
  */
-export function CallStage({ media, otherName, waiting, sharingMine, onStopShare, cameraOff, onTapStage, onFlip, hideTiles, swapped = false, onSwap }: { swapped?: boolean; onSwap?: () => void; onTapStage?: () => void; onFlip?: () => void; hideTiles?: boolean; media: CallMedia; otherName: string; waiting: boolean; sharingMine: boolean; onStopShare: () => void; cameraOff: boolean }) {
+export function CallStage({ media, otherName, waiting, sharingMine, onStopShare, cameraOff, onTapStage, onFlip, hideTiles, swapped = false, onSwap, compact = false, selfView = false }: { selfView?: boolean; compact?: boolean; swapped?: boolean; onSwap?: () => void; onTapStage?: () => void; onFlip?: () => void; hideTiles?: boolean; media: CallMedia; otherName: string; waiting: boolean; sharingMine: boolean; onStopShare: () => void; cameraOff: boolean }) {
   const hasScreen = !!media.remoteScreen;
   const screenIsMain = hasScreen && !swapped; // swapped: the teacher's face fills the stage and the screen becomes the small picture
-  const main = hasScreen ? (swapped ? media.remoteCamera : media.remoteScreen) : media.remoteCamera;
+  const remoteMain = hasScreen ? (swapped ? media.remoteCamera : media.remoteScreen) : media.remoteCamera;
+  // nobody else is on yet: the teacher sees their own camera as the big picture instead of an empty avatar
+  const selfMain = selfView && !remoteMain && !!media.localCamera && !cameraOff;
+  const main = remoteMain ?? (selfMain ? media.localCamera : null);
   const pulse = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.loop(Animated.sequence([Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }), Animated.timing(pulse, { toValue: 0, duration: 900, useNativeDriver: true })])).start();
@@ -78,9 +81,9 @@ export function CallStage({ media, otherName, waiting, sharingMine, onStopShare,
   return (
     <View style={styles.stage}>
       <Pressable style={StyleSheet.absoluteFill} onPress={onTapStage} accessible={false} />
-      <View style={StyleSheet.absoluteFill} pointerEvents="none"><Video track={main} style={StyleSheet.absoluteFill} cover={!screenIsMain} /></View>
+      <View style={StyleSheet.absoluteFill} pointerEvents="none"><Video track={main} style={StyleSheet.absoluteFill} cover={!screenIsMain} mirror={selfMain} /></View>
       {!main && (
-        <View style={styles.center}>
+        <View style={styles.center} pointerEvents="none">
           <Animated.View style={[styles.avatar, { opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }]}>
             <Text style={styles.avatarLetter}>{(otherName || '?').trim().slice(0, 1).toUpperCase()}</Text>
           </Animated.View>
@@ -90,16 +93,16 @@ export function CallStage({ media, otherName, waiting, sharingMine, onStopShare,
       )}
       {!hideTiles && hasScreen ? <FaceBubble track={swapped ? media.remoteScreen : media.remoteCamera} name={otherName} size={swapped ? 78 : 60} onPress={onSwap} /> : null}
       {!hideTiles && (
-        <View style={styles.tiles} pointerEvents="box-none">
-          {media.localCamera && !cameraOff ? <Pressable accessibilityRole="button" accessibilityLabel="flip" onPress={onFlip} style={styles.tile}><View style={styles.tileVideo} pointerEvents="none"><Video track={media.localCamera} style={styles.tileVideo} mirror /></View></Pressable> : null}
+        <View style={[styles.tiles, compact && styles.tilesCompact]} pointerEvents="box-none">
+          {media.localCamera && !cameraOff && !selfMain ? <Pressable accessibilityRole="button" accessibilityLabel="flip" onPress={onFlip} style={[styles.tile, compact && styles.tileCompact]}><View style={styles.tileVideo} pointerEvents="none"><Video track={media.localCamera} style={styles.tileVideo} mirror /></View></Pressable> : null}
         </View>
       )}
       {media.remoteMicMuted && main ? <View style={styles.muted}><Ionicons name="mic-off" size={14} color="#fff" /></View> : null}
       {sharingMine && (
         <View style={styles.sharing}>
           <View style={styles.sharingDot} />
-          <Text style={styles.sharingText}>{t('call.youShare')}</Text>
-          <Pressable accessibilityRole="button" onPress={onStopShare} style={styles.sharingBtn}><Text style={styles.sharingBtnText}>{t('call.stopShare')}</Text></Pressable>
+          <Text style={styles.sharingText} numberOfLines={1}>{t('call.youShare')}</Text>
+          <Pressable accessibilityRole="button" onPress={onStopShare} hitSlop={8} style={styles.sharingBtn}><Text style={styles.sharingBtnText}>{t('call.stopShare')}</Text></Pressable>
         </View>
       )}
     </View>
@@ -116,23 +119,25 @@ export function RoundButton({ icon, label, onPress, active = true, danger = fals
 
 const styles = StyleSheet.create({
   stage: { flex: 1, backgroundColor: '#000', overflow: 'hidden' },
-  center: { ...StyleSheet.absoluteFill as object, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#0E1116' },
+  center: { ...StyleSheet.absoluteFill as object, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#0E1116', paddingBottom: 56, paddingTop: 30 },
   avatar: { width: 112, height: 112, borderRadius: 56, backgroundColor: '#2B3340', alignItems: 'center', justifyContent: 'center' },
   avatarLetter: { color: '#fff', fontSize: 46, fontWeight: '800' },
   name: { color: '#fff', fontSize: 22, fontWeight: '800' },
   sub: { color: 'rgba(255,255,255,0.7)', fontSize: 15 },
   tag: { position: 'absolute', left: 12, top: 84, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
   tagText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  tiles: { position: 'absolute', right: 12, bottom: 110, gap: 10, alignItems: 'flex-end' },
+  tilesCompact: { bottom: 10, right: 10 },
+  tileCompact: { width: 70, height: 96, borderRadius: 14 },
+  tiles: { position: 'absolute', right: 12, bottom: 150, gap: 10, alignItems: 'flex-end' },
   tile: { width: 92, height: 128, borderRadius: 16, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)', backgroundColor: '#111' },
   tileVideo: { flex: 1 },
   faceRound: { position: 'absolute', top: 10, right: 10, width: 60, height: 60, borderRadius: 30, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)', backgroundColor: '#111' },
   muted: { position: 'absolute', left: 14, bottom: 14, width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,69,58,0.9)', alignItems: 'center', justifyContent: 'center' },
-  sharing: { position: 'absolute', left: 12, right: 12, top: 84, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(0,122,255,0.92)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 9 },
+  sharing: { position: 'absolute', left: 10, top: 44, maxWidth: '78%', flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: 'rgba(0,122,255,0.92)', borderRadius: 999, paddingLeft: 10, paddingRight: 4, paddingVertical: 4 },
   sharingDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: '#fff' },
-  sharingText: { flex: 1, color: '#fff', fontWeight: '700', fontSize: 14 },
-  sharingBtn: { backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
-  sharingBtnText: { color: '#0A5BD6', fontWeight: '800', fontSize: 13 },
+  sharingText: { flexShrink: 1, color: '#fff', fontWeight: '700', fontSize: 12 },
+  sharingBtn: { backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  sharingBtnText: { color: '#0A5BD6', fontWeight: '800', fontSize: 11 },
   badgeWrap: { alignItems: 'flex-end' },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(0,0,0,0.42)', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3, minHeight: 22 },
   dot: { width: 7, height: 7, borderRadius: 4 },

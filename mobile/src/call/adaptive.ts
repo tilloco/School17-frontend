@@ -85,9 +85,10 @@ export function remoteCameraFor(s: LinkSample, ctx: Pick<CallContext, 'remoteScr
   return 'high';
 }
 
+export const WARMUP_MS = 15_000; // first seconds of a call: the bandwidth estimate is still ramping up
 export const DOWN_STREAK = 2; // samples (2 s each) before stepping down: ~4 s
-export const UP_STREAK = 8; // samples before stepping up: ~16 s of a clearly better network
-export const UP_HOLD_MS = 15_000; // and at least this long since the last change
+export const UP_STREAK = 4; // samples before stepping up: ~8 s of a clearly better network
+export const UP_HOLD_MS = 6_000; // and at least this long since the last change
 
 export class AdaptiveController {
   private cur: { cam: number; screen: number } | null = null;
@@ -98,12 +99,16 @@ export class AdaptiveController {
   private remote: Plan['remoteCamera'] = 'high';
   private remoteStreak = 0;
   private lastCtx: CallContext | null = null;
+  private t0: number | undefined;
 
   /** Call every sample (about every 2 s). Returns a new plan only when something should change. */
   update(sample: LinkSample, ctx: CallContext, now: number): Plan | null {
-    const raw = sample.availKbps && sample.availKbps > 0 ? sample.availKbps : sample.upKbps && sample.upKbps > 0 ? sample.upKbps * 1.3 : undefined;
+    if (this.t0 === undefined) this.t0 = now;
+    // the network's own bandwidth estimate starts very low and climbs for the first seconds: do not trust it yet (unless packets are being lost)
+    const warm = now - this.t0 < WARMUP_MS && (sample.lossPct ?? 0) < 4;
+    const raw = warm ? undefined : sample.availKbps && sample.availKbps > 0 ? sample.availKbps : sample.upKbps && sample.upKbps > 0 ? sample.upKbps * 1.3 : undefined;
     if (raw !== undefined) {
-      this.est = this.est === undefined ? raw : raw < this.est ? this.est * 0.5 + raw * 0.5 : this.est * 0.9 + raw * 0.1; // fast down, slow up
+      this.est = this.est === undefined ? raw : raw < this.est ? this.est * 0.5 + raw * 0.5 : this.est * 0.6 + raw * 0.4; // fast down, steady up
     }
     const est = this.est ?? 2500; // before the first measurement: a moderate start
     const target = choose(budgetKbps(est, sample.lossPct, sample.rttMs), ctx);

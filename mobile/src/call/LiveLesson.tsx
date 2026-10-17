@@ -92,13 +92,15 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
     <View style={[styles.box, { height: showsScreen ? 250 : 230 }]}>
       <CallStage
         hideTiles={false}
+        compact
+        selfView={publish}
         swapped={swapped}
         onSwap={() => setSwapped((v) => !v)}
         onTapStage={tapStage}
         onFlip={() => void driver.current?.flipCamera()}
         media={media}
         otherName={teacher ? t('room.title') : teacherName}
-        waiting={state === 'live' && !media.remoteCamera && !media.remoteScreen}
+        waiting={!publish && state === 'live' && !media.remoteCamera && !media.remoteScreen}
         sharingMine={sharing}
         onStopShare={() => { setSharing(false); void driver.current?.setScreenShare(false); }}
         cameraOff={!cam}

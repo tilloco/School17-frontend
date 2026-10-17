@@ -19,7 +19,8 @@ const rep = (n: number, s: LinkSample) => Array.from({ length: n }, () => s);
 
 describe('adaptive call quality', () => {
   it('plenty of bandwidth: sharp screen and a sharp face', () => {
-    const { last } = run(new AdaptiveController(), rep(3, { availKbps: 9000, rttMs: 40, lossPct: 0 }), both);
+    const { last } = run(new AdaptiveController(), rep(24, { availKbps: 9000, rttMs: 40, lossPct: 0 }), both);
+    assert.ok(last, 'a plan was made');
     assert.equal(last!.screen!.id, 0);
     assert.equal(last!.camera.id, 0);
   });
@@ -52,18 +53,18 @@ describe('adaptive call quality', () => {
 
   it('degrades within seconds when the network collapses, recovers slowly and one step at a time', () => {
     const c = new AdaptiveController();
-    let r = run(c, rep(3, { availKbps: 9000, rttMs: 40, lossPct: 0 }), both);
-    const start = r.last!;
+    let r = run(c, rep(24, { availKbps: 9000, rttMs: 40, lossPct: 0 }), both);
+    const start = r.plans.filter(Boolean).slice(-1)[0] ?? r.last!;
     r = run(c, rep(6, { availKbps: 900, rttMs: 150, lossPct: 1 }), both, r.now);
     const low = r.last!;
     assert.ok(low.screen!.id > start.screen!.id, 'screen fps fell');
     assert.ok(low.camera.id > start.camera.id, 'face got smaller');
     assert.equal(low.reason, 'network_worse');
-    // network is good again: nothing changes during the first 7 samples (14 s) ...
-    r = run(c, rep(7, { availKbps: 9000, rttMs: 40, lossPct: 0 }), both, r.now);
+    // network is good again: nothing changes during the first 3 samples (6 s) ...
+    r = run(c, rep(3, { availKbps: 9000, rttMs: 40, lossPct: 0 }), both, r.now);
     assert.ok(r.plans.every((p) => p === null), 'no upgrade before the streak');
     // ... then steps up by ONE tier at a time
-    const up1 = run(c, rep(2, { availKbps: 9000, rttMs: 40, lossPct: 0 }), both, r.now);
+    const up1 = run(c, rep(4, { availKbps: 9000, rttMs: 40, lossPct: 0 }), both, r.now);
     const step = up1.last!;
     assert.equal(step.reason, 'network_better');
     assert.ok(step.screen!.id === low.screen!.id - 1 || step.camera.id === low.camera.id - 1);
@@ -72,11 +73,20 @@ describe('adaptive call quality', () => {
 
   it('a flickering network does not make the picture flicker', () => {
     const c = new AdaptiveController();
-    let r = run(c, rep(3, { availKbps: 9000 }), both);
+    let r = run(c, rep(24, { availKbps: 9000 }), both);
     const samples: LinkSample[] = Array.from({ length: 30 }, (_, i) => (i % 2 ? { availKbps: 9000, rttMs: 40 } : { availKbps: 1000, rttMs: 200 }));
     r = run(c, samples, both, r.now);
     const changes = r.plans.filter(Boolean).length;
     assert.ok(changes <= 4, `too many changes: ${changes}`);
+  });
+
+  it('the low bandwidth estimate at the very start of a call does not degrade the picture', () => {
+    const c = new AdaptiveController();
+    // the network estimate starts around 300 kb/s and climbs: during warm-up it is ignored
+    const { plans } = run(c, [300, 450, 700, 1100, 1800, 2600, 3500].map((k) => ({ availKbps: k, rttMs: 30, lossPct: 0 })), both);
+    const first = plans.find(Boolean)!;
+    assert.ok(first.screen!.id <= 2 && first.camera.layer !== 'off', 'the first plan is a sensible mid tier, not the bottom');
+    assert.ok(plans.slice(1).every((p) => p === null || p.reason !== 'network_worse'), 'no downgrade during warm-up');
   });
 
   it('loss and delay shrink the budget even when the estimate looks fine', () => {
@@ -86,7 +96,7 @@ describe('adaptive call quality', () => {
 
   it('starting or stopping a share re-plans at once', () => {
     const c = new AdaptiveController();
-    let r = run(c, rep(3, { availKbps: 2000 }), camOnly);
+    let r = run(c, rep(24, { availKbps: 2000 }), camOnly);
     const withShare = c.update({ availKbps: 2000 }, both, r.now + 2000);
     assert.ok(withShare && withShare.screen && withShare.reason === 'context');
     assert.ok(withShare!.screen!.id >= 1, 'on a 2 Mb/s uplink the screen is not at its top tier');

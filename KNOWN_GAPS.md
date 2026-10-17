@@ -184,3 +184,8 @@
 - Background lessons: a silent looping sound keeps the lesson alive with the screen off; added but NOT verified with the screen off yet.
 - Keyboard: the whole app shrinks above the keyboard (one place: src/lib/keyboard.tsx). Checked on the phone for the pop-up sheets; not every screen was opened.
 - A first-run intro (4 cards) is shown once; the "seen" flag is stored on the device.
+
+## Video calls: what was verified on a real phone (laptop hotspot + local LiveKit)
+- Verified: joining a class lesson; camera 720p with 3 simulcast layers AND screen share 1080 together on the server (both tracks ACTIVE); self-view for the teacher; compact quality badge with live ping; the lesson stays connected 45 s with the app in the background (foreground services are running); the camera restarts when the app returns to the foreground (was a black picture before); the 1:1 call screen: lobby, join, controls hide and show, hang up, summary, rejoin.
+- NOT verified (needs a second device): another person actually SEEING the shared screen and the teacher's face, the swap and full-screen on real video, and the adaptive quality on a really bad network (the algorithm is unit-tested; the phone's own estimate started low, so a 15-second warm-up now ignores it).
+- Dev setup: `scripts/dev-hotspot.ps1` turns on the hotspot and joins the phone; the video server needs a one-time firewall rule (see the script header).

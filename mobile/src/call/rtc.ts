@@ -2,6 +2,7 @@ import { AdaptiveController, CallContext, Plan } from './adaptive';
 
 // WebRTC driver (LiveKit). Needs a development build: livekit-client and @livekit/react-native contain native code and do not run in Expo Go.
 // The libraries are loaded with require() so that Expo Go still starts the app and the call screen explains what is missing.
+import { AppState } from 'react-native';
 import Constants from 'expo-constants';
 
 export interface RtcStats {
@@ -110,6 +111,7 @@ export function createRtcDriver(): RtcDriver | null {
   let lkLevel: LinkQuality['level'] = 'excellent';
   let rttEma: number | undefined;
   let lastLoss: number | undefined;
+  let appSub: { remove: () => void } | null = null;
   const adaptive = new AdaptiveController();
   let lastPlan: Plan | null = null;
   let autoPaused = false; // the camera was paused by the controller (not by the person)
@@ -322,6 +324,25 @@ export function createRtcDriver(): RtcDriver | null {
       try { const mt = room.localParticipant.getTrackPublication(lk.Track.Source.Camera)?.videoTrack?.mediaStreamTrack; if (mt) mt.contentHint = 'motion'; } catch { /* optional */ }
       if (room.remoteParticipants?.size > 0) ev.onRemoteJoined();
       emitMedia();
+      // Android stops the camera while the app is in the background: when the person comes back, start it again (otherwise the picture stays black)
+      appSub?.remove();
+      appSub = AppState.addEventListener('change', (st) => {
+        if (st !== 'active' || !room || !userCameraOn || autoPaused) return;
+        const pub = room.localParticipant.getTrackPublication(lk.Track.Source.Camera);
+        const track = pub?.videoTrack;
+        if (!track) return;
+        const redo = async () => {
+          await new Promise((r) => setTimeout(r, 400)); // let Android hand the camera back first
+          try {
+            console.warn('CAM_RESUME', track.mediaStreamTrack?.readyState, track.mediaStreamTrack?.muted);
+            await track.restartTrack();
+          } catch { try { await room.localParticipant.setCameraEnabled(false); await room.localParticipant.setCameraEnabled(true); } catch { /* the next toggle fixes it */ } }
+          // the picture view must bind to the new camera stream: drop the old one for a moment, then show the fresh one
+          if (ev) ev.onMedia({ ...EMPTY_MEDIA, remoteCamera: trackOf(remote(), lk.Track.Source.Camera), remoteScreen: trackOf(remote(), lk.Track.Source.ScreenShare) });
+          setTimeout(emitMedia, 150);
+        };
+        void redo();
+      });
       if (statsTimer) clearInterval(statsTimer);
       statsTimer = setInterval(() => void sample(), 2000);
       void sample();
@@ -329,6 +350,8 @@ export function createRtcDriver(): RtcDriver | null {
     async disconnect() {
       if (statsTimer) clearInterval(statsTimer);
       statsTimer = null;
+      appSub?.remove();
+      appSub = null;
       try { await room?.disconnect(); } catch { /* already closed */ }
       room = null;
       try { await rn.AudioSession?.stopAudioSession?.(); } catch { /* ignore */ }
