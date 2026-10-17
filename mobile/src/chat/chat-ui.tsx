@@ -64,11 +64,12 @@ function FileChip({ token, file, onDark }: { token: string; file: ChatFile; onDa
 }
 
 /** One chat bubble. `author` is shown above other people's messages in group chats (class channel). */
-export function Bubble({ token, mine, body, at, file, state, author, authorIsTeacher, onLongPress, onAuthorPress, authorPhotoId, onRetry }: {
+export function Bubble({ token, mine, body, at, file, state, author, authorIsTeacher, onLongPress, onAuthorPress, authorPhotoId, onRetry, pinned, highlight }: {
+  pinned?: boolean; highlight?: boolean;
   token: string; mine: boolean; body: string; at: string; file?: ChatFile | null; state?: DeliveryState; author?: string | null; authorIsTeacher?: boolean; onLongPress?: () => void; onAuthorPress?: () => void; authorPhotoId?: string | null; onRetry?: () => void;
 }) {
   return (
-    <Pressable onLongPress={onLongPress} onPress={state === 'FAILED' ? onRetry : undefined} style={[styles.bubble, mine ? styles.mine : styles.theirs, state === 'FAILED' && styles.failed, state === 'SENDING' && { opacity: 0.7 }]}>
+    <Pressable onLongPress={onLongPress} onPress={state === 'FAILED' ? onRetry : undefined} style={[styles.bubble, mine ? styles.mine : styles.theirs, state === 'FAILED' && styles.failed, state === 'SENDING' && { opacity: 0.7 }, highlight && styles.highlight]}>
       {!mine && !!author && (
         <Pressable onPress={onAuthorPress} disabled={!onAuthorPress} hitSlop={6} accessibilityRole="button" accessibilityLabel={author} style={styles.authorRow}>
           <Avatar name={author} size={22} userId={authorPhotoId ?? null} />
@@ -79,6 +80,7 @@ export function Bubble({ token, mine, body, at, file, state, author, authorIsTea
       {!!body && <Text style={[styles.text, mine && { color: '#fff' }]}>{body}</Text>}
       {state === 'FAILED' && <Text style={styles.failedText}>{t('chat.failed')}</Text>}
       <View style={styles.meta}>
+        {pinned && <Ionicons name="pin" size={11} color={mine ? 'rgba(255,255,255,0.75)' : colors.textMuted} />}
         <Text style={[styles.time, mine && { color: 'rgba(255,255,255,0.75)' }]}>{fmtTime(at)}</Text>
         {mine && <Ticks state={state} onDark />}
       </View>
@@ -174,6 +176,7 @@ const styles = StyleSheet.create({
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   author: { fontSize: 12, fontWeight: '700', flexShrink: 1 },
   text: { fontSize: 16, lineHeight: 22, color: colors.text },
+  highlight: { borderWidth: 2, borderColor: colors.primary },
   meta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
   time: { fontSize: 11, color: colors.textMuted },
   thumb: { width: 220, height: 160, borderRadius: 12, backgroundColor: colors.neutralSoft },

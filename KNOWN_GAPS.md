@@ -155,3 +155,9 @@
 - Phone uploads read big files piece by piece with expo-file-system (File.open/readBytes); written against the type definitions, not run on a phone with a large file. No upload retry UI for a 100 GB transfer beyond the existing resume.
 - No in-app video player yet: videos download and open in the phone's own app. Recorded-lesson playback (expo-video with Range requests, which the server now supports) is the next piece.
 - Courses (a paid one-month course: price, curriculum, enrolment, progress) are not built; only classes, files and live rooms exist.
+
+## Guardian optional, pins, channel info, content protection
+- A guardian is NOT required any more: pupils under 18 join classes alone and chat with their teacher alone (owner's decision). A linked guardian still sees the chats; contact details (phone numbers, links) stay blocked in chats with under-18s. NEEDS LAWYER: teachers talking one-to-one with minors without a guardian; the app wording about this.
+- Pins: teacher only, up to 100 per class (silent limit, error PIN_LIMIT). Jumping to an old pinned message loads older pages until it is found (max ~40 pages); not tested with thousands of messages.
+- Channel info uses the head teacher's photo as the channel logo (no separate class logo upload yet).
+- Content protection blocks screenshots on Android (secure window flag; checked on a phone) and iOS recording hiding (not tested on an iPhone). It cannot stop photographing the screen with another phone.

@@ -19,6 +19,8 @@ import { colors, radius, spacing } from '../../../src/theme/colors';
 import { fmtDayTime } from '../../../src/ui/format';
 import { Sheet, SheetAction } from '../../../src/ui/Sheet';
 import { Person, PersonSheet } from '../../../src/ui/PersonSheet';
+import { PinnedBar, PinsSheet } from '../../../src/ui/PinnedBar';
+import { Avatar } from '../../../src/ui';
 
 const POLL_MS = 15000; // safety net; new posts arrive instantly over the live connection
 
@@ -40,6 +42,14 @@ export default function ClassChannelScreen() {
   const [who, setWho] = useState<Person | null>(null);
   const list = useRef<FlatList<ChannelPost>>(null);
   const lastSeq = useRef(0);
+  const [pins, setPins] = useState<ChannelPost[]>([]);
+  const [pinIdx, setPinIdx] = useState(0);
+  const [pinList, setPinList] = useState(false);
+  const [actionsFor, setActionsFor] = useState<ChannelPost | null>(null);
+  const [flash, setFlash] = useState<string | null>(null);
+  const loadPins = useCallback(async () => {
+    try { setPins((await market.channelPins(token as string, id)).items); } catch { /* the strip simply stays as it was */ }
+  }, [token, id]);
 
   const load = useCallback(async (initial: boolean) => {
     try {
@@ -58,7 +68,36 @@ export default function ClassChannelScreen() {
     const timer = setInterval(() => void load(false), POLL_MS);
     return () => clearInterval(timer);
   }, [load]);
-  useRealtime(['class.channel', 'connect'], () => void load(false));
+  useEffect(() => { void loadPins(); }, [loadPins]);
+  useEffect(() => { if (pinIdx >= pins.length) setPinIdx(0); }, [pins.length, pinIdx]);
+  useRealtime(['class.channel', 'connect'], () => { void load(false); void loadPins(); });
+
+  /** Scrolls to a message, loading older history first when it is not on screen yet, and flashes it so the eye finds it. */
+  const jumpTo = async (postId: string, seq: number) => {
+    let all = posts;
+    let guard = 0;
+    while (!all.some((p) => p.id === postId) && all.length && guard++ < 40) {
+      const r = await market.channel(token as string, id, { before: Math.min(...all.map((p) => p.seq)) }).catch(() => null);
+      if (!r || !r.items.length) break;
+      all = [...r.items, ...all.filter((p) => !r.items.some((n) => n.id === p.id))];
+      setPosts(all);
+      if (!r.more) break;
+    }
+    const idx = all.findIndex((p) => p.id === postId);
+    if (idx < 0) return;
+    setTimeout(() => list.current?.scrollToIndex({ index: idx, viewPosition: 0.35, animated: true }), 60);
+    setFlash(postId);
+    setTimeout(() => setFlash(null), 1600);
+    void seq;
+  };
+  const onPinBar = (p: { id: string }) => {
+    const i = pins.findIndex((x) => x.id === p.id);
+    void jumpTo(p.id, pins[i]?.seq ?? 0);
+    setPinIdx((i + 1) % Math.max(1, pins.length));
+  };
+  const pinPost = (p: ChannelPost, on: boolean) => market.channelPin(token as string, id, p.id, on)
+    .then(() => { setPosts((x) => x.map((y) => (y.id === p.id ? { ...y, pinned: on } : y))); return loadPins(); })
+    .catch(fail);
 
   const c = cls.data;
   const teacher = c?.role === 'teacher';
@@ -137,6 +176,15 @@ export default function ClassChannelScreen() {
   const header = (
     <Stack.Screen options={{
       headerShown: true, title: c?.title ?? '', headerBackTitle: t('common.back'),
+      headerTitle: () => (
+        <Pressable accessibilityRole="button" onPress={() => push(`/market/class-info/${id}`)} style={styles.headTitle}>
+          <View style={styles.logo}><Text style={styles.logoLetter}>{(c?.title ?? '?').trim().slice(0, 1).toUpperCase()}</Text></View>
+          <View style={{ flexShrink: 1 }}>
+            <Text style={styles.headName} numberOfLines={1}>{c?.title ?? ''}</Text>
+            <Text style={styles.headSub} numberOfLines={1}>{c ? t('class.members', { n: c.enrolled }) : ''}</Text>
+          </View>
+        </Pressable>
+      ),
       headerRight: () => <Pressable onPress={() => setMenu(true)} hitSlop={12} accessibilityLabel={t('common.more')}><Ionicons name="ellipsis-vertical" size={22} color={colors.text} /></Pressable>,
     }} />
   );
@@ -147,9 +195,10 @@ export default function ClassChannelScreen() {
     <View style={styles.root}>
       {header}
       <Pressable accessibilityRole="button" onPress={() => push(`/market/class-ranking/${id}`)} style={[styles.info, styles.infoRow]}>
-        <Text style={styles.infoText} numberOfLines={1}>{c.subject} · {t('class.members', { n: c.enrolled })}</Text>
+        <Text style={styles.infoText} numberOfLines={1}>{c.subject}</Text>
         <View style={styles.rankChip}><Ionicons name="trophy" size={14} color="#FF9500" /><Text style={styles.rankChipText}>{t('rank.title')}</Text></View>
       </Pressable>
+      <PinnedBar items={pins.map((p) => ({ id: p.id, body: p.body, at: p.at, fileName: p.file?.name, image: p.file?.image }))} index={pinIdx} onJump={onPinBar} onList={() => setPinList(true)} />
       {next && !closed && (
         <Pressable accessibilityRole="button" onPress={() => push(`/market/class-room/${next.id}`)} style={styles.next}>
           <Ionicons name={next.status === 'LIVE' ? 'radio' : 'videocam'} size={22} color="#fff" />
@@ -174,6 +223,7 @@ export default function ClassChannelScreen() {
             data={[...posts, ...pending] as (ChannelPost & { state?: 'SENDING' | 'FAILED' })[]}
             keyExtractor={(p) => p.id}
             contentContainerStyle={{ padding: spacing.sm }}
+            onScrollToIndexFailed={(info) => setTimeout(() => list.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true }), 80)}
             onContentSizeChange={() => list.current?.scrollToEnd({ animated: false })}
             renderItem={({ item }) => (
               <Bubble
@@ -188,13 +238,21 @@ export default function ClassChannelScreen() {
                 authorPhotoId={item.author.hasPhoto ? item.author.id : null}
                 onAuthorPress={() => setWho({ userId: item.author.id, name: item.author.name, username: item.author.username, hasPhoto: item.author.hasPhoto, teacher: item.author.teacher })}
                 file={item.file ? { id: item.file.id, name: item.file.name, size: item.file.size, image: item.file.image } : null}
-                onLongPress={() => removePost(item)}
+                onLongPress={() => ((item.mine || teacher) && !(item as Partial<Pending>).state ? setActionsFor(item) : undefined)}
+                pinned={pins.some((x) => x.id === item.id)}
+                highlight={flash === item.id}
               />
             )}
           />
         )}
         {closed ? <Text style={styles.closed}>{t('class.cancelledLabel')}</Text> : <Composer keyboardOpen={kb > 0} token={token as string} placeholder={t('chan.placeholder')} onSend={send} onAttached={sendFile} />}
       </View>
+      <PinsSheet visible={pinList} items={pins.map((p) => ({ id: p.id, body: p.body, at: p.at, fileName: p.file?.name, image: p.file?.image }))} onClose={() => setPinList(false)}
+        onJump={(p) => void jumpTo(p.id, 0)} onUnpin={teacher ? (p) => { const full = pins.find((x) => x.id === p.id); if (full) void pinPost(full, false); } : undefined} />
+      <Sheet visible={!!actionsFor} onClose={() => setActionsFor(null)} title={actionsFor?.body ? actionsFor.body.slice(0, 40) : undefined} actions={actionsFor ? [
+        ...(teacher ? [{ label: pins.some((x) => x.id === actionsFor.id) ? t('pin.unpin') : t('pin.pin'), icon: 'pin' as const, onPress: () => void pinPost(actionsFor, !pins.some((x) => x.id === actionsFor.id)) }] : []),
+        ...((actionsFor.mine || teacher) ? [{ label: t('common.delete'), icon: 'trash' as const, onPress: () => removePost(actionsFor), danger: true }] : []),
+      ] : []} />
       <Sheet visible={menu} onClose={() => setMenu(false)} title={c.title} actions={actions} />
       <PersonSheet person={who} onClose={() => setWho(null)} onMessage={openDirect} extra={teacher && who?.userId && !who.teacher ? { label: t('stu.detail'), icon: 'stats-chart', onPress: () => push(`/market/student/${who.userId}`) } : undefined} />
     </View>
@@ -202,6 +260,11 @@ export default function ClassChannelScreen() {
 }
 
 const styles = StyleSheet.create({
+  headTitle: { flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: 230 },
+  logo: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.hero, alignItems: 'center', justifyContent: 'center' },
+  logoLetter: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  headName: { fontSize: 16, fontWeight: '800', color: colors.text },
+  headSub: { fontSize: 12, color: colors.textMuted },
   root: { flex: 1, backgroundColor: colors.background },
   info: { paddingHorizontal: spacing.md, paddingVertical: 6, backgroundColor: colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

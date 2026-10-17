@@ -215,6 +215,9 @@ export const market = {
   myClasses: (token: string) => apiRequest<ClassItem[]>('/classes/mine', { token }),
   classDetail: (token: string, id: string) => apiRequest<ClassDetail>(`/classes/${id}`, { token }),
   channel: (token: string, id: string, opts: { before?: number; after?: number } = {}) => apiRequest<{ items: ChannelPost[]; more: boolean }>(`/classes/${id}/channel?${q({ before: opts.before, after: opts.after })}`, { token }),
+  channelPins: (token: string, id: string) => apiRequest<{ items: ChannelPost[] }>(`/classes/${id}/channel/pins`, { token }),
+  channelPin: (token: string, id: string, pid: string, on: boolean) => apiRequest(`/classes/${id}/channel/${pid}/pin`, { method: on ? 'PUT' : 'DELETE', token, body: on ? {} : undefined }),
+  channelInfo: (token: string, id: string) => apiRequest<ChannelInfo>(`/classes/${id}/channel/info`, { token }),
   channelPost: (token: string, id: string, body: { body?: string; fileId?: string }) => apiRequest<ChannelPost>(`/classes/${id}/channel`, { method: 'POST', token, body }),
   channelRemove: (token: string, id: string, pid: string) => apiRequest(`/classes/${id}/channel/${pid}`, { method: 'DELETE', token }),
   addClassSession: (token: string, id: string, body: { startAt: string; durationMin?: number }) => apiRequest(`/classes/${id}/sessions`, { method: 'POST', token, body }),
@@ -408,8 +411,14 @@ export interface StudentDetail {
   chatBookingId: string | null;
 }
 
+export interface ChannelInfo {
+  id: string; title: string; subject: string; description: string; priceMinor: number; members: number; createdAt: string; protectContent: boolean; role: 'teacher' | 'pupil';
+  startDate: string | null; endDate: string | null; weekdays: number[]; startMinute: number; durationMin: number; timezone: string;
+  teacher: { id: string; name: string | null; username: string | null; bio: string | null; subjects: string[]; hasPhoto: boolean };
+  upcoming: { id: string; startAt: string; endAt: string; status: string }[]; filesCount: number; pinsCount: number;
+}
 export interface ChannelPost {
-  id: string; seq: number; at: string; body: string; mine: boolean;
+  id: string; seq: number; at: string; body: string; mine: boolean; pinned?: boolean;
   author: { id: string | null; name: string | null; teacher: boolean; username: string | null; hasPhoto: boolean };
   file: { id: string; name: string; size: number; mime: string; image: boolean } | null;
 }
