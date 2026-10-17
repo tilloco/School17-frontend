@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../ui/Text';
 import { t } from '../i18n';
 import type { CallMedia, LinkQuality } from './rtc';
+import { FaceBubble } from './FaceBubble';
 
 type Icon = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -87,7 +88,7 @@ export function CallStage({ media, otherName, waiting, sharingMine, onStopShare,
         </View>
       )}
       {hasScreen && <View style={styles.tag}><Ionicons name="desktop" size={13} color="#fff" /><Text style={styles.tagText}>{t('call.theirScreen', { name: otherName })}</Text></View>}
-      {!hideTiles && hasScreen && media.remoteCamera ? <View style={styles.faceRound} pointerEvents="none"><Video track={media.remoteCamera} style={styles.tileVideo} /></View> : null}
+      {!hideTiles && hasScreen ? <FaceBubble track={media.remoteCamera} name={otherName} /> : null}
       {!hideTiles && (
         <View style={styles.tiles} pointerEvents="box-none">
           {media.localCamera && !cameraOff ? <Pressable accessibilityRole="button" accessibilityLabel="flip" onPress={onFlip} style={styles.tile}><View style={styles.tileVideo} pointerEvents="none"><Video track={media.localCamera} style={styles.tileVideo} mirror /></View></Pressable> : null}

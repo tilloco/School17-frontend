@@ -58,7 +58,7 @@ export default function TeacherSetupScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       {roundPicker.node}
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={undefined}>
         <KeyboardScroll contentContainerStyle={styles.body}>
           <Text style={styles.title}>{t('setup2.title', { name: (user?.name ?? '').split(' ')[0] })}</Text>
           <Text style={styles.lead}>{t('setup2.lead')}</Text>

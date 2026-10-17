@@ -94,7 +94,7 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
         onStopShare={() => { setSharing(false); void driver.current?.setScreenShare(false); }}
         cameraOff={!cam}
       />
-      <View style={[styles.top, showsScreen && !!media.remoteCamera && { right: 78 }]} pointerEvents="box-none">
+      <View style={styles.top} pointerEvents="box-none">
         <View style={styles.live}><View style={styles.dot} /><Text style={styles.liveText}>{state === 'live' ? t('chan.liveNow') : t('call.banner.reconnecting')}</Text></View>
         <QualityBadge q={q} />
       </View>
@@ -110,7 +110,7 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
           {teacher && <RoundButton size={40} icon="desktop" label={sharing ? t('call.stopShare') : t('call.share')} accent={sharing} onPress={() => { const on = !sharing; setSharing(on); void driver.current?.setScreenShare(on).catch(() => setSharing(false)); }} />}
         </View>
       )}
-      <ShareFull visible={full} media={media} quality={q} onClose={() => setFull(false)} />
+      <ShareFull visible={full} media={media} quality={q} name={teacherName} onClose={() => setFull(false)} />
     </View>
   );
 }

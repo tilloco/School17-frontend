@@ -36,7 +36,7 @@ export default function SignInScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={undefined}>
         <KeyboardScroll contentContainerStyle={styles.body}>
           <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={28} color={colors.text} />

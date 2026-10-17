@@ -67,7 +67,7 @@ export default function ClassEditScreen() {
     </View>
   );
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={undefined}>
       <Stack.Screen options={{ headerShown: true, title: t(id ? 'class.edit' : 'class.create'), headerBackTitle: t('common.back') }} />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {!id && <Text style={styles.lead}>{t('class.createLead')}</Text>}

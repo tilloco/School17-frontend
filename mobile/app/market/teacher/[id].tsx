@@ -82,7 +82,7 @@ export default function TeacherScreen() {
   const myComment = comments.data?.mine ?? null;
 
   return (
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.root} behavior={undefined}>
       {header}
       <ScrollView contentContainerStyle={[styles.body, { paddingBottom: spacing.xl + insets.bottom }]} keyboardShouldPersistTaps="handled">
         <View style={styles.top}>

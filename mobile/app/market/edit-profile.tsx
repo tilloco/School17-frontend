@@ -93,7 +93,7 @@ export default function EditProfileScreen() {
         headerShown: true, title: t('profile.edit'), headerBackTitle: t('common.back'),
         headerRight: () => <Pressable accessibilityRole="button" onPress={save} disabled={busy || !ready} hitSlop={10}><Text style={[styles.save, (busy || !ready) && { opacity: 0.4 }]}>{t('common.save')}</Text></Pressable>,
       }} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={undefined}>
         <KeyboardScroll contentContainerStyle={styles.body}>
           <View style={styles.photoBlock}>
             <Pressable accessibilityRole="button" accessibilityLabel={t('profile.photoChange')} onPress={changePhoto} disabled={busy}>
