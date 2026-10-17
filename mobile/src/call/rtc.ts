@@ -47,7 +47,7 @@ export interface RtcDriverEvents {
 }
 
 export interface RtcDriver {
-  connect(url: string, token: string, ev: RtcDriverEvents, opts: { videoEnabled: boolean }): Promise<void>;
+  connect(url: string, token: string, ev: RtcDriverEvents, opts: { videoEnabled: boolean; /** false: join as a viewer (a pupil in a class who is not on stage) */ publish?: boolean; /** the person whose picture is the main one (the teacher in a class) */ focusIdentity?: string }): Promise<void>;
   disconnect(): Promise<void>;
   setMic(on: boolean): Promise<void>;
   setCamera(on: boolean): Promise<void>;
@@ -116,7 +116,12 @@ export function createRtcDriver(): RtcDriver | null {
   let userCameraOn = true;
   let prev: { t: number; up: number; down: number; lost: number; recv: number } | null = null;
 
-  const remote = () => (room && room.remoteParticipants ? (Array.from(room.remoteParticipants.values())[0] as any) : null);
+  let focus: string | undefined;
+  const remote = () => {
+    if (!room || !room.remoteParticipants) return null;
+    const all = Array.from(room.remoteParticipants.values()) as any[];
+    return (focus ? all.find((p) => p.identity === focus) : undefined) ?? all[0] ?? null;
+  };
   const trackOf = (p: any, source: any) => {
     const pub = p?.getTrackPublication?.(source);
     return pub && pub.track && !pub.isMuted ? pub.track : null;
@@ -257,6 +262,7 @@ export function createRtcDriver(): RtcDriver | null {
   return {
     async connect(url, token, events, opts) {
       ev = events;
+      focus = opts.focusIdentity;
       prev = null;
       rttEma = undefined;
       await rn.AudioSession?.startAudioSession?.();
@@ -300,9 +306,13 @@ export function createRtcDriver(): RtcDriver | null {
         })
         .on(lk.RoomEvent.DataReceived, (payload: Uint8Array) => ev?.onData(dec.decode(payload)));
       await room.connect(url, token);
-      await room.localParticipant.setMicrophoneEnabled(true);
-      userCameraOn = opts.videoEnabled;
-      await room.localParticipant.setCameraEnabled(opts.videoEnabled);
+      if (opts.publish !== false) {
+        await room.localParticipant.setMicrophoneEnabled(true);
+        userCameraOn = opts.videoEnabled;
+        await room.localParticipant.setCameraEnabled(opts.videoEnabled);
+      } else {
+        userCameraOn = false;
+      }
       try { const mt = room.localParticipant.getTrackPublication(lk.Track.Source.Camera)?.videoTrack?.mediaStreamTrack; if (mt) mt.contentHint = 'motion'; } catch { /* optional */ }
       if (room.remoteParticipants?.size > 0) ev.onRemoteJoined();
       emitMedia();

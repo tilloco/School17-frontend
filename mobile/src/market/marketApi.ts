@@ -354,7 +354,7 @@ export interface ClassDetail {
   pupils?: { id: string; name: string | null }[]; classmates?: { name: string }[]; mySeats?: string[];
 }
 export interface ClassRoomState {
-  id: string; protectContent?: boolean; role: 'teacher' | 'pupil'; status: string; startAt: string; lobbyOpensAt: string; stageMode: 'LISTEN_ONLY' | 'HAND_RAISE' | 'OPEN_STAGE'; locked: boolean;
+  id: string; protectContent?: boolean; teacherId?: string | null; teacherName?: string | null; role: 'teacher' | 'pupil'; status: string; startAt: string; lobbyOpensAt: string; stageMode: 'LISTEN_ONLY' | 'HAND_RAISE' | 'OPEN_STAGE'; locked: boolean;
   teacherReconnecting: boolean; teacherNoShow: boolean; stageCount: number; stageMax: number;
   whiteboardRev: number;
   presentation: { fileId: string; name: string; page: number; pageCount: number; renderedPages: number; renderStatus: string } | null;

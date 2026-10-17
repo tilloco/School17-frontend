@@ -103,10 +103,10 @@ export function CallStage({ media, otherName, waiting, sharingMine, onStopShare,
   );
 }
 
-export function RoundButton({ icon, label, onPress, active = true, danger = false, accent = false }: { icon: Icon; label: string; onPress: () => void; active?: boolean; danger?: boolean; accent?: boolean }) {
+export function RoundButton({ icon, label, onPress, active = true, danger = false, accent = false, size = 58 }: { icon: Icon; label: string; onPress: () => void; active?: boolean; danger?: boolean; accent?: boolean; size?: number }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.round, !active && styles.roundOff, accent && styles.roundAccent, danger && styles.roundDanger, pressed && { opacity: 0.8, transform: [{ scale: 0.95 }] }]}>
-      <Ionicons name={icon} size={24} color={danger || accent || active ? '#fff' : '#1C1C1E'} />
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.round, { width: size, height: size, borderRadius: size / 2 }, !active && styles.roundOff, accent && styles.roundAccent, danger && styles.roundDanger, pressed && { opacity: 0.8, transform: [{ scale: 0.95 }] }]}>
+      <Ionicons name={icon} size={Math.round(size * 0.41)} color={danger || accent || active ? '#fff' : '#1C1C1E'} />
     </Pressable>
   );
 }
