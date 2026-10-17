@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRealtime } from './realtime';
 import { useAuth } from './auth-context';
 import { market } from '../market/marketApi';
 
@@ -18,10 +19,12 @@ export function useScreenProtect(on: boolean) {
 export function useClassProtect(classId: string | undefined) {
   const { token } = useAuth();
   const [on, setOn] = useState(false);
+  const [tick, setTick] = useState(0);
+  useRealtime(['class.channel', 'connect'], () => setTick((n) => n + 1));
   useEffect(() => {
     if (!classId || !token) return;
     market.classDetail(token, classId).then((c) => setOn(!!c.protectContent && c.role !== 'teacher')).catch(() => undefined);
-  }, [classId, token]);
+  }, [classId, token, tick]);
   useScreenProtect(on);
   return on;
 }
@@ -30,10 +33,12 @@ export function useClassProtect(classId: string | undefined) {
 export function useSessionProtect(sid: string | undefined) {
   const { token } = useAuth();
   const [on, setOn] = useState(false);
+  const [tick, setTick] = useState(0);
+  useRealtime(['class.channel', 'connect'], () => setTick((n) => n + 1));
   useEffect(() => {
     if (!sid || !token) return;
     market.roomState(token, sid).then((s) => setOn(!!s.protectContent && s.role !== 'teacher')).catch(() => undefined);
-  }, [sid, token]);
+  }, [sid, token, tick]);
   useScreenProtect(on);
   return on;
 }

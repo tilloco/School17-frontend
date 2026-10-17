@@ -39,6 +39,8 @@ export default function ThreadScreen() {
   const [title, setTitle] = useState('');
   const [req, setReq] = useState<{ status?: string; mine?: boolean }>({});
   const [menu, setMenu] = useState(false);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [actionsFor, setActionsFor] = useState<ChatMessage | null>(null);
   const last = useRef(0);
   const list = useRef<FlatList<ChatMessage>>(null);
 
@@ -79,7 +81,7 @@ export default function ThreadScreen() {
   const deliver = async (tmp: ChatMessage) => {
     setPending((p) => p.map((x) => (x.id === tmp.id ? { ...x, state: 'SENDING' as never } : x)));
     try {
-      const m = await market.send(token as string, id, tmp.body);
+      const m = await market.send(token as string, id, tmp.body, undefined, (tmp as ChatMessage & { replyToId?: string }).replyToId);
       last.current = Math.max(last.current, m.seq);
       setMsgs((x) => (x.some((y) => y.id === m.id) ? x : [...x, m]));
       setPending((p) => p.filter((x) => x.id !== tmp.id));
@@ -88,15 +90,23 @@ export default function ThreadScreen() {
       else { setPending((p) => p.filter((x) => x.id !== tmp.id)); Alert.alert(t('common.error'), errorText(e)); }
     }
   };
+  const jumpTo = (messageId: string) => {
+    const idx = [...msgs, ...pending].findIndex((m) => m.id === messageId);
+    if (idx >= 0) list.current?.scrollToIndex({ index: idx, viewPosition: 0.4, animated: true });
+  };
   const send = (text: string) => {
     const tmp = { id: `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, seq: 0, mine: true, from: 'STUDENT', body: text, createdAt: new Date().toISOString(), state: 'SENDING' as never, file: null } as ChatMessage;
+    (tmp as ChatMessage & { replyToId?: string }).replyToId = replyTo?.id;
+    tmp.replyTo = replyTo ? { id: replyTo.id, body: replyTo.body, hasFile: !!replyTo.file, deleted: false, mine: replyTo.mine, name: null } : null;
+    setReplyTo(null);
     setPending((p) => [...p, tmp]);
     void deliver(tmp);
   };
   useEffect(() => onReconnect(() => pendingRef.current.filter((x) => (x.state as string) === 'FAILED').forEach((x) => void deliver(x))), []); // eslint-disable-line react-hooks/exhaustive-deps
   const sendFile = async (fileId: string) => {
     try {
-      const m = await market.send(token as string, id, '', fileId);
+      const m = await market.send(token as string, id, '', fileId, replyTo?.id);
+      setReplyTo(null);
       last.current = Math.max(last.current, m.seq);
       setMsgs((x) => [...x, m]);
     } catch (e) {
@@ -132,6 +142,7 @@ export default function ThreadScreen() {
             data={[...msgs, ...pending]}
             keyExtractor={(m) => m.id}
             contentContainerStyle={{ padding: spacing.sm, paddingBottom: spacing.md }}
+            onScrollToIndexFailed={(info) => setTimeout(() => list.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true }), 80)}
             onContentSizeChange={() => list.current?.scrollToEnd({ animated: false })}
             renderItem={({ item }) => (
               <Bubble
@@ -141,6 +152,10 @@ export default function ThreadScreen() {
                 at={item.createdAt}
                 state={item.state as never}
                 onRetry={() => void deliver(item)}
+                replyTo={item.replyTo ? { id: item.replyTo.id, body: item.replyTo.body, author: item.replyTo.mine ? t('msg.you') : item.replyTo.name ?? title, deleted: item.replyTo.deleted, hasFile: item.replyTo.hasFile } : null}
+                onQuotePress={() => item.replyTo && jumpTo(item.replyTo.id)}
+                onSwipeReply={(item.state as string | undefined) === 'SENDING' || (item.state as string | undefined) === 'FAILED' ? undefined : () => setReplyTo(item)}
+                onLongPress={() => ((item.state as string | undefined) === 'SENDING' || (item.state as string | undefined) === 'FAILED' ? undefined : setActionsFor(item))}
                 file={item.file ? { id: item.file.id, name: item.file.name, size: item.file.sizeBytes, image: !!item.file.mime?.startsWith('image/') } : null}
               />
             )}
@@ -156,8 +171,9 @@ export default function ThreadScreen() {
           </View>
         )}
         {req.status === 'REQUEST' && req.mine && <Text style={styles.ro}>{t('dm.waiting')}</Text>}
-        {readOnly || req.status === 'DECLINED' ? <Text style={styles.ro}>{t(req.status === 'DECLINED' ? 'dm.declined' : 'chat.readOnly')}</Text> : <Composer keyboardOpen={kb > 0} token={token as string} placeholder={t('chat.placeholder')} onSend={send} onAttached={sendFile} />}
+        {readOnly || req.status === 'DECLINED' ? <Text style={styles.ro}>{t(req.status === 'DECLINED' ? 'dm.declined' : 'chat.readOnly')}</Text> : <Composer reply={replyTo ? { id: replyTo.id, body: replyTo.body, author: replyTo.mine ? t('msg.you') : title, hasFile: !!replyTo.file } : null} onCancelReply={() => setReplyTo(null)} keyboardOpen={kb > 0} token={token as string} placeholder={t('chat.placeholder')} onSend={send} onAttached={sendFile} />}
       </View>
+      <Sheet visible={!!actionsFor} onClose={() => setActionsFor(null)} title={actionsFor?.body ? actionsFor.body.slice(0, 40) : undefined} actions={actionsFor ? [{ label: t('reply.action'), icon: 'arrow-undo' as const, onPress: () => setReplyTo(actionsFor) }] : []} />
       <Sheet visible={menu} onClose={() => setMenu(false)} title={title} actions={[
         { label: t('chat.report'), icon: 'flag', onPress: report },
         { label: t('chat.block'), icon: 'ban', onPress: block, danger: true },

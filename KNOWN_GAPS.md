@@ -165,3 +165,8 @@
 ## Channel reports (spam, unwanted pictures)
 - Reports on class-channel messages and pictures: the reporter stops seeing the message at once; 3 different reporters hide it for everybody until the teacher clears or deletes it; an admin can act through the existing report queue (`CHANNEL_POST`). There is no admin web page for this queue yet (API only), and pictures are not scanned automatically: a human decides.
 - In a protected class, pictures open inside the app only (a tap does not open the phone's browser, which would allow screenshots); long-pressing a picture or file opens the same menu as text.
+
+## Replies in ordinary chats, live protection, dev account switch
+- Replies work in direct chats (quote, swipe either way, jump to the original from the class channel only; direct chats show the quote but a tap on it scrolls only when the original is already loaded).
+- The protection switch now reaches pupils who already have the class open within seconds (checked on a phone: secure flag on/off).
+- `app/dev-switch.tsx` signs in with a token from a link and exists only when EXPO_PUBLIC_DEV_LOGIN=1 (local test scripts). Never set that variable in a release build.
