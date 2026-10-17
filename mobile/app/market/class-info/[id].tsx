@@ -13,6 +13,11 @@ import { useAsync } from '../../../src/market/useAsync';
 import { colors, spacing } from '../../../src/theme/colors';
 import { Avatar } from '../../../src/ui';
 import { fmtDayTime, fmtMoney } from '../../../src/ui/format';
+import { ClassLogo } from '../../../src/ui/ClassLogo';
+import { CHAT_THEMES, themeOf } from '../../../src/theme/chatThemes';
+import { useRoundPhotoPicker } from '../../../src/ui/CircleCrop';
+import { UploadError, uploadFile } from '../../../src/market/uploader';
+import { uploadErrorText } from '../../../src/market/AttachBar';
 
 type Icon = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -27,16 +32,38 @@ export default function ClassInfoScreen() {
   useClassProtect(id);
   const info = useAsync(() => market.channelInfo(token as string, id), [token, id]);
   const [protect, setProtect] = useState(false);
+  const [theme, setTheme] = useState('ocean');
+  const [logoV, setLogoV] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const roundPicker = useRoundPhotoPicker();
   const glow = useRef(new Animated.Value(0)).current;
   const d = info.data;
   const teacher = d?.role === 'teacher';
 
-  useEffect(() => { if (d) setProtect(d.protectContent); }, [d]);
+  useEffect(() => { if (d) { setProtect(d.protectContent); setTheme(d.theme); } }, [d]);
   useEffect(() => { Animated.spring(glow, { toValue: protect ? 1 : 0, useNativeDriver: false, friction: 7 }).start(); }, [protect, glow]);
 
   const toggle = async (v: boolean) => {
     setProtect(v);
     try { await market.updateClass(token as string, id, { protectContent: v }); } catch (e) { setProtect(!v); Alert.alert(t('common.error'), e instanceof ApiError ? e.message : t('state.error')); }
+  };
+  const pickTheme = async (key: string) => {
+    const old = theme;
+    setTheme(key);
+    try { await market.updateClass(token as string, id, { theme: key }); } catch (e) { setTheme(old); Alert.alert(t('common.error'), e instanceof ApiError ? e.message : t('state.error')); }
+  };
+  const changeLogo = async () => {
+    const a = await roundPicker.pick();
+    if (!a) return;
+    try {
+      setBusy(true);
+      const up = await uploadFile({ token: token as string, uri: a.uri, name: a.name, mime: a.mime, purpose: 'AVATAR' });
+      await market.setChannelLogo(token as string, id, up.fileId);
+      setLogoV(Date.now());
+      info.reload();
+    } catch (e) {
+      Alert.alert(t('profile.photoFailed'), uploadErrorText(e) + (e instanceof UploadError || e instanceof ApiError ? `\n(${e.code ?? ''} ${e.message})` : ''));
+    } finally { setBusy(false); }
   };
   const writeTeacher = async () => {
     if (!d) return;
@@ -56,6 +83,7 @@ export default function ClassInfoScreen() {
     { icon: 'trophy', label: t('rank.title'), onPress: () => router.push(`/market/class-ranking/${id}` as never) },
     { icon: 'people', label: t('info.members'), count: d.members, onPress: () => router.push(`/market/class-pupils/${id}` as never) },
   ];
+  const th = themeOf(theme);
   const borderColor = glow.interpolate({ inputRange: [0, 1], outputRange: [colors.border, colors.success] });
   const chips: { icon: Icon; label: string }[] = [
     { icon: 'camera-reverse', label: t('info.noShots') },
@@ -65,14 +93,16 @@ export default function ClassInfoScreen() {
 
   return (
     <View style={styles.root}>
+      {roundPicker.node}
       <Stack.Screen options={{ headerShown: true, title: t('info.title'), headerBackTitle: t('common.back') }} />
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl * 2 }} showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
-          <View style={styles.ringOuter}>
+        <View style={[styles.hero, { backgroundColor: th.accent }]}>
+          <Pressable accessibilityRole="button" disabled={!teacher || busy} onPress={changeLogo} style={styles.ringOuter}>
             <View style={styles.ring}>
-              <Avatar name={d.teacher.name ?? d.title} size={104} userId={d.teacher.hasPhoto ? d.teacher.id : null} tone="primary" />
+              <ClassLogo classId={id} size={104} hasLogo={d.hasLogo} title={d.title} theme={theme} v={logoV} />
             </View>
-          </View>
+            {teacher && <View style={[styles.cam, { backgroundColor: th.accent2 }]}><Ionicons name="camera" size={16} color="#fff" /></View>}
+          </Pressable>
           <Text style={styles.title}>{d.title}</Text>
           <View style={styles.pills}>
             <View style={styles.pill}><Text style={styles.pillText}>{d.subject}</Text></View>
@@ -112,9 +142,9 @@ export default function ClassInfoScreen() {
             <View style={styles.subjects}>{d.teacher.subjects.map((s) => <View key={s} style={styles.subject}><Text style={styles.subjectText}>{s}</Text></View>)}</View>
           )}
           {!teacher && (
-            <Pressable accessibilityRole="button" onPress={writeTeacher} style={styles.writeBtn}>
-              <Ionicons name="chatbubble-ellipses" size={18} color="#fff" />
-              <Text style={styles.writeText}>{t('info.writeTeacher')}</Text>
+            <Pressable accessibilityRole="button" onPress={writeTeacher} style={[styles.writeBtn, { borderColor: th.accent }]}>
+              <Ionicons name="chatbubble-ellipses" size={15} color={th.accent} />
+              <Text style={[styles.writeText, { color: th.accent }]}>{t('info.writeTeacher')}</Text>
             </Pressable>
           )}
         </View>
@@ -129,6 +159,20 @@ export default function ClassInfoScreen() {
           ))}
           {!!days && <Text style={[styles.muted, { marginTop: 8 }]}>{t('info.schedule')}: {t('info.every', { days, time })}</Text>}
         </View>
+
+        {teacher && (
+          <View style={styles.card}>
+            <Text style={[styles.cardTitle, { color: th.accent }]}>{t('theme.channel')}</Text>
+            <View style={styles.swatches}>
+              {CHAT_THEMES.map((x) => (
+                <Pressable key={x.key} accessibilityRole="radio" accessibilityState={{ selected: theme === x.key }} accessibilityLabel={x.name} onPress={() => pickTheme(x.key)} style={[styles.swatch, { backgroundColor: x.accent }, theme === x.key && styles.swatchOn]}>
+                  {theme === x.key && <Ionicons name="checkmark" size={22} color="#fff" />}
+                </Pressable>
+              ))}
+            </View>
+            <Text style={styles.muted}>{t('theme.channelHint')}</Text>
+          </View>
+        )}
 
         <Animated.View style={[styles.protect, { borderColor }]}>
           <View style={styles.protectHead}>
@@ -189,8 +233,12 @@ const styles = StyleSheet.create({
   subjects: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   subject: { backgroundColor: colors.primarySoft, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },
   subjectText: { color: colors.primary, fontWeight: '700', fontSize: 12 },
-  writeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 13 },
-  writeText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  writeBtn: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
+  writeText: { fontWeight: '700', fontSize: 13 },
+  cam: { position: 'absolute', right: 0, bottom: 0, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#fff' },
+  swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  swatch: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
+  swatchOn: { borderWidth: 3, borderColor: colors.surface, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   lesson: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 },
   lessonSep: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   lessonDot: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },

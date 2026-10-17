@@ -20,7 +20,8 @@ import { fmtDayTime } from '../../../src/ui/format';
 import { Sheet, SheetAction } from '../../../src/ui/Sheet';
 import { Person, PersonSheet } from '../../../src/ui/PersonSheet';
 import { PinnedBar, PinsSheet } from '../../../src/ui/PinnedBar';
-import { Avatar } from '../../../src/ui';
+import { ClassLogo } from '../../../src/ui/ClassLogo';
+import { themeOf, wallOf } from '../../../src/theme/chatThemes';
 
 const POLL_MS = 15000; // safety net; new posts arrive instantly over the live connection
 
@@ -47,6 +48,7 @@ export default function ClassChannelScreen() {
   const [pinList, setPinList] = useState(false);
   const [actionsFor, setActionsFor] = useState<ChannelPost | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<ChannelPost | null>(null);
   const loadPins = useCallback(async () => {
     try { setPins((await market.channelPins(token as string, id)).items); } catch { /* the strip simply stays as it was */ }
   }, [token, id]);
@@ -100,6 +102,7 @@ export default function ClassChannelScreen() {
     .catch(fail);
 
   const c = cls.data;
+  const th = themeOf(c?.theme);
   const teacher = c?.role === 'teacher';
   const next = sessions.data?.find((s) => ['SCHEDULED', 'LOBBY', 'LIVE'].includes(s.status));
   const fail = (e: unknown) => Alert.alert(t('common.error'), e instanceof ApiError ? e.message : t('state.error'));
@@ -114,7 +117,7 @@ export default function ClassChannelScreen() {
   const deliver = async (tmp: Pending) => {
     setPending((p) => p.map((x) => (x.id === tmp.id ? { ...x, state: 'SENDING' } : x)));
     try {
-      add(await market.channelPost(token as string, id, { body: tmp.body }));
+      add(await market.channelPost(token as string, id, { body: tmp.body, replyToId: tmp.replyTo?.id }));
       setPending((p) => p.filter((x) => x.id !== tmp.id));
     } catch (e) {
       if (e instanceof ApiError && e.statusCode === 0) setPending((p) => p.map((x) => (x.id === tmp.id ? { ...x, state: 'FAILED' } : x)));
@@ -123,11 +126,13 @@ export default function ClassChannelScreen() {
   };
   const send = (text: string) => {
     const tmp: Pending = { id: `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, seq: 0, at: new Date().toISOString(), body: text, mine: true, author: { id: null, name: null, teacher: false, username: null, hasPhoto: false }, file: null, state: 'SENDING' };
+    tmp.replyTo = replyTo ? { id: replyTo.id, body: replyTo.body, author: replyTo.author.name, hasFile: !!replyTo.file } : null;
+    setReplyTo(null);
     setPending((p) => [...p, tmp]);
     void deliver(tmp);
   };
   useEffect(() => onReconnect(() => pendingRef.current.filter((x) => x.state === 'FAILED').forEach((x) => void deliver(x))), []); // eslint-disable-line react-hooks/exhaustive-deps
-  const sendFile = async (fileId: string) => { try { add(await market.channelPost(token as string, id, { fileId })); } catch (e) { throw new Error(e instanceof ApiError ? e.message : t('state.error')); } };
+  const sendFile = async (fileId: string) => { try { add(await market.channelPost(token as string, id, { fileId, replyToId: replyTo?.id })); setReplyTo(null); } catch (e) { throw new Error(e instanceof ApiError ? e.message : t('state.error')); } };
   const removePost = (p: ChannelPost) => {
     if (!(p.mine || teacher)) return;
     Alert.alert(t('chan.deleteMsg'), undefined, [
@@ -178,7 +183,7 @@ export default function ClassChannelScreen() {
       headerShown: true, title: c?.title ?? '', headerBackTitle: t('common.back'),
       headerTitle: () => (
         <Pressable accessibilityRole="button" onPress={() => push(`/market/class-info/${id}`)} style={styles.headTitle}>
-          <View style={styles.logo}><Text style={styles.logoLetter}>{(c?.title ?? '?').trim().slice(0, 1).toUpperCase()}</Text></View>
+          <ClassLogo classId={id} size={36} hasLogo={c?.hasLogo} title={c?.title} theme={c?.theme} />
           <View style={{ flexShrink: 1 }}>
             <Text style={styles.headName} numberOfLines={1}>{c?.title ?? ''}</Text>
             <Text style={styles.headSub} numberOfLines={1}>{c ? t('class.members', { n: c.enrolled }) : ''}</Text>
@@ -192,15 +197,15 @@ export default function ClassChannelScreen() {
   const closed = c.status !== 'ACTIVE';
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: wallOf(th) }]}>
       {header}
       <Pressable accessibilityRole="button" onPress={() => push(`/market/class-ranking/${id}`)} style={[styles.info, styles.infoRow]}>
         <Text style={styles.infoText} numberOfLines={1}>{c.subject}</Text>
         <View style={styles.rankChip}><Ionicons name="trophy" size={14} color="#FF9500" /><Text style={styles.rankChipText}>{t('rank.title')}</Text></View>
       </Pressable>
-      <PinnedBar items={pins.map((p) => ({ id: p.id, body: p.body, at: p.at, fileName: p.file?.name, image: p.file?.image }))} index={pinIdx} onJump={onPinBar} onList={() => setPinList(true)} />
+      <PinnedBar accent={th.accent} items={pins.map((p) => ({ id: p.id, body: p.body, at: p.at, fileName: p.file?.name, image: p.file?.image }))} index={pinIdx} onJump={onPinBar} onList={() => setPinList(true)} />
       {next && !closed && (
-        <Pressable accessibilityRole="button" onPress={() => push(`/market/class-room/${next.id}`)} style={styles.next}>
+        <Pressable accessibilityRole="button" onPress={() => push(`/market/class-room/${next.id}`)} style={[styles.next, { backgroundColor: th.accent }]}>
           <Ionicons name={next.status === 'LIVE' ? 'radio' : 'videocam'} size={22} color="#fff" />
           <View style={{ flex: 1 }}>
             <Text style={styles.nextTitle}>{next.status === 'LIVE' ? t('chan.liveNow') : t('chan.nextLesson')}</Text>
@@ -238,18 +243,23 @@ export default function ClassChannelScreen() {
                 authorPhotoId={item.author.hasPhoto ? item.author.id : null}
                 onAuthorPress={() => setWho({ userId: item.author.id, name: item.author.name, username: item.author.username, hasPhoto: item.author.hasPhoto, teacher: item.author.teacher })}
                 file={item.file ? { id: item.file.id, name: item.file.name, size: item.file.size, image: item.file.image } : null}
-                onLongPress={() => ((item.mine || teacher) && !(item as Partial<Pending>).state ? setActionsFor(item) : undefined)}
+                onLongPress={() => (!(item as Partial<Pending>).state ? setActionsFor(item) : undefined)}
                 pinned={pins.some((x) => x.id === item.id)}
+                theme={th}
+                replyTo={item.replyTo ?? null}
+                onQuotePress={() => item.replyTo && void jumpTo(item.replyTo.id, 0)}
+                onSwipeReply={(item as Partial<Pending>).state ? undefined : () => setReplyTo(item)}
                 highlight={flash === item.id}
               />
             )}
           />
         )}
-        {closed ? <Text style={styles.closed}>{t('class.cancelledLabel')}</Text> : <Composer keyboardOpen={kb > 0} token={token as string} placeholder={t('chan.placeholder')} onSend={send} onAttached={sendFile} />}
+        {closed ? <Text style={styles.closed}>{t('class.cancelledLabel')}</Text> : <Composer reply={replyTo ? { id: replyTo.id, body: replyTo.body, author: replyTo.author.name, hasFile: !!replyTo.file } : null} onCancelReply={() => setReplyTo(null)} accent={th.accent} wall={wallOf(th)} keyboardOpen={kb > 0} token={token as string} placeholder={t('chan.placeholder')} onSend={send} onAttached={sendFile} />}
       </View>
       <PinsSheet visible={pinList} items={pins.map((p) => ({ id: p.id, body: p.body, at: p.at, fileName: p.file?.name, image: p.file?.image }))} onClose={() => setPinList(false)}
         onJump={(p) => void jumpTo(p.id, 0)} onUnpin={teacher ? (p) => { const full = pins.find((x) => x.id === p.id); if (full) void pinPost(full, false); } : undefined} />
       <Sheet visible={!!actionsFor} onClose={() => setActionsFor(null)} title={actionsFor?.body ? actionsFor.body.slice(0, 40) : undefined} actions={actionsFor ? [
+        { label: t('reply.action'), icon: 'arrow-undo' as const, onPress: () => setReplyTo(actionsFor) },
         ...(teacher ? [{ label: pins.some((x) => x.id === actionsFor.id) ? t('pin.unpin') : t('pin.pin'), icon: 'pin' as const, onPress: () => void pinPost(actionsFor, !pins.some((x) => x.id === actionsFor.id)) }] : []),
         ...((actionsFor.mine || teacher) ? [{ label: t('common.delete'), icon: 'trash' as const, onPress: () => removePost(actionsFor), danger: true }] : []),
       ] : []} />

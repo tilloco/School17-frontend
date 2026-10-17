@@ -103,7 +103,7 @@ export function SectionTitle({ title, action }: { title: string; action?: { labe
 /** Round avatar: the teacher's photo when `photoOf` (a teacher profile id) is given and loads, otherwise the initials. `v` changes after a new upload so the picture refreshes. */
 const imageCache = new Map<string, string>();
 /** Loads a picture that needs the sign-in header (Android's Image drops it) and shows it from memory. */
-function AuthImage({ url, token, style, onFail }: { url: string; token: string; style: StyleProp<ImageStyle>; onFail: () => void }) {
+export function AuthImage({ url, token, style, onFail }: { url: string; token: string; style: StyleProp<ImageStyle>; onFail: () => void }) {
   const [src, setSrc] = useState<string | null>(imageCache.get(url) ?? null);
   useEffect(() => {
     let alive = true;

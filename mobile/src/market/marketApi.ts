@@ -218,7 +218,9 @@ export const market = {
   channelPins: (token: string, id: string) => apiRequest<{ items: ChannelPost[] }>(`/classes/${id}/channel/pins`, { token }),
   channelPin: (token: string, id: string, pid: string, on: boolean) => apiRequest(`/classes/${id}/channel/${pid}/pin`, { method: on ? 'PUT' : 'DELETE', token, body: on ? {} : undefined }),
   channelInfo: (token: string, id: string) => apiRequest<ChannelInfo>(`/classes/${id}/channel/info`, { token }),
-  channelPost: (token: string, id: string, body: { body?: string; fileId?: string }) => apiRequest<ChannelPost>(`/classes/${id}/channel`, { method: 'POST', token, body }),
+  channelMembers: (token: string, id: string) => apiRequest<{ items: ChannelMember[] }>(`/classes/${id}/channel/members`, { token }),
+  setChannelLogo: (token: string, id: string, fileId: string) => apiRequest(`/classes/${id}/channel/logo`, { method: 'PUT', token, body: { fileId } }),
+  channelPost: (token: string, id: string, body: { body?: string; fileId?: string; replyToId?: string }) => apiRequest<ChannelPost>(`/classes/${id}/channel`, { method: 'POST', token, body }),
   channelRemove: (token: string, id: string, pid: string) => apiRequest(`/classes/${id}/channel/${pid}`, { method: 'DELETE', token }),
   addClassSession: (token: string, id: string, body: { startAt: string; durationMin?: number }) => apiRequest(`/classes/${id}/sessions`, { method: 'POST', token, body }),
   classSessions: (token: string, id: string) => apiRequest<ClassSessionItem[]>(`/classes/${id}/sessions`, { token }),
@@ -345,7 +347,7 @@ export interface ClassItem {
   next: { id: string; startAt: string; isTrial: boolean } | null;
 }
 export interface ClassDetail {
-  id: string; title: string; subject: string; description: string; capacity: number; enrolled: number; priceMinor: number; status: string; role: 'teacher' | 'pupil'; protectContent?: boolean;
+  id: string; title: string; subject: string; description: string; capacity: number; enrolled: number; priceMinor: number; status: string; role: 'teacher' | 'pupil'; protectContent?: boolean; theme?: string; hasLogo?: boolean;
   pupils?: { id: string; name: string | null }[]; classmates?: { name: string }[]; mySeats?: string[];
 }
 export interface ClassRoomState {
@@ -411,7 +413,9 @@ export interface StudentDetail {
   chatBookingId: string | null;
 }
 
+export interface ChannelMember { id: string | null; name: string | null; username: string | null; hasPhoto: boolean; teacher: boolean; me: boolean }
 export interface ChannelInfo {
+  theme: string; hasLogo: boolean;
   id: string; title: string; subject: string; description: string; priceMinor: number; members: number; createdAt: string; protectContent: boolean; role: 'teacher' | 'pupil';
   startDate: string | null; endDate: string | null; weekdays: number[]; startMinute: number; durationMin: number; timezone: string;
   teacher: { id: string; name: string | null; username: string | null; bio: string | null; subjects: string[]; hasPhoto: boolean };
@@ -419,6 +423,7 @@ export interface ChannelInfo {
 }
 export interface ChannelPost {
   id: string; seq: number; at: string; body: string; mine: boolean; pinned?: boolean;
+  replyTo?: { id: string; body: string; author: string | null; deleted?: boolean; hasFile?: boolean } | null;
   author: { id: string | null; name: string | null; teacher: boolean; username: string | null; hasPhoto: boolean };
   file: { id: string; name: string; size: number; mime: string; image: boolean } | null;
 }

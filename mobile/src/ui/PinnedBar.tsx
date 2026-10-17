@@ -16,7 +16,8 @@ const preview = (p: PinnedItem) => (p.body.trim() ? p.body.trim().replace(/\s+/g
  * The left rail shows how many pins there are and which one you are on; a tap jumps to that message and moves to the next pin;
  * the list button opens all pins.
  */
-export function PinnedBar({ items, index, onJump, onList }: { items: PinnedItem[]; index: number; onJump: (p: PinnedItem) => void; onList: () => void }) {
+export function PinnedBar({ items, index, onJump, onList, accent }: { items: PinnedItem[]; index: number; onJump: (p: PinnedItem) => void; onList: () => void; accent?: string }) {
+  const ac = accent ?? colors.primary;
   const fade = useRef(new Animated.Value(1)).current;
   const cur = items[Math.min(index, items.length - 1)];
   useEffect(() => {
@@ -31,15 +32,15 @@ export function PinnedBar({ items, index, onJump, onList }: { items: PinnedItem[
     <View style={styles.bar}>
       <Pressable accessibilityRole="button" accessibilityLabel={t('pin.title')} onPress={() => onJump(cur)} style={styles.main}>
         <View style={styles.rail}>
-          {Array.from({ length: segs }).map((_, i) => <View key={i} style={[styles.seg, { flex: 1 }, i === active && styles.segOn]} />)}
+          {Array.from({ length: segs }).map((_, i) => <View key={i} style={[styles.seg, { flex: 1 }, i === active && { backgroundColor: ac }]} />)}
         </View>
         <Animated.View style={{ flex: 1, opacity: fade }}>
-          <Text style={styles.label} numberOfLines={1}>{n > 1 ? `${t('pin.title')} #${index + 1}` : t('pin.title')}</Text>
+          <Text style={[styles.label, { color: ac }]} numberOfLines={1}>{n > 1 ? `${t('pin.title')} #${index + 1}` : t('pin.title')}</Text>
           <Text style={styles.text} numberOfLines={1}>{preview(cur)}</Text>
         </Animated.View>
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={t('pin.all')} onPress={onList} hitSlop={8} style={styles.listBtn}>
-        <Ionicons name={n > 1 ? 'list' : 'pin'} size={20} color={colors.primary} />
+        <Ionicons name={n > 1 ? 'list' : 'pin'} size={20} color={ac} />
       </Pressable>
     </View>
   );
