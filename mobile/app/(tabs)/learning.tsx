@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../src/ui/Text';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StateView } from '../../src/components/StateView';
 import { useAuth } from '../../src/lib/auth-context';
@@ -9,7 +10,7 @@ import { market } from '../../src/market/marketApi';
 import { useAsync } from '../../src/market/useAsync';
 import { colors, spacing } from '../../src/theme/colors';
 import { fmtDate, fmtDayTime } from '../../src/ui/format';
-import { Avatar, Card, Empty, Group, ListRow, Page, Pill, SectionTitle, StatTile } from '../../src/ui';
+import { Avatar, Card, Empty, Group, ListRow, Page, Pill, SectionTitle } from '../../src/ui';
 
 /** Pupil / guardian: my classes (attendance, homework, next session), what is coming up, and the learning history. */
 export default function LearningScreen() {
@@ -37,11 +38,19 @@ export default function LearningScreen() {
       )}
       {d.children && <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}><Avatar name={d.pupil.name} /><Text style={styles.childName}>{d.pupil.name}</Text></Card>}
 
-      <View style={styles.grid}>
-        <StatTile icon="school" label={t('learn.lessons')} value={d.stats.lessonsCompleted} />
-        <StatTile icon="people" label={t('learn.classSessions')} value={d.stats.classSessionsAttended} tone="success" />
-        <StatTile icon="document-text" label={t('learn.homeworkDone')} value={d.stats.homeworkSubmitted} tone="warning" />
-        <StatTile icon="trophy" label={t('learn.avgScore')} value={d.stats.avgScore === null ? '–' : d.stats.avgScore} tone="success" />
+      <View style={styles.statsRow}>
+        {[
+          { icon: 'school' as const, label: t('learn.lessons'), value: d.stats.lessonsCompleted, color: '#1A8CFF' },
+          { icon: 'people' as const, label: t('learn.classSessions'), value: d.stats.classSessionsAttended, color: '#2ED573' },
+          { icon: 'document-text' as const, label: t('learn.homeworkDone'), value: d.stats.homeworkSubmitted, color: '#FF8A00' },
+          { icon: 'trophy' as const, label: t('learn.avgScore'), value: d.stats.avgScore === null ? '–' : d.stats.avgScore, color: '#F5B301' },
+        ].map((x) => (
+          <View key={x.label} style={styles.stat}>
+            <Ionicons name={x.icon} size={18} color={x.color} />
+            <Text style={styles.statNum}>{x.value}</Text>
+            <Text style={styles.statLabel} numberOfLines={2}>{x.label}</Text>
+          </View>
+        ))}
       </View>
 
       <SectionTitle title={t('learn.myClasses')} action={{ label: t('learn.joinClass'), onPress: () => router.push('/market/classes' as never) }} />
@@ -93,7 +102,10 @@ export default function LearningScreen() {
 
 const styles = StyleSheet.create({
   h1: { fontSize: 28, fontWeight: '800', color: colors.text },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  statsRow: { flexDirection: 'row', gap: spacing.sm },
+  stat: { flex: 1, backgroundColor: colors.surface, borderRadius: 18, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', gap: 2 },
+  statNum: { fontSize: 22, fontWeight: '800', color: colors.text },
+  statLabel: { fontSize: 11, color: colors.textMuted, textAlign: 'center', fontWeight: '600' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },

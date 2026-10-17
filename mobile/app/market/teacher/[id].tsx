@@ -13,6 +13,7 @@ import { colors, radius, spacing } from '../../../src/theme/colors';
 import { fmtDate, fmtDay, fmtTime, fmtDayShort } from '../../../src/ui/format';
 import { Action, Avatar, AuthImage, Card, Pill, SectionTitle, Stars } from '../../../src/ui';
 import { VerifiedBadge, VerifiedPill, VERIFIED_BLUE } from '../../../src/ui/Verified';
+import { SubjectPill } from '../../../src/ui/SubjectPill';
 import { Sheet } from '../../../src/ui/Sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -118,7 +119,7 @@ export default function TeacherScreen() {
 
         <SectionTitle title={t('teacher.about')} />
         <Card><Text style={styles.bio}>{p.bio}</Text>
-          <View style={styles.chips}>{p.subjects.map((s) => <Pill key={s} label={t(`subj.${s}`)} tone="primary" />)}</View>
+          <View style={styles.chips}>{p.subjects.map((s) => <SubjectPill key={s} id={s} size="md" />)}</View>
         </Card>
 
         {!!p.education && (<>

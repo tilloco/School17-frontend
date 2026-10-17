@@ -297,6 +297,7 @@ export const market = {
   testPush: (token: string) => apiRequest('/notifications/test', { method: 'POST', token, body: {} }),
   readNotif: (token: string, id: string) => apiRequest(`/notifications/${id}/read`, { method: 'POST', token, body: {} }),
   home: (token: string) => apiRequest<HomeData>('/me/home', { token }),
+  progress: (token: string) => apiRequest<ProgressResponse>('/me/progress', { token }),
   learning: (token: string, studentId?: string) => apiRequest<LearningData>(`/me/learning${studentId ? `?studentId=${studentId}` : ''}`, { token }),
   students: (token: string) => apiRequest<StudentRow[]>('/teachers/me/students', { token }),
   studentDetail: (token: string, id: string) => apiRequest<StudentDetail>(`/teachers/me/students/${id}`, { token }),
@@ -399,6 +400,16 @@ export interface PollView { id: string; question: string; status: 'OPEN' | 'CLOS
 export interface NotifPrefs { categories: { id: string; enabled: boolean; canDisable: boolean }[]; quiet: { start: string; end: string } | null; pushOnServer: boolean }
 
 export interface AgendaItem { kind: 'lesson' | 'class'; id: string; classId?: string; startAt: string; endAt: string; title: string; counterpart: string; pupil?: string; status: string; canJoin: boolean; isTrial?: boolean }
+export interface Progress {
+  eligible: true;
+  streak: number;
+  todayDone: boolean;
+  week: { lessons: number; homework: number; done: number; goal: number; reached: boolean };
+  ranks: { classId: string; title: string; rank: number; of: number; points: number }[];
+  isNew: boolean;
+}
+export type ProgressResponse = Progress | { eligible: false };
+
 export interface HomeData {
   role: 'STUDENT' | 'TEACHER' | 'GUARDIAN';
   name: string | null;

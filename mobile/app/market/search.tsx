@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '../../src/ui/Text';
 import { VerifiedBadge } from '../../src/ui/Verified';
+import { SubjectPill } from '../../src/ui/SubjectPill';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StateView } from '../../src/components/StateView';
@@ -102,7 +103,7 @@ export default function SearchScreen() {
               </View>
             </View>
             <View style={styles.pills}>
-              {item.subjects.slice(0, 3).map((s) => <Pill key={s} label={t(`subj.${s}`)} tone="primary" />)}
+              {item.subjects.slice(0, 3).map((s) => <SubjectPill key={s} id={s} />)}
               {item.instantBooking && <Pill label={t('search.instant')} tone="success" icon="flash" />}
             </View>
             <View style={styles.foot}>

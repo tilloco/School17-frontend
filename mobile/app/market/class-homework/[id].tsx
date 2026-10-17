@@ -7,6 +7,7 @@ import { imagePicker } from '../../../src/lib/native';
 import { Screen } from '../../../src/components/Screen';
 import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
+import { Celebrate } from '../../../src/ui/Celebrate';
 import { ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
 import { t } from '../../../src/i18n';
@@ -28,6 +29,7 @@ export default function ClassHomeworkScreen() {
   const [text, setText] = useState('');
   const [days, setDays] = useState('3');
   const [answer, setAnswer] = useState('');
+  const [win, setWin] = useState(false);
   const [score, setScore] = useState<Record<string, string>>({});
   const teacher = me.data?.role === 'TEACHER';
   const fail = (e: unknown) => Alert.alert(t('common.error'), e instanceof ApiError ? (e.code === 'ALREADY_MARKED' ? t('hw.alreadyMarked') : e.code === 'CONTACT_INFO_NOT_ALLOWED' ? t('cchat.contact') : e.message) : uploadErrorText(e));
@@ -41,6 +43,7 @@ export default function ClassHomeworkScreen() {
     try {
       await market.submitHomework(token as string, id, hw.id, { text: answer.trim() || undefined, fileId });
       setAnswer('');
+      setWin(true);
       detail.reload();
       list.reload();
     } catch (e) {
@@ -127,6 +130,7 @@ export default function ClassHomeworkScreen() {
           ))
         )}
       </ScrollView>
+      <Celebrate visible={win} title={t('cel.hwTitle')} text={t('cel.hwText')} icon="checkmark-done" onClose={() => setWin(false)} />
     </Screen>
   );
 }

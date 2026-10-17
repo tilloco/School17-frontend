@@ -1,13 +1,14 @@
-import React, { useEffect } from 'react';
-import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import * as SecureStore from 'expo-secure-store';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../../src/ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StateView } from '../../src/components/StateView';
-import { API_URL } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth-context';
 import { takePendingJoin } from '../../src/lib/pending-join';
 import { t } from '../../src/i18n';
+import { useLocale } from '../../src/i18n/LocaleProvider';
 import { market } from '../../src/market/marketApi';
 import { useAsync } from '../../src/market/useAsync';
 import { colors, spacing } from '../../src/theme/colors';
@@ -15,6 +16,14 @@ import { AgendaCard } from '../../src/ui/AgendaRow';
 import { PressScale } from '../../src/ui/PressScale';
 import { fmtDayTime } from '../../src/ui/format';
 import { Avatar, Card, Empty, Group, IconName, ListRow, Page, Pill, SectionTitle, Stars } from '../../src/ui';
+import { Celebrate } from '../../src/ui/Celebrate';
+import { GetStarted, Step } from '../../src/ui/GetStarted';
+import { StreakChip, WeekCard } from '../../src/ui/Progress';
+import { colorFor } from '../../src/theme/subjects';
+
+/** The Monday of this week, as a key for "have I already celebrated this week". */
+const weekKey = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 const TILE = ['#1A8CFF', '#2ED573', '#FF8A00', '#A55EEA'];
 function Quick({ icon, label, onPress, n = 0 }: { icon: IconName; label: string; onPress: () => void; n?: number }) {
@@ -28,7 +37,8 @@ function Quick({ icon, label, onPress, n = 0 }: { icon: IconName; label: string;
 
 /** Home: what is next, shortcuts, my classes and who needs attention (teacher) or who to learn from (pupil). */
 export default function HomeScreen() {
-  const { token, user } = useAuth();
+  const { token, user, refreshUser } = useAuth();
+  const { locale } = useLocale();
   const router = useRouter();
   const teacher = user?.role === 'TEACHER';
   const go = (path: string) => router.push(path as never);
@@ -39,20 +49,58 @@ export default function HomeScreen() {
   const rating = useAsync(() => (profile.data ? market.reviews(token as string, profile.data.id).catch(() => null) : Promise.resolve(null)), [token, profile.data?.id]);
   const unread = useAsync(() => market.unread(token as string).catch(() => null), [token]);
   const top = useAsync(() => (teacher ? Promise.resolve(null) : market.search(token as string, { sort: 'rating' }).catch(() => null)), [token, teacher]);
+  const progress = useAsync(() => (teacher ? Promise.resolve(null) : market.progress(token as string).catch(() => null)), [token, teacher]);
+  const [cel, setCel] = useState<{ title: string; text: string; icon: IconName } | null>(null);
+  useEffect(() => {
+    const p = progress.data;
+    if (!p || !p.eligible) return;
+    void (async () => {
+      const gk = `s17_goal_${weekKey()}`;
+      let win: { title: string; text: string; icon: IconName } | null = null;
+      if (p.week.reached && !(await SecureStore.getItemAsync(gk).catch(() => 'x'))) { await SecureStore.setItemAsync(gk, '1').catch(() => undefined); win = { title: t('cel.goalTitle'), text: t('cel.goalText'), icon: 'trophy' }; }
+      for (const r of p.ranks) {
+        const k = `s17_rank_${r.classId}`;
+        const last = Number(await SecureStore.getItemAsync(k).catch(() => '') || 0);
+        if (last && r.rank < last && !win) win = { title: t('cel.rankTitle'), text: t('cel.rankText', { rank: r.rank, title: r.title }), icon: 'trending-up' };
+        await SecureStore.setItemAsync(k, String(r.rank)).catch(() => undefined);
+      }
+      if (win) setCel(win);
+    })();
+  }, [progress.data]);
+  // the language on this phone is the language of the notifications too: keep the server in step, once
+  useEffect(() => { if (token && user && user.locale && user.locale !== locale) void market.updateMe(token, { locale }).then(() => refreshUser()).catch(() => undefined); }, [token, user?.locale, locale]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { takePendingJoin().then((inv) => { if (inv) router.push(`/join/${inv}` as never); }); }, [router]);
-  const reload = () => { unread.reload(); home.reload(); classes.reload(); students.reload(); profile.reload(); top.reload(); };
+  const reload = () => { progress.reload(); unread.reload(); home.reload(); classes.reload(); students.reload(); profile.reload(); top.reload(); };
 
   if (home.state !== 'ready' || !home.data) return <Page padded><StateView state={home.state === 'ready' ? 'loading' : home.state} onRetry={home.reload} /></Page>;
   const d = home.data;
   const next = d.agenda[0];
-  const rest = d.agenda.slice(1, 4);
+  const rest = d.agenda.slice(1, 2);
   const attention = (students.data ?? []).filter((s) => s.attention).slice(0, 3);
   const myClasses = (classes.data ?? []).filter((c) => c.status === 'ACTIVE');
-  const shareProfile = () => profile.data && Share.share({ message: t('share.profile', { name: user?.name ?? '', link: `${API_URL.replace(/\/+$/, '')}/p/${profile.data.id}` }) });
+  const first = (user?.name ?? '').trim().split(/\s+/)[0] ?? '';
+  const prog = progress.data && progress.data.eligible ? progress.data : null;
+  const now = new Date();
+  const todayCount = d.agenda.filter((i) => sameDay(new Date(i.startAt), now)).length;
+  const steps: Step[] = teacher
+    ? [
+        { key: 'photo', label: t('start.tPhoto'), done: !!profile.data?.hasPhoto, onPress: () => go('/market/profile-edit') },
+        { key: 'cert', label: t('start.tCert'), done: (profile.data?.credentials.length ?? 0) > 0, onPress: () => go('/market/profile-edit') },
+        { key: 'verify', label: t('start.tVerify'), done: profile.data?.verificationStatus === 'VERIFIED' || profile.data?.verificationStatus === 'PENDING', onPress: () => go('/market/profile-edit') },
+        { key: 'class', label: t('start.tClass'), done: myClasses.length > 0, onPress: () => go('/market/class-edit') },
+      ]
+    : [
+        { key: 'join', label: t('start.pupilJoin'), done: myClasses.length > 0 || d.agenda.length > 0, onPress: () => go('/(tabs)/find') },
+        { key: 'first', label: t('start.pupilFirst'), done: !!prog && (prog.week.done > 0 || prog.streak > 0), onPress: () => go('/(tabs)/learning') },
+      ];
 
   return (
     <Page padded={false} onRefresh={reload}>
       <View style={styles.body}>
+        <View style={styles.hello}>
+          <Text style={styles.helloText} numberOfLines={1}>{t('home.hi', { name: first })}</Text>
+          {prog && <StreakChip streak={prog.streak} todayDone={prog.todayDone} />}
+        </View>
         {!teacher && (
           <Pressable accessibilityRole="search" onPress={() => go('/(tabs)/find')} style={styles.search}>
             <Ionicons name="search" size={20} color={colors.textMuted} />
@@ -60,23 +108,31 @@ export default function HomeScreen() {
           </Pressable>
         )}
 
-        <View style={styles.quickRow}>
+        {teacher && (
+          <View style={styles.today}>
+            {[
+              { n: todayCount, label: t('today.lessons'), icon: 'calendar' as IconName, color: '#1A8CFF', to: '/market/today' },
+              { n: d.counts.homeworkToMark ?? 0, label: t('today.toMark'), icon: 'create' as IconName, color: '#FF8A00', to: '/(tabs)/students' },
+              { n: d.counts.pendingRequests ?? 0, label: t('today.requests'), icon: 'mail-unread' as IconName, color: '#A55EEA', to: '/market/requests' },
+            ].map((x) => (
+              <Pressable key={x.label} accessibilityRole="button" onPress={() => go(x.to)} style={styles.todayTile}>
+                <View style={[styles.todayIcon, { backgroundColor: x.color + '26' }]}><Ionicons name={x.icon} size={18} color={x.color} /></View>
+                <Text style={styles.todayNum}>{x.n}</Text>
+                <Text style={styles.todayLabel} numberOfLines={2}>{x.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+
+        {teacher && <View style={styles.quickRow}>
           {teacher ? (
             <>
               <Quick icon="add-circle" label={t('class.create')} onPress={() => go('/market/class-edit')} n={0} />
               <Quick icon="calendar" label={t('sched.add')} onPress={() => (myClasses.length === 1 ? go(`/market/class-schedule/${myClasses[0].id}`) : go('/(tabs)/classes'))} n={1} />
-              <Quick icon="paper-plane" label={t('share.telegram')} onPress={shareProfile} n={2} />
-              <Quick icon="time" label={t('setup.availability')} onPress={() => go('/market/availability')} n={3} />
+              <Quick icon="time" label={t('setup.availability')} onPress={() => go('/market/availability')} n={2} />
             </>
-          ) : (
-            <>
-              <Quick icon="search" label={t('market.find')} onPress={() => go('/(tabs)/find')} n={0} />
-              <Quick icon="key" label={t('class.joinByCode')} onPress={() => go('/market/classes')} n={1} />
-              <Quick icon="book" label={t('tab.learning')} onPress={() => go('/(tabs)/learning')} n={2} />
-              <Quick icon="star" label={t('rev.title')} onPress={() => go('/market/reviews')} n={3} />
-            </>
-          )}
-        </View>
+          ) : null}
+        </View>}
 
         <SectionTitle title={t('home.next')} />
         {next ? <AgendaCard item={next} big /> : (
@@ -86,13 +142,17 @@ export default function HomeScreen() {
         )}
         {rest.map((i) => <AgendaCard key={`${i.kind}${i.id}`} item={i} />)}
 
+        {prog && <WeekCard p={prog} onRank={(cid) => go(`/market/class-ranking/${cid}`)} />}
+
+        <GetStarted role={teacher ? 'T' : 'P'} steps={steps} />
+
         {myClasses.length > 0 && (
           <>
             <SectionTitle title={t(teacher ? 'class.titleTeacher' : 'learn.myClasses')} action={{ label: t('home.all'), onPress: () => go(teacher ? '/(tabs)/classes' : '/(tabs)/learning') }} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingRight: spacing.md }} style={{ marginHorizontal: -spacing.md, paddingHorizontal: spacing.md }}>
               {myClasses.map((c) => (
                 <Pressable key={c.id + (c.pupil?.id ?? '')} accessibilityRole="button" onPress={() => go(`/market/class/${c.id}`)} style={styles.classTile}>
-                  <View style={styles.classIcon}><Ionicons name="chatbubbles" size={22} color="#fff" />{!!unread.data?.byClass[c.id] && <View style={styles.tileBadge}><Text style={styles.tileBadgeText}>{unread.data.byClass[c.id] > 99 ? '99+' : unread.data.byClass[c.id]}</Text></View>}</View>
+                  <View style={[styles.classIcon, { backgroundColor: colorFor(c.title) }]}><Ionicons name="chatbubbles" size={22} color="#fff" />{!!unread.data?.byClass[c.id] && <View style={styles.tileBadge}><Text style={styles.tileBadgeText}>{unread.data.byClass[c.id] > 99 ? '99+' : unread.data.byClass[c.id]}</Text></View>}</View>
                   <Text style={styles.classTitle} numberOfLines={2}>{c.title}</Text>
                   <Text style={styles.classSub} numberOfLines={1}>{c.next ? fmtDayTime(c.next.startAt) : t('class.members', { n: c.enrolled ?? 0 })}</Text>
                 </Pressable>
@@ -167,16 +227,24 @@ export default function HomeScreen() {
           </>
         )}
       </View>
+      <Celebrate visible={!!cel} title={cel?.title ?? ''} text={cel?.text} icon={cel?.icon} onClose={() => setCel(null)} />
     </Page>
   );
 }
 
 const styles = StyleSheet.create({
+  hello: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  helloText: { flex: 1, fontSize: 26, fontWeight: '800', color: colors.text, marginRight: 8 },
+  today: { flexDirection: 'row', gap: spacing.sm },
+  todayTile: { flex: 1, backgroundColor: colors.surface, borderRadius: 20, padding: 12, gap: 2 },
+  todayIcon: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  todayNum: { fontSize: 26, fontWeight: '800', color: colors.text },
+  todayLabel: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
   body: { paddingHorizontal: spacing.md, gap: spacing.md, paddingTop: spacing.xs },
   search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.surface, borderRadius: 999, paddingHorizontal: 18, minHeight: 50, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   searchText: { color: colors.textMuted, fontSize: 15 },
-  quickRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  quick: { width: '24%', alignItems: 'center', gap: 6 },
+  quickRow: { flexDirection: 'row', gap: spacing.md },
+  quick: { width: '30%', alignItems: 'center', gap: 6 },
   quickIcon: { width: 62, height: 62, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   quickLabel: { fontSize: 12, fontWeight: '600', color: colors.text, textAlign: 'center' },
   classTile: { width: 156, borderRadius: 22, padding: 16, backgroundColor: colors.surface, gap: 6 },
