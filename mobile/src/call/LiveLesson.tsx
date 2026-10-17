@@ -30,14 +30,22 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
     if (!avail.ok) return;
     let dead = false;
     let tries = 0;
+    let busy = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const d = createRtcDriver();
+    driver.current = d;
+    const later = () => {
+      if (dead || timer) return;
+      timer = setTimeout(() => { timer = null; void open(); }, Math.min(8000, 1000 * 2 ** Math.min(tries, 3)));
+    };
     const open = async () => {
+      if (dead || busy || !d) return; // never two connections with the same identity: the server would kick the first one out
+      busy = true;
       try {
-        driver.current ??= createRtcDriver();
-        const d = driver.current;
-        if (!d) throw new Error('rtc');
         const tok = (await market.roomPost(token, sid, 'token')) as { token: string; url: string };
+        if (dead) return;
         await d.connect(tok.url, tok.token, {
-          onDisconnected: () => { if (!dead) { setState('reconnecting'); setTimeout(() => { if (!dead && tries++ < 8) void open(); }, Math.min(8000, 1000 * 2 ** tries)); } },
+          onDisconnected: () => { if (!dead) { setState('reconnecting'); tries++; later(); } },
           onReconnecting: () => setState('reconnecting'),
           onReconnected: () => setState('live'),
           onMedia: setMedia,
@@ -46,14 +54,17 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
           onRemoteLeft: () => undefined,
           onData: () => undefined,
         }, { videoEnabled: publish, publish, focusIdentity: teacherId ?? undefined });
-        if (!dead) { tries = 0; setState('live'); }
+        if (dead) { await d.disconnect(); return; }
+        tries = 0;
+        setState('live');
       } catch {
-        if (!dead) setState(tries++ < 8 ? 'reconnecting' : 'error');
-        if (!dead && tries < 8) setTimeout(() => void open(), Math.min(8000, 1000 * 2 ** tries));
+        if (!dead) { tries++; setState(tries < 10 ? 'reconnecting' : 'error'); if (tries < 10) later(); }
+      } finally {
+        busy = false;
       }
     };
     void open();
-    return () => { dead = true; void driver.current?.disconnect(); driver.current = null; };
+    return () => { dead = true; if (timer) clearTimeout(timer); void d?.disconnect(); if (driver.current === d) driver.current = null; };
   }, [token, sid, teacherId, publish]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!avail.ok) {

@@ -94,17 +94,20 @@ export default function WhiteboardScreen() {
           const { w, h } = sizeRef.current;
           const total = strokesRef.current.reduce((n, s) => n + s.p.length, 0);
           if (total >= MAX_POINTS) return Alert.alert(t('wb.full'));
-          setStrokes((s) => [...s, { c: colorRef.current, w: 3, p: [[clamp(e.nativeEvent.locationX / w), clamp(e.nativeEvent.locationY / h)]] }]);
+          // read the touch position NOW: the event object is recycled by the time the state updater runs
+          const x0 = clamp(e.nativeEvent.locationX / w);
+          const y0 = clamp(e.nativeEvent.locationY / h);
+          setStrokes((s) => [...s, { c: colorRef.current, w: 3, p: [[x0, y0]] }]);
           dirty.current = true;
         },
         onPanResponderMove: (e) => {
           const { w, h } = sizeRef.current;
           const total = strokesRef.current.reduce((n, s) => n + s.p.length, 0);
           if (total >= MAX_POINTS) return;
+          const pt: [number, number] = [clamp(e.nativeEvent.locationX / w), clamp(e.nativeEvent.locationY / h)];
           setStrokes((s) => {
             if (!s.length) return s;
             const last = s[s.length - 1];
-            const pt: [number, number] = [clamp(e.nativeEvent.locationX / w), clamp(e.nativeEvent.locationY / h)];
             const prev = last.p[last.p.length - 1];
             if (Math.abs(prev[0] - pt[0]) + Math.abs(prev[1] - pt[1]) < 0.004) return s; // skip tiny moves
             return [...s.slice(0, -1), { ...last, p: [...last.p, pt] }];
