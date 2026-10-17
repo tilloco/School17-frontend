@@ -1128,4 +1128,10 @@ export const en: Record<string, string> = {
   "invite.title": "Bring your pupils",
   "invite.text": "Send your profile link. They join you in one tap.",
   "common.close": "Close",
+  "subj.geography": "Geography",
+  "subj.economics": "Economics",
+  "subj.literature": "Literature",
+  "subj.music": "Music",
+  "subj.art": "Art",
+  "subj.exam_prep": "Exam preparation",
 };

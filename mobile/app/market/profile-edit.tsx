@@ -127,7 +127,10 @@ export default function ProfileEditScreen() {
       Alert.alert(t('common.error'), e instanceof UploadError || e instanceof ApiError ? e.message : t('state.error'));
     }
   };
-  const removeCred = (id: string) => market.removeCredential(token as string, id).then(prof.reload).catch(fail);
+  const removeCred = (id: string) => Alert.alert(t('profile.credRemove'), undefined, [
+    { text: t('common.cancel'), style: 'cancel' },
+    { text: t('profile.credRemove'), style: 'destructive', onPress: () => void market.removeCredential(token as string, id).then(prof.reload).catch(fail) },
+  ]);
 
   return (
     <Screen>

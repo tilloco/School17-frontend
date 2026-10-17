@@ -1128,4 +1128,10 @@ export const ru: Record<string, string> = {
   "invite.title": "Приведите своих учеников",
   "invite.text": "Отправьте ссылку на профиль. Они присоединятся в одно касание.",
   "common.close": "Закрыть",
+  "subj.geography": "География",
+  "subj.economics": "Экономика",
+  "subj.literature": "Литература",
+  "subj.music": "Музыка",
+  "subj.art": "Рисование и искусство",
+  "subj.exam_prep": "Подготовка к экзаменам",
 };

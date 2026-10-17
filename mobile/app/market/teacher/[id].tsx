@@ -10,7 +10,7 @@ import { t } from '../../../src/i18n';
 import { market } from '../../../src/market/marketApi';
 import { useAsync } from '../../../src/market/useAsync';
 import { colors, radius, spacing } from '../../../src/theme/colors';
-import { fmtDay, fmtTime, fmtDayShort } from '../../../src/ui/format';
+import { fmtDate, fmtDay, fmtTime, fmtDayShort } from '../../../src/ui/format';
 import { Action, Avatar, AuthImage, Card, Pill, SectionTitle, Stars } from '../../../src/ui';
 import { VerifiedBadge, VerifiedPill, VERIFIED_BLUE } from '../../../src/ui/Verified';
 import { Sheet } from '../../../src/ui/Sheet';
@@ -60,9 +60,10 @@ export default function TeacherScreen() {
     }
   };
   const sendComment = async () => {
-    if (!stars) return Alert.alert(t('comment.starsFirst'));
+    const given = stars || comments.data?.mine?.rating || 0;
+    if (!given) return Alert.alert(t('comment.starsFirst'));
     try {
-      await market.writeComment(token as string, id, draft.trim(), stars);
+      await market.writeComment(token as string, id, draft.trim(), given);
       setDraft('');
       setStars(0);
       comments.reload();
@@ -85,6 +86,7 @@ export default function TeacherScreen() {
   const exComments = (comments.data?.items ?? []).filter((c) => c.exStudent);
   const otherComments = (comments.data?.items ?? []).filter((c) => !c.exStudent);
   const myComment = comments.data?.mine ?? null;
+  const otherRated = otherComments.filter((c) => !!c.rating);
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={undefined}>
@@ -100,7 +102,7 @@ export default function TeacherScreen() {
           {!!p.username && <Text style={styles.username}>@{p.username}</Text>}
           <Text style={styles.headline}>{p.headline}</Text>
           {!!p.city && <View style={styles.cityRow}><Ionicons name="location" size={14} color={colors.textMuted} /><Text style={styles.cityText}>{p.city}</Text></View>}
-          <VerifiedPill since={p.verifiedAt ? fmtDay(p.verifiedAt) : null} />
+          <VerifiedPill since={p.verifiedAt ? fmtDate(p.verifiedAt) : null} />
         </View>
 
         <View style={styles.statRow}>
@@ -143,6 +145,12 @@ export default function TeacherScreen() {
             <Card key={`hl${r.id}`} style={{ gap: 4 }}>
               <View style={styles.reviewHead}><View style={styles.exRow}><Text style={styles.author}>{r.author}</Text><View style={styles.exBadge}><Text style={styles.exBadgeText}>{t('comment.formerBadge')}</Text></View></View><Stars value={r.rating} size={14} /></View>
               {!!r.text && !r.textHidden && <Text style={styles.text}>{r.text}</Text>}
+            </Card>
+          ))}
+          {exComments.slice(0, Math.max(0, 2 - (reviews.data?.items.length ?? 0))).map((c) => (
+            <Card key={`hc${c.id}`} style={{ gap: 4 }}>
+              <View style={styles.reviewHead}><View style={styles.exRow}><Text style={styles.author}>{c.author}</Text><View style={styles.exBadge}><Text style={styles.exBadgeText}>{t('comment.formerBadge')}</Text></View></View>{c.rating ? <Stars value={c.rating} size={14} /> : null}</View>
+              <Text style={styles.text}>{c.text}</Text>
             </Card>
           ))}
         </>)}
@@ -219,14 +227,14 @@ export default function TeacherScreen() {
               </Card>
             ))}
             {!otherComments.length && <Text style={styles.empty}>{t('comment.noneOther')}</Text>}
-            {!!comments.data?.summary.count && <Text style={styles.meta}>{t('comment.community', { avg: (comments.data.summary.average ?? 0).toFixed(1), n: comments.data.summary.count })}</Text>}
+            {otherRated.length > 0 && <Text style={styles.meta}>{t('comment.community', { avg: (otherRated.reduce((x, c) => x + (c.rating ?? 0), 0) / otherRated.length).toFixed(1), n: otherRated.length })}</Text>}
             <Text style={styles.meta}>{t('comment.cannotDelete')}</Text>
             {!mine && (
               <View style={{ gap: 8 }}>
                 <View style={styles.pick}>
                   <Text style={styles.meta}>{t('comment.rate')}</Text>
                   {[1, 2, 3, 4, 5].map((n) => (
-                    <Pressable key={n} accessibilityRole="button" accessibilityLabel={`${n}`} onPress={() => setStars(n)} hitSlop={4}><Ionicons name={n <= stars ? 'star' : 'star-outline'} size={30} color="#F5B301" /></Pressable>
+                    <Pressable key={n} accessibilityRole="button" accessibilityLabel={`${n}`} onPress={() => setStars(n)} hitSlop={4}><Ionicons name={n <= (stars || myComment?.rating || 0) ? 'star' : 'star-outline'} size={30} color="#F5B301" /></Pressable>
                   ))}
                 </View>
               <View style={styles.write}>

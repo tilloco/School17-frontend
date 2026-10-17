@@ -1128,4 +1128,10 @@ export const uz: Record<string, string> = {
   "invite.title": "O'quvchilaringizni olib keling",
   "invite.text": "Profil havolasini yuboring. Ular bir bosishda sizga qo'shiladi.",
   "common.close": "Yopish",
+  "subj.geography": "Geografiya",
+  "subj.economics": "Iqtisodiyot",
+  "subj.literature": "Adabiyot",
+  "subj.music": "Musiqa",
+  "subj.art": "Tasviriy san'at",
+  "subj.exam_prep": "Imtihonga tayyorlov",
 };
