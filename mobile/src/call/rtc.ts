@@ -266,7 +266,11 @@ export function createRtcDriver(): RtcDriver | null {
       prev = null;
       rttEma = undefined;
       await rn.AudioSession?.startAudioSession?.();
-      room = new lk.Room({
+      // a second connect (retry) must not leave the first room running next to it
+      const stale = room;
+      room = null;
+      if (stale) { try { stale.removeAllListeners?.(); await stale.disconnect(); } catch { /* already closed */ } }
+      const myRoom = new lk.Room({
         adaptiveStream: true, // the viewer's screen size picks the layer: sharp when big, light when small
         dynacast: true, // layers nobody watches are not sent
         stopLocalTrackOnUnpublish: true,
@@ -285,19 +289,21 @@ export function createRtcDriver(): RtcDriver | null {
           backupCodec: true,
         },
       });
-      room
-        .on(lk.RoomEvent.Disconnected, () => { ev?.onDisconnected(); })
-        .on(lk.RoomEvent.Reconnecting, () => { lkLevel = 'lost'; ev?.onReconnecting(); void sample(); })
-        .on(lk.RoomEvent.Reconnected, () => { lkLevel = 'excellent'; ev?.onReconnected(); })
-        .on(lk.RoomEvent.ParticipantConnected, () => { ev?.onRemoteJoined(); emitMedia(); })
-        .on(lk.RoomEvent.ParticipantDisconnected, () => { ev?.onRemoteLeft(); emitMedia(); })
-        .on(lk.RoomEvent.TrackSubscribed, emitMedia)
-        .on(lk.RoomEvent.TrackUnsubscribed, emitMedia)
-        .on(lk.RoomEvent.TrackMuted, emitMedia)
-        .on(lk.RoomEvent.TrackUnmuted, emitMedia)
-        .on(lk.RoomEvent.LocalTrackPublished, emitMedia)
-        .on(lk.RoomEvent.LocalTrackUnpublished, emitMedia)
-        .on(lk.RoomEvent.ActiveSpeakersChanged, emitMedia)
+      room = myRoom;
+      const g = <A extends unknown[]>(fn: (...a: A) => void) => (...a: A) => { if (room === myRoom) fn(...a); };
+      myRoom
+        .on(lk.RoomEvent.Disconnected, g(() => { ev?.onDisconnected(); }))
+        .on(lk.RoomEvent.Reconnecting, g(() => { lkLevel = 'lost'; ev?.onReconnecting(); void sample(); }))
+        .on(lk.RoomEvent.Reconnected, g(() => { lkLevel = 'excellent'; ev?.onReconnected(); }))
+        .on(lk.RoomEvent.ParticipantConnected, g(() => { ev?.onRemoteJoined(); emitMedia(); }))
+        .on(lk.RoomEvent.ParticipantDisconnected, g(() => { ev?.onRemoteLeft(); emitMedia(); }))
+        .on(lk.RoomEvent.TrackSubscribed, g(() => emitMedia()))
+        .on(lk.RoomEvent.TrackUnsubscribed, g(() => emitMedia()))
+        .on(lk.RoomEvent.TrackMuted, g(() => emitMedia()))
+        .on(lk.RoomEvent.TrackUnmuted, g(() => emitMedia()))
+        .on(lk.RoomEvent.LocalTrackPublished, g(() => emitMedia()))
+        .on(lk.RoomEvent.LocalTrackUnpublished, g(() => emitMedia()))
+        .on(lk.RoomEvent.ActiveSpeakersChanged, g(() => emitMedia()))
         .on(lk.RoomEvent.ConnectionQualityChanged, (q: string, p: any) => {
           if (p?.isLocal) {
             lkLevel = q === 'excellent' ? 'excellent' : q === 'good' ? 'good' : q === 'poor' ? 'poor' : q === 'lost' ? 'lost' : 'excellent';

@@ -170,3 +170,8 @@
 - Replies work in direct chats (quote, swipe either way, jump to the original from the class channel only; direct chats show the quote but a tap on it scrolls only when the original is already loaded).
 - The protection switch now reaches pupils who already have the class open within seconds (checked on a phone: secure flag on/off).
 - `app/dev-switch.tsx` signs in with a token from a link and exists only when EXPO_PUBLIC_DEV_LOGIN=1 (local test scripts). Never set that variable in a release build.
+
+## Video calls (LiveKit)
+- Checked on a real phone against a local LiveKit server: joins the class room, own camera shows, the quality badge shows live ping and level. NOT yet checked: screen share (needs the phone's capture permission), two phones at once, remote video, the adaptive quality on a bad network (the algorithm itself is unit-tested in shared/adaptive.spec.ts), and the 1:1 booking call screen.
+- The dev build needs the LiveKit server reachable: over USB only TCP works (adb reverse 7880/7881); UDP media needs Wi-Fi with the firewall open for the LiveKit server. For real users a hosted or self-hosted LiveKit with a public address and TURN is required (NEEDS A DECISION: cost, data location).
+- `Start-School17.bat` still starts Expo Go mode; calls need the installed development build (mobile/android debug APK) and `npx expo start --dev-client`.

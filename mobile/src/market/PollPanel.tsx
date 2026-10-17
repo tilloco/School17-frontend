@@ -14,7 +14,7 @@ export function PollPanel({ token, sessionId, teacher }: { token: string; sessio
   const [poll, setPoll] = useState<PollView | null>(null);
   const [q, setQ] = useState('');
   const [opts, setOpts] = useState(['', '']);
-  const load = () => market.pollCurrent(token, sessionId).then(setPoll).catch(() => undefined);
+  const load = () => market.pollCurrent(token, sessionId).then((p) => setPoll(p && Array.isArray((p as PollView).options) ? p : null)).catch(() => undefined);
   useEffect(() => {
     void load();
     const timer = setInterval(() => void load(), POLL_MS);
