@@ -43,6 +43,7 @@ export default function ClassChannelScreen() {
   const [who, setWho] = useState<Person | null>(null);
   const list = useRef<FlatList<ChannelPost>>(null);
   const lastSeq = useRef(0);
+  const stick = useRef(true); // stay at the newest message unless the reader scrolled up
   const [pins, setPins] = useState<ChannelPost[]>([]);
   const [pinIdx, setPinIdx] = useState(0);
   const [pinList, setPinList] = useState(false);
@@ -88,6 +89,7 @@ export default function ClassChannelScreen() {
     }
     const idx = all.findIndex((p) => p.id === postId);
     if (idx < 0) return;
+    stick.current = false;
     setTimeout(() => list.current?.scrollToIndex({ index: idx, viewPosition: 0.35, animated: true }), 60);
     setFlash(postId);
     setTimeout(() => setFlash(null), 1600);
@@ -135,6 +137,7 @@ export default function ClassChannelScreen() {
   };
   const send = (text: string) => {
     const tmp: Pending = { id: `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, seq: 0, at: new Date().toISOString(), body: text, mine: true, author: { id: null, name: null, teacher: false, username: null, hasPhoto: false }, file: null, state: 'SENDING' };
+    stick.current = true;
     tmp.replyTo = replyTo ? { id: replyTo.id, body: replyTo.body, author: replyTo.author.name, hasFile: !!replyTo.file } : null;
     setReplyTo(null);
     setPending((p) => [...p, tmp]);
@@ -238,7 +241,9 @@ export default function ClassChannelScreen() {
             keyExtractor={(p) => p.id}
             contentContainerStyle={{ padding: spacing.sm }}
             onScrollToIndexFailed={(info) => setTimeout(() => list.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true }), 80)}
-            onContentSizeChange={() => list.current?.scrollToEnd({ animated: false })}
+            onContentSizeChange={() => { if (stick.current) list.current?.scrollToEnd({ animated: false }); }}
+            onScroll={(e) => { const m = e.nativeEvent; stick.current = m.contentSize.height - m.layoutMeasurement.height - m.contentOffset.y < 160; }}
+            scrollEventThrottle={64}
             renderItem={({ item }) => (
               <Bubble
                 token={token as string}

@@ -35,6 +35,12 @@
       "expo-font",
       "expo-audio",
       "expo-web-browser",
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "School17 compares the phone numbers of your contacts (scrambled on your phone, never stored) to show which friends already use the app. You can turn this off at any time."
+        }
+      ],
       "@react-native-google-signin/google-signin",
       [
         "expo-image-picker",

@@ -97,9 +97,9 @@ export function Bubble({ token, mine, body, at, file, state, author, authorIsTea
   swipe.current = onSwipeReply;
   const back = () => Animated.spring(x, { toValue: 0, useNativeDriver: true, friction: 7 }).start();
   const pan = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, g) => !!swipe.current && g.dx > 14 && Math.abs(g.dx) > Math.abs(g.dy) * 1.8,
-    onPanResponderMove: (_, g) => x.setValue(Math.max(0, Math.min(72, g.dx))),
-    onPanResponderRelease: (_, g) => { if (g.dx > 56) swipe.current?.(); back(); },
+    onMoveShouldSetPanResponder: (_, g) => !!swipe.current && Math.abs(g.dx) > 14 && Math.abs(g.dx) > Math.abs(g.dy) * 1.8,
+    onPanResponderMove: (_, g) => x.setValue(Math.max(-72, Math.min(72, g.dx))),
+    onPanResponderRelease: (_, g) => { if (Math.abs(g.dx) > 56) swipe.current?.(); back(); },
     onPanResponderTerminate: back,
   })).current;
   const fg = mine ? th.mineText : colors.text;
@@ -115,7 +115,10 @@ export function Bubble({ token, mine, body, at, file, state, author, authorIsTea
   }
   return (
     <View style={{ width: '100%', alignItems: mine ? 'flex-end' : 'flex-start' }} {...pan.panHandlers}>
-      <Animated.View style={[styles.replyHint, { opacity: x.interpolate({ inputRange: [0, 56], outputRange: [0, 1] }), transform: [{ scale: x.interpolate({ inputRange: [0, 56], outputRange: [0.5, 1] }) }] }]} pointerEvents="none">
+      <Animated.View style={[styles.replyHint, { opacity: x.interpolate({ inputRange: [0, 56], outputRange: [0, 1], extrapolate: 'clamp' }), transform: [{ scale: x.interpolate({ inputRange: [0, 56], outputRange: [0.5, 1], extrapolate: 'clamp' }) }] }]} pointerEvents="none">
+        <Ionicons name="arrow-undo" size={18} color={th.accent} />
+      </Animated.View>
+      <Animated.View style={[styles.replyHint, { left: undefined, right: 6, opacity: x.interpolate({ inputRange: [-56, 0], outputRange: [1, 0], extrapolate: 'clamp' }), transform: [{ scale: x.interpolate({ inputRange: [-56, 0], outputRange: [1, 0.5], extrapolate: 'clamp' }) }] }]} pointerEvents="none">
         <Ionicons name="arrow-undo" size={18} color={th.accent} />
       </Animated.View>
       <Animated.View style={{ transform: [{ translateX: x }], maxWidth: '84%' }}>
