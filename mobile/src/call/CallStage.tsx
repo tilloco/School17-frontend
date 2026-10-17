@@ -72,8 +72,9 @@ export function CallStage({ media, otherName, waiting, sharingMine, onStopShare,
   const screenIsMain = hasScreen && !swapped; // swapped: the teacher's face fills the stage and the screen becomes the small picture
   const remoteMain = hasScreen ? (swapped ? media.remoteCamera : media.remoteScreen) : media.remoteCamera;
   // nobody else is on yet: the teacher sees their own camera as the big picture instead of an empty avatar
-  const selfMain = selfView && !remoteMain && !!media.localCamera && !cameraOff;
-  const main = remoteMain ?? (selfMain ? media.localCamera : null);
+  const camSwap = !hasScreen && swapped && !!media.localCamera && !cameraOff; // I tapped the small picture: my face is big, the other person is small
+  const selfMain = camSwap || (selfView && !remoteMain && !!media.localCamera && !cameraOff);
+  const main = camSwap ? media.localCamera : (remoteMain ?? (selfMain ? media.localCamera : null));
   const pulse = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.loop(Animated.sequence([Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }), Animated.timing(pulse, { toValue: 0, duration: 900, useNativeDriver: true })])).start();
@@ -94,7 +95,15 @@ export function CallStage({ media, otherName, waiting, sharingMine, onStopShare,
       {!hideTiles && hasScreen ? <FaceBubble track={swapped ? media.remoteScreen : media.remoteCamera} name={otherName} size={swapped ? 78 : 60} onPress={onSwap} /> : null}
       {!hideTiles && (
         <View style={[styles.tiles, compact && styles.tilesCompact]} pointerEvents="box-none">
-          {media.localCamera && !cameraOff && !selfMain ? <Pressable accessibilityRole="button" accessibilityLabel="flip" onPress={onFlip} style={[styles.tile, compact && styles.tileCompact]}><View style={styles.tileVideo} pointerEvents="none"><Video track={media.localCamera} style={styles.tileVideo} mirror /></View></Pressable> : null}
+          {(media.localCamera && !cameraOff && !selfMain) || camSwap ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="swap" onPress={onSwap} style={[styles.tile, compact && styles.tileCompact]}>
+              <View style={styles.tileVideo} pointerEvents="none">
+                {camSwap
+                  ? (media.remoteCamera ? <Video track={media.remoteCamera} style={styles.tileVideo} /> : <View style={[styles.tileVideo, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#2B3340' }]}><Text style={styles.avatarLetter}>{(otherName || '?').trim().slice(0, 1).toUpperCase()}</Text></View>)
+                  : <Video track={media.localCamera} style={styles.tileVideo} mirror />}
+              </View>
+            </Pressable>
+          ) : null}
         </View>
       )}
       {media.remoteMicMuted && main ? <View style={styles.muted}><Ionicons name="mic-off" size={14} color="#fff" /></View> : null}

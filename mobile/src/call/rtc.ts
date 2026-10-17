@@ -369,8 +369,15 @@ export function createRtcDriver(): RtcDriver | null {
     async flipCamera() {
       const pub = room?.localParticipant.getTrackPublication(lk.Track.Source.Camera);
       const cur = pub?.videoTrack?.mediaStreamTrack?.getSettings?.().facingMode;
-      await pub?.videoTrack?.restartTrack?.({ facingMode: cur === 'environment' ? 'user' : 'environment', resolution: lk.VideoPresets.h720.resolution });
-      emitMedia();
+      try {
+        await pub?.videoTrack?.restartTrack?.({ facingMode: cur === 'environment' ? 'user' : 'environment', resolution: lk.VideoPresets.h720.resolution });
+      } catch {
+        try { await room?.localParticipant.setCameraEnabled(false); await room?.localParticipant.setCameraEnabled(true); } catch { /* the next toggle fixes it */ }
+      }
+      // the view must bind to the new camera stream: drop the old one for a moment, then show the fresh one
+      const r = remote();
+      ev?.onMedia({ ...EMPTY_MEDIA, remoteCamera: trackOf(r, lk.Track.Source.Camera), remoteScreen: trackOf(r, lk.Track.Source.ScreenShare) });
+      setTimeout(emitMedia, 150);
     },
     async setScreenShare(on) {
       // camera and screen are two separate tracks: both can be published at the same time

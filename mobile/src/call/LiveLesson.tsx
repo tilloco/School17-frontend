@@ -113,6 +113,7 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
         <View style={styles.controls}>
           <RoundButton size={40} icon={mic ? 'mic' : 'mic-off'} label={mic ? t('call.mute') : t('call.unmute')} active={mic} onPress={() => { setMic(!mic); void driver.current?.setMic(!mic); }} />
           <RoundButton size={40} icon={cam ? 'videocam' : 'videocam-off'} label={cam ? t('call.cameraOff') : t('call.cameraOn')} active={cam} onPress={() => { setCam(!cam); void driver.current?.setCamera(!cam); }} />
+          <RoundButton size={40} icon="camera-reverse" label={t('call.flip')} onPress={() => void driver.current?.flipCamera()} />
           {teacher && <RoundButton size={40} icon="desktop" label={sharing ? t('call.stopShare') : t('call.share')} accent={sharing} onPress={() => { const on = !sharing; setSharing(on); void driver.current?.setScreenShare(on).catch(() => setSharing(false)); }} />}
         </View>
       )}

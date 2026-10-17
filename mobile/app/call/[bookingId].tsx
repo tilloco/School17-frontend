@@ -26,6 +26,7 @@ export default function CallScreen() {
   const call = useCall(bookingId, token);
   const insets = useSafeAreaInsets();
   const cs = useCleanScreen();
+  const [swapped, setSwapped] = useState(false);
   const [ui, setUi] = useState(true);
   const hide = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   /** show the controls and hide them again after 5 s without a touch */
@@ -149,7 +150,7 @@ export default function CallScreen() {
     return (
       <View style={styles.callRoot}>
         <Stack.Screen options={{ headerShown: false }} />
-        <CallStage onTapStage={() => (ui ? setUi(false) : poke())} onFlip={call.flipCamera} hideTiles={cs.clean} media={call.media} otherName={lobby.other.name} waiting={!call.remoteJoined && ctx.state === 'connected'} sharingMine={ctx.screenSharing} onStopShare={call.toggleShare} cameraOff={ctx.cameraOff || ctx.audioOnlyAuto} />
+        <CallStage swapped={swapped} onSwap={() => setSwapped((v) => !v)} onTapStage={() => (ui ? setUi(false) : poke())} onFlip={call.flipCamera} hideTiles={cs.clean} media={call.media} otherName={lobby.other.name} waiting={!call.remoteJoined && ctx.state === 'connected'} sharingMine={ctx.screenSharing} onStopShare={call.toggleShare} cameraOff={ctx.cameraOff || ctx.audioOnlyAuto} />
         {!cs.clean && ui && <View style={[styles.topBar, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
           <View>
             <Text style={styles.topName} numberOfLines={1}>{lobby.other.name}</Text>
@@ -166,6 +167,7 @@ export default function CallScreen() {
           <View style={[styles.pill, { bottom: insets.bottom + 18 }]}>
             <RoundButton icon={ctx.micMuted ? 'mic-off' : 'mic'} label={ctx.micMuted ? t('call.unmute') : t('call.mute')} active={!ctx.micMuted} onPress={() => { poke(); call.toggleMic(); }} />
             <RoundButton icon={ctx.cameraOff ? 'videocam-off' : 'videocam'} label={ctx.cameraOff ? t('call.cameraOn') : t('call.cameraOff')} active={!ctx.cameraOff} onPress={() => { poke(); call.toggleCamera(); }} />
+            <RoundButton icon="camera-reverse" label={t('call.flip')} onPress={() => { poke(); call.flipCamera(); }} />
             <RoundButton icon="desktop" label={ctx.screenSharing ? t('call.stopShare') : t('call.share')} accent={ctx.screenSharing} onPress={() => { poke(); call.toggleShare(); }} />
             <RoundButton icon="eye-off" label={t('clean.enter')} onPress={cs.enter} />
             <RoundButton icon="call" label={t('call.leave')} danger onPress={call.leave} />
