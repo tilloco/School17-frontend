@@ -7,6 +7,7 @@ import { StateView } from '../../../src/components/StateView';
 import { API_URL, ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
 import { inviteLink } from '../../../src/lib/pending-join';
+import { useRealtime } from '../../../src/lib/realtime';
 import { t } from '../../../src/i18n';
 import { Bubble, Composer } from '../../../src/chat/chat-ui';
 import { ChannelPost, market } from '../../../src/market/marketApi';
@@ -18,7 +19,7 @@ import { fmtDayTime } from '../../../src/ui/format';
 import { Sheet, SheetAction } from '../../../src/ui/Sheet';
 import { Person, PersonSheet } from '../../../src/ui/PersonSheet';
 
-const POLL_MS = 4000;
+const POLL_MS = 15000; // safety net; new posts arrive instantly over the live connection
 
 /**
  * A class is a channel, like a Telegram group: everyone in it writes, shares photos and files, and the next lesson is pinned on top.
@@ -55,6 +56,7 @@ export default function ClassChannelScreen() {
     const timer = setInterval(() => void load(false), POLL_MS);
     return () => clearInterval(timer);
   }, [load]);
+  useRealtime(['class.channel', 'connect'], () => void load(false));
 
   const c = cls.data;
   const teacher = c?.role === 'teacher';

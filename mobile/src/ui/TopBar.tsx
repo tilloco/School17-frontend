@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useRealtime } from '../lib/realtime';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from './Text';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,9 +39,10 @@ export function TopBar() {
   }, [token]);
   useEffect(() => {
     void refresh();
-    const timer = setInterval(() => void refresh(), 6_000);
+    const timer = setInterval(() => void refresh(), 30_000);
     return () => clearInterval(timer);
   }, [refresh]);
+  useRealtime(['message', 'receipt', 'class.channel', 'connect'], () => void refresh());
 
   return (
     <View style={[styles.bar, { paddingTop: insets.top + 6 }]}>

@@ -30,10 +30,11 @@ export default function EditProfileScreen() {
   const [photoV, setPhotoV] = useState(0);
   const [unState, setUnState] = useState<'idle' | 'checking' | 'ok' | 'taken' | 'bad'>('idle');
   const [dmReq, setDmReq] = useState(false);
+  const [disc, setDisc] = useState(true);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (me.data && !loaded) { setName(me.data.name ?? ''); setUsername(me.data.username ?? ''); setBio(me.data.bio ?? ''); setDmReq(!!me.data.dmRequests); setLoaded(true); }
+    if (me.data && !loaded) { setName(me.data.name ?? ''); setUsername(me.data.username ?? ''); setBio(me.data.bio ?? ''); setDmReq(!!me.data.dmRequests); setDisc(me.data.phoneDiscoverable !== false); setLoaded(true); }
   }, [me.data, loaded]);
 
   useEffect(() => {
@@ -65,6 +66,10 @@ export default function EditProfileScreen() {
   const toggleDm = async (v: boolean) => {
     setDmReq(v);
     try { await market.updateMe(token as string, { dmRequests: v }); } catch { setDmReq(!v); Alert.alert(t('common.error'), t('state.error')); }
+  };
+  const toggleDisc = async (v: boolean) => {
+    setDisc(v);
+    try { await market.updateMe(token as string, { phoneDiscoverable: v }); } catch { setDisc(!v); Alert.alert(t('common.error'), t('state.error')); }
   };
   const save = async () => {
     setBusy(true);
@@ -133,6 +138,15 @@ export default function EditProfileScreen() {
               </View>
             ))}
           </View>
+          {me.data?.hasPhone && (
+            <View style={[styles.group, { marginTop: spacing.md, padding: spacing.md, gap: spacing.xs }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <Text style={[styles.dmTitle, { flex: 1 }]}>{t('contacts.discover')}</Text>
+                <Switch value={disc} onValueChange={toggleDisc} trackColor={{ true: colors.success }} />
+              </View>
+              <Text style={styles.dmText}>{t('contacts.discoverHint')}</Text>
+            </View>
+          )}
         </KeyboardScroll>
       </KeyboardAvoidingView>
     </View>

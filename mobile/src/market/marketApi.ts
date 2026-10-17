@@ -8,6 +8,8 @@ export interface Me {
   username?: string | null;
   bio?: string | null;
   dmRequests?: boolean;
+  phoneDiscoverable?: boolean;
+  hasPhone?: boolean;
   hasPhoto?: boolean;
   role: 'STUDENT' | 'GUARDIAN' | 'TEACHER' | 'ADMIN';
   locale: 'uz' | 'ru' | 'en';
@@ -278,8 +280,9 @@ export const market = {
   learning: (token: string, studentId?: string) => apiRequest<LearningData>(`/me/learning${studentId ? `?studentId=${studentId}` : ''}`, { token }),
   students: (token: string) => apiRequest<StudentRow[]>('/teachers/me/students', { token }),
   studentDetail: (token: string, id: string) => apiRequest<StudentDetail>(`/teachers/me/students/${id}`, { token }),
+  peopleFromContacts: (token: string, hashes: string[]) => apiRequest<{ userId: string; name: string; username: string | null; role: string; hasPhoto: boolean }[]>('/threads/people-from-contacts', { method: 'POST', token, body: { hashes } }),
   usernameCheck: (token: string, u: string) => apiRequest<{ ok: boolean; reason?: 'TAKEN' | 'BAD' }>(`/me/username-check?u=${encodeURIComponent(u)}`, { token }),
-  updateMe: (token: string, body: { name?: string; locale?: string; timezone?: string; username?: string; bio?: string; dmRequests?: boolean }) => apiRequest('/me', { method: 'PATCH', token, body }),
+  updateMe: (token: string, body: { name?: string; locale?: string; timezone?: string; username?: string; bio?: string; dmRequests?: boolean; phoneDiscoverable?: boolean }) => apiRequest('/me', { method: 'PATCH', token, body }),
   owed: (token: string) => apiRequest<OwedGroup[]>('/teachers/me/money/owed', { token }),
   remind: (token: string, bookingId: string) => apiRequest<{ reminded: number }>('/teachers/me/money/remind', { method: 'POST', token, body: { bookingId } }),
   income: (token: string, month: string) => apiRequest<IncomeView>(`/teachers/me/money/income?month=${month}`, { token }),

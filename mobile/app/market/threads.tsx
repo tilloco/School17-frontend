@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRealtime } from '../../src/lib/realtime';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../src/ui/Text';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,7 @@ export default function ThreadsScreen() {
   const router = useRouter();
   const { token, user } = useAuth();
   const res = useAsync(() => market.threads(token as string), [token]);
+  useRealtime(['message', 'receipt', 'connect'], () => res.reload());
   const home = useAsync(() => (user?.role === 'TEACHER' ? market.home(token as string) : Promise.resolve(null)), [token, user?.role]);
   const contacts = useAsync(() => market.contacts(token as string).catch(() => []), [token]);
   const top = useAsync(() => (user?.role === 'TEACHER' ? Promise.resolve(null) : market.search(token as string, { sort: 'rating' }).catch(() => null)), [token, user?.role]);

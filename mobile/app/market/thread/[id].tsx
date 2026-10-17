@@ -6,6 +6,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StateView } from '../../../src/components/StateView';
 import { ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
+import { useRealtime } from '../../../src/lib/realtime';
 import { t } from '../../../src/i18n';
 import { Bubble, Composer } from '../../../src/chat/chat-ui';
 import { ChatMessage, market } from '../../../src/market/marketApi';
@@ -14,7 +15,7 @@ import { ConnectionStrip, onReconnect } from '../../../src/lib/connection';
 import { colors, spacing } from '../../../src/theme/colors';
 import { Sheet } from '../../../src/ui/Sheet';
 
-const POLL_MS = 4000; // real-time sockets are not connected yet: plain polling
+const POLL_MS = 15000; // safety net only: new messages arrive instantly over the live connection
 
 function errorText(e: unknown): string {
   if (e instanceof ApiError) {
@@ -69,6 +70,7 @@ export default function ThreadScreen() {
     const timer = setInterval(() => void load(false), POLL_MS);
     return () => clearInterval(timer);
   }, [load, token, id]);
+  useRealtime(['message', 'receipt', 'connect'], () => void load(false));
 
   // Messages go out through a small outbox: shown at once as "sending", marked "not sent" when the connection drops, and re-sent by themselves when it returns.
   const [pending, setPending] = useState<ChatMessage[]>([]);
