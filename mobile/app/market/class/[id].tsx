@@ -52,7 +52,7 @@ export default function ClassChannelScreen() {
   const [replyTo, setReplyTo] = useState<ChannelPost | null>(null);
   const [reporting, setReporting] = useState<ChannelPost | null>(null);
   const loadPins = useCallback(async () => {
-    try { setPins((await market.channelPins(token as string, id)).items); } catch { /* the strip simply stays as it was */ }
+    try { setPins((await market.channelPins(token as string, id)).items.filter((p) => !p.hidden)); } catch { /* the strip simply stays as it was */ }
   }, [token, id]);
 
   const load = useCallback(async (initial: boolean) => {
@@ -242,8 +242,10 @@ export default function ClassChannelScreen() {
             contentContainerStyle={{ padding: spacing.sm }}
             onScrollToIndexFailed={(info) => setTimeout(() => list.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true }), 80)}
             onContentSizeChange={() => { if (stick.current) list.current?.scrollToEnd({ animated: false }); }}
-            onScroll={(e) => { const m = e.nativeEvent; stick.current = m.contentSize.height - m.layoutMeasurement.height - m.contentOffset.y < 160; }}
-            scrollEventThrottle={64}
+            onLayout={() => { if (stick.current) setTimeout(() => list.current?.scrollToEnd({ animated: false }), 30); }}
+            onScrollBeginDrag={(e) => { stick.current = false; void e; }}
+            onMomentumScrollEnd={(e) => { const m = e.nativeEvent; stick.current = m.contentSize.height - m.layoutMeasurement.height - m.contentOffset.y < 160; }}
+            onScrollEndDrag={(e) => { const m = e.nativeEvent; stick.current = m.contentSize.height - m.layoutMeasurement.height - m.contentOffset.y < 160; }}
             renderItem={({ item }) => (
               <Bubble
                 token={token as string}
