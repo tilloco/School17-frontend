@@ -161,3 +161,7 @@
 - Pins: teacher only, up to 100 per class (silent limit, error PIN_LIMIT). Jumping to an old pinned message loads older pages until it is found (max ~40 pages); not tested with thousands of messages.
 - Channel info uses the head teacher's photo as the channel logo (no separate class logo upload yet).
 - Content protection blocks screenshots on Android (secure window flag; checked on a phone) and iOS recording hiding (not tested on an iPhone). It cannot stop photographing the screen with another phone.
+
+## Channel reports (spam, unwanted pictures)
+- Reports on class-channel messages and pictures: the reporter stops seeing the message at once; 3 different reporters hide it for everybody until the teacher clears or deletes it; an admin can act through the existing report queue (`CHANNEL_POST`). There is no admin web page for this queue yet (API only), and pictures are not scanned automatically: a human decides.
+- In a protected class, pictures open inside the app only (a tap does not open the phone's browser, which would allow screenshots); long-pressing a picture or file opens the same menu as text.

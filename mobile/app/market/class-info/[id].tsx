@@ -175,7 +175,7 @@ export default function ClassInfoScreen() {
         )}
 
         <Animated.View style={[styles.protect, { borderColor }]}>
-          <View style={styles.protectHead}>
+          <Pressable accessibilityRole={teacher ? 'switch' : 'button'} onPress={() => (teacher ? toggle(!protect) : Alert.alert(t('protect.title'), protect ? t('info.protectedPupil') : t('info.openPupil')))} style={styles.protectHead}>
             <View style={[styles.shield, protect && { backgroundColor: colors.success }]}>
               <Ionicons name={protect ? 'shield-checkmark' : 'shield-outline'} size={26} color={protect ? '#fff' : colors.primary} />
             </View>
@@ -183,8 +183,8 @@ export default function ClassInfoScreen() {
               <Text style={styles.protectTitle}>{t('protect.title')}</Text>
               <Text style={[styles.protectState, protect && { color: colors.success }]}>{protect ? t('info.protected') : t('info.open')}</Text>
             </View>
-            {teacher && <Switch value={protect} onValueChange={toggle} trackColor={{ true: colors.success }} />}
-          </View>
+            {teacher ? <Switch value={protect} onValueChange={toggle} trackColor={{ true: colors.success }} /> : <Ionicons name="information-circle-outline" size={22} color={colors.textMuted} />}
+          </Pressable>
           <View style={styles.chipRow}>
             {chips.map((c) => (
               <View key={c.label} style={[styles.chip, protect && styles.chipOn]}>

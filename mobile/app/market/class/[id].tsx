@@ -49,6 +49,7 @@ export default function ClassChannelScreen() {
   const [actionsFor, setActionsFor] = useState<ChannelPost | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<ChannelPost | null>(null);
+  const [reporting, setReporting] = useState<ChannelPost | null>(null);
   const loadPins = useCallback(async () => {
     try { setPins((await market.channelPins(token as string, id)).items); } catch { /* the strip simply stays as it was */ }
   }, [token, id]);
@@ -97,6 +98,14 @@ export default function ClassChannelScreen() {
     void jumpTo(p.id, pins[i]?.seq ?? 0);
     setPinIdx((i + 1) % Math.max(1, pins.length));
   };
+  const sendReport = (p: ChannelPost, reason: string) => market.channelReport(token as string, id, p.id, reason)
+    .then(() => {
+      setPosts((x) => x.map((y) => (y.id === p.id ? { ...y, hidden: 'reported', body: '', file: null, replyTo: null } : y)));
+      Alert.alert(t('rp.sentTitle'), t('rp.sentText'));
+    }).catch(fail);
+  const clearReports = (p: ChannelPost) => market.channelClearReports(token as string, id, p.id)
+    .then(() => { setPosts((x) => x.map((y) => (y.id === p.id ? { ...y, reports: 0, hidden: null } : y))); Alert.alert(t('rp.cleared')); void load(true); })
+    .catch(fail);
   const pinPost = (p: ChannelPost, on: boolean) => market.channelPin(token as string, id, p.id, on)
     .then(() => { setPosts((x) => x.map((y) => (y.id === p.id ? { ...y, pinned: on } : y))); return loadPins(); })
     .catch(fail);
@@ -246,6 +255,9 @@ export default function ClassChannelScreen() {
                 onLongPress={() => (!(item as Partial<Pending>).state ? setActionsFor(item) : undefined)}
                 pinned={pins.some((x) => x.id === item.id)}
                 theme={th}
+                hidden={item.hidden ?? null}
+                locked={!!c.protectContent && !teacher}
+                reports={item.reports ?? 0}
                 replyTo={item.replyTo ?? null}
                 onQuotePress={() => item.replyTo && void jumpTo(item.replyTo.id, 0)}
                 onSwipeReply={(item as Partial<Pending>).state ? undefined : () => setReplyTo(item)}
@@ -259,9 +271,18 @@ export default function ClassChannelScreen() {
       <PinsSheet visible={pinList} items={pins.map((p) => ({ id: p.id, body: p.body, at: p.at, fileName: p.file?.name, image: p.file?.image }))} onClose={() => setPinList(false)}
         onJump={(p) => void jumpTo(p.id, 0)} onUnpin={teacher ? (p) => { const full = pins.find((x) => x.id === p.id); if (full) void pinPost(full, false); } : undefined} />
       <Sheet visible={!!actionsFor} onClose={() => setActionsFor(null)} title={actionsFor?.body ? actionsFor.body.slice(0, 40) : undefined} actions={actionsFor ? [
-        { label: t('reply.action'), icon: 'arrow-undo' as const, onPress: () => setReplyTo(actionsFor) },
-        ...(teacher ? [{ label: pins.some((x) => x.id === actionsFor.id) ? t('pin.unpin') : t('pin.pin'), icon: 'pin' as const, onPress: () => void pinPost(actionsFor, !pins.some((x) => x.id === actionsFor.id)) }] : []),
+        ...(actionsFor.hidden ? [] : [{ label: t('reply.action'), icon: 'arrow-undo' as const, onPress: () => setReplyTo(actionsFor) }]),
+        ...(!actionsFor.mine && !actionsFor.hidden ? [{ label: t('rp.action'), icon: 'flag' as const, onPress: () => setReporting(actionsFor), danger: true }] : []),
+        ...(teacher && (actionsFor.reports ?? 0) > 0 ? [{ label: t('rp.clear'), icon: 'checkmark-circle' as const, onPress: () => void clearReports(actionsFor) }] : []),
+        ...(teacher && !actionsFor.hidden ? [{ label: pins.some((x) => x.id === actionsFor.id) ? t('pin.unpin') : t('pin.pin'), icon: 'pin' as const, onPress: () => void pinPost(actionsFor, !pins.some((x) => x.id === actionsFor.id)) }] : []),
         ...((actionsFor.mine || teacher) ? [{ label: t('common.delete'), icon: 'trash' as const, onPress: () => removePost(actionsFor), danger: true }] : []),
+      ] : []} />
+      <Sheet visible={!!reporting} onClose={() => setReporting(null)} title={t('rp.title')} actions={reporting ? [
+        { label: t('rp.spam'), icon: 'megaphone' as const, onPress: () => void sendReport(reporting, 'SPAM') },
+        { label: t('rp.inappropriate'), icon: 'eye-off' as const, onPress: () => void sendReport(reporting, 'INAPPROPRIATE') },
+        { label: t('rp.abuse'), icon: 'sad' as const, onPress: () => void sendReport(reporting, 'ABUSE') },
+        { label: t('rp.personal'), icon: 'id-card' as const, onPress: () => void sendReport(reporting, 'PERSONAL_DATA') },
+        { label: t('rp.other'), icon: 'ellipsis-horizontal' as const, onPress: () => void sendReport(reporting, 'OTHER') },
       ] : []} />
       <Sheet visible={menu} onClose={() => setMenu(false)} title={c.title} actions={actions} />
       <PersonSheet person={who} onClose={() => setWho(null)} onMessage={openDirect} extra={teacher && who?.userId && !who.teacher ? { label: t('stu.detail'), icon: 'stats-chart', onPress: () => push(`/market/student/${who.userId}`) } : undefined} />

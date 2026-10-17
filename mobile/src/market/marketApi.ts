@@ -220,6 +220,8 @@ export const market = {
   channelInfo: (token: string, id: string) => apiRequest<ChannelInfo>(`/classes/${id}/channel/info`, { token }),
   channelMembers: (token: string, id: string) => apiRequest<{ items: ChannelMember[] }>(`/classes/${id}/channel/members`, { token }),
   setChannelLogo: (token: string, id: string, fileId: string) => apiRequest(`/classes/${id}/channel/logo`, { method: 'PUT', token, body: { fileId } }),
+  channelReport: (token: string, id: string, pid: string, reason: string) => apiRequest(`/classes/${id}/channel/${pid}/report`, { method: 'POST', token, body: { reason } }),
+  channelClearReports: (token: string, id: string, pid: string) => apiRequest(`/classes/${id}/channel/${pid}/clear-reports`, { method: 'POST', token, body: {} }),
   channelPost: (token: string, id: string, body: { body?: string; fileId?: string; replyToId?: string }) => apiRequest<ChannelPost>(`/classes/${id}/channel`, { method: 'POST', token, body }),
   channelRemove: (token: string, id: string, pid: string) => apiRequest(`/classes/${id}/channel/${pid}`, { method: 'DELETE', token }),
   addClassSession: (token: string, id: string, body: { startAt: string; durationMin?: number }) => apiRequest(`/classes/${id}/sessions`, { method: 'POST', token, body }),
@@ -422,7 +424,7 @@ export interface ChannelInfo {
   upcoming: { id: string; startAt: string; endAt: string; status: string }[]; filesCount: number; pinsCount: number;
 }
 export interface ChannelPost {
-  id: string; seq: number; at: string; body: string; mine: boolean; pinned?: boolean;
+  id: string; seq: number; at: string; body: string; mine: boolean; pinned?: boolean; hidden?: 'reported' | 'review' | null; reports?: number;
   replyTo?: { id: string; body: string; author: string | null; deleted?: boolean; hasFile?: boolean } | null;
   author: { id: string | null; name: string | null; teacher: boolean; username: string | null; hasPhoto: boolean };
   file: { id: string; name: string; size: number; mime: string; image: boolean } | null;

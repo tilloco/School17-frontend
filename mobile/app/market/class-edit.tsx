@@ -87,11 +87,11 @@ export default function ClassEditScreen() {
           </>
         )}
         <View style={styles.protect}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Pressable accessibilityRole="switch" onPress={() => setProtect(!protect)} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <Ionicons name="lock-closed" size={20} color={colors.primary} />
             <Text style={[styles.label, { flex: 1 }]}>{t('protect.title')}</Text>
             <Switch value={protect} onValueChange={setProtect} trackColor={{ true: colors.success }} />
-          </View>
+          </Pressable>
           <Text style={styles.help}>{t('protect.text')}</Text>
           <Text style={styles.help}>{t('protect.limit')}</Text>
         </View>

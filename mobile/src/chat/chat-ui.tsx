@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Image, Linking, PanResponder, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Image, Linking, PanResponder, Pressable, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,7 +35,7 @@ async function openUrl(token: string, fileId: string) {
   await Linking.openURL(url.startsWith('/') ? `${API_URL}${url}` : url);
 }
 
-function ImageThumb({ token, file, onDark }: { token: string; file: ChatFile; onDark: boolean }) {
+function ImageThumb({ token, file, onDark, onLongPress, locked }: { token: string; file: ChatFile; onDark: boolean; onLongPress?: () => void; locked?: boolean }) {
   const [uri, setUri] = useState<string | null>(null);
   const [bad, setBad] = useState(false);
   useEffect(() => {
@@ -43,18 +43,18 @@ function ImageThumb({ token, file, onDark }: { token: string; file: ChatFile; on
     market.fileUrl(token, file.id).then((r) => live && setUri(r.url.startsWith('/') ? `${API_URL}${r.url}` : r.url)).catch(() => live && setBad(true));
     return () => { live = false; };
   }, [token, file.id]);
-  if (bad) return <FileChip token={token} file={file} onDark={onDark} />;
+  if (bad) return <FileChip token={token} file={file} onDark={onDark} onLongPress={onLongPress} locked={locked} />;
   return (
-    <Pressable accessibilityRole="imagebutton" accessibilityLabel={file.name} onPress={() => uri && Linking.openURL(uri)}>
+    <Pressable accessibilityRole="imagebutton" accessibilityLabel={file.name} onLongPress={onLongPress} onPress={locked ? undefined : () => uri && Linking.openURL(uri)}>
       {uri ? <Image source={{ uri }} style={styles.thumb} resizeMode="cover" onError={() => setBad(true)} /> : <View style={[styles.thumb, styles.thumbWait]}><ActivityIndicator color={colors.textMuted} /></View>}
     </Pressable>
   );
 }
 
-function FileChip({ token, file, onDark }: { token: string; file: ChatFile; onDark: boolean }) {
+function FileChip({ token, file, onDark, onLongPress, locked }: { token: string; file: ChatFile; onDark: boolean; onLongPress?: () => void; locked?: boolean }) {
   const fg = onDark ? '#fff' : colors.text;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={t('attach.open', { name: file.name })} onPress={() => openUrl(token, file.id).catch(() => undefined)} style={[styles.file, { backgroundColor: onDark ? 'rgba(255,255,255,0.16)' : colors.neutralSoft }]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('attach.open', { name: file.name })} onLongPress={onLongPress} onPress={locked ? () => Alert.alert(t('protect.title'), t('info.protectedPupil')) : () => openUrl(token, file.id).catch(() => undefined)} style={[styles.file, { backgroundColor: onDark ? 'rgba(255,255,255,0.16)' : colors.neutralSoft }]}>
       <View style={[styles.fileIcon, { backgroundColor: onDark ? 'rgba(255,255,255,0.25)' : colors.primarySoft }]}><Ionicons name="document-text" size={22} color={onDark ? '#fff' : colors.primary} /></View>
       <View style={{ flex: 1 }}>
         <Text style={{ color: fg, fontWeight: '600' }} numberOfLines={1}>{file.name}</Text>
@@ -86,7 +86,8 @@ export function ReplyQuote({ reply, accent, onDark, onPress, onClose }: { reply:
  * One chat bubble. `author` is shown above other people's messages in group chats (class channel).
  * Swipe a bubble to the right to reply (like Telegram); a quoted message shows on top and a tap on it jumps to the original.
  */
-export function Bubble({ token, mine, body, at, file, state, author, authorIsTeacher, onLongPress, onAuthorPress, authorPhotoId, onRetry, pinned, highlight, theme, replyTo, onQuotePress, onSwipeReply }: {
+export function Bubble({ token, mine, body, at, file, state, author, authorIsTeacher, onLongPress, onAuthorPress, authorPhotoId, onRetry, pinned, highlight, theme, replyTo, onQuotePress, onSwipeReply, hidden, reports, locked }: {
+  locked?: boolean; hidden?: 'reported' | 'review' | null; reports?: number;
   pinned?: boolean; highlight?: boolean; theme?: ChatTheme; replyTo?: ReplyInfo | null; onQuotePress?: () => void; onSwipeReply?: () => void;
   token: string; mine: boolean; body: string; at: string; file?: ChatFile | null; state?: DeliveryState; author?: string | null; authorIsTeacher?: boolean; onLongPress?: () => void; onAuthorPress?: () => void; authorPhotoId?: string | null; onRetry?: () => void;
 }) {
@@ -102,6 +103,16 @@ export function Bubble({ token, mine, body, at, file, state, author, authorIsTea
     onPanResponderTerminate: back,
   })).current;
   const fg = mine ? th.mineText : colors.text;
+  if (hidden) {
+    return (
+      <View style={{ width: '100%', alignItems: 'flex-start' }}>
+        <Pressable onLongPress={onLongPress} style={styles.hiddenPill}>
+          <Ionicons name="eye-off" size={16} color={colors.textMuted} />
+          <Text style={styles.hiddenText}>{t(hidden === 'reported' ? 'rp.hiddenMine' : 'rp.hiddenReview')}</Text>
+        </Pressable>
+      </View>
+    );
+  }
   return (
     <View style={{ width: '100%', alignItems: mine ? 'flex-end' : 'flex-start' }} {...pan.panHandlers}>
       <Animated.View style={[styles.replyHint, { opacity: x.interpolate({ inputRange: [0, 56], outputRange: [0, 1] }), transform: [{ scale: x.interpolate({ inputRange: [0, 56], outputRange: [0.5, 1] }) }] }]} pointerEvents="none">
@@ -119,8 +130,11 @@ export function Bubble({ token, mine, body, at, file, state, author, authorIsTea
               <Text style={[styles.author, { color: authorIsTeacher ? '#FF9500' : nameColor(author) }]} numberOfLines={1}>{author}{authorIsTeacher ? `  ·  ${t('role.TEACHER')}` : ''}</Text>
             </Pressable>
           )}
+          {!!reports && reports > 0 && (
+            <View style={styles.reportChip}><Ionicons name="warning" size={13} color="#fff" /><Text style={styles.reportChipText}>{t('rp.count', { n: reports })}</Text></View>
+          )}
           {!!replyTo && <ReplyQuote reply={replyTo} accent={th.accent} onDark={mine} onPress={replyTo.deleted ? undefined : onQuotePress} />}
-          {file && (file.image ? <ImageThumb token={token} file={file} onDark={mine} /> : <FileChip token={token} file={file} onDark={mine} />)}
+          {file && (file.image ? <ImageThumb token={token} file={file} onDark={mine} onLongPress={onLongPress} locked={locked} /> : <FileChip token={token} file={file} onDark={mine} onLongPress={onLongPress} locked={locked} />)}
           {!!body && <Text style={[styles.text, { color: fg }]}>{body}</Text>}
           {state === 'FAILED' && <Text style={styles.failedText}>{t('chat.failed')}</Text>}
           <View style={styles.meta}>
@@ -218,6 +232,10 @@ export function Composer({ token, placeholder, onSend, onAttached, disabled, key
 const styles = StyleSheet.create({
   bubble: { paddingHorizontal: 13, paddingTop: 9, paddingBottom: 7, borderRadius: 20, gap: 5, marginVertical: 3, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   mine: { borderBottomRightRadius: 6 },
+  hiddenPill: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.neutralSoft, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, marginVertical: 3, maxWidth: '84%' },
+  hiddenText: { color: colors.textMuted, fontSize: 13, flexShrink: 1 },
+  reportChip: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 5, backgroundColor: colors.danger, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
+  reportChipText: { color: '#fff', fontSize: 12, fontWeight: '800' },
   replyHint: { position: 'absolute', left: 6, top: '40%', width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   quote: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, paddingVertical: 6, paddingRight: 8, paddingLeft: 6, minWidth: 140 },
   quoteBar: { width: 3, alignSelf: 'stretch', borderRadius: 2 },
