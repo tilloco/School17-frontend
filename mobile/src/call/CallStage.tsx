@@ -88,7 +88,7 @@ export function CallStage({ media, otherName, waiting, sharingMine, onStopShare,
           <Text style={styles.sub}>{waiting ? t('call.waiting', { name: otherName }) : media.remoteMicMuted ? t('call.cameraOffOther') : ''}</Text>
         </View>
       )}
-      {!hideTiles && hasScreen ? <FaceBubble track={swapped ? media.remoteScreen : media.remoteCamera} name={otherName} rect={swapped} size={swapped ? 64 : 60} onPress={onSwap} /> : null}
+      {!hideTiles && hasScreen ? <FaceBubble track={swapped ? media.remoteScreen : media.remoteCamera} name={otherName} size={swapped ? 78 : 60} onPress={onSwap} /> : null}
       {!hideTiles && (
         <View style={styles.tiles} pointerEvents="box-none">
           {media.localCamera && !cameraOff ? <Pressable accessibilityRole="button" accessibilityLabel="flip" onPress={onFlip} style={styles.tile}><View style={styles.tileVideo} pointerEvents="none"><Video track={media.localCamera} style={styles.tileVideo} mirror /></View></Pressable> : null}

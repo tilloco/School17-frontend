@@ -35,7 +35,7 @@ export function ShareFull({ visible, media, quality, onClose, name = '', swapped
         <Pressable style={StyleSheet.absoluteFill} onPress={tap} accessibilityLabel={t('share.exitFull')}>
           <Video track={swapped ? media.remoteCamera : media.remoteScreen} style={StyleSheet.absoluteFill} cover={swapped} />
         </Pressable>
-        <FaceBubble track={swapped ? media.remoteScreen : media.remoteCamera} name={name} size={64} inset={14} rect={swapped} onPress={onSwap} />
+        <FaceBubble track={swapped ? media.remoteScreen : media.remoteCamera} name={name} size={swapped ? 84 : 64} inset={14} onPress={onSwap} />
         <View style={styles.badge} pointerEvents="box-none"><QualityBadge q={quality} /></View>
         <Animated.View style={[styles.toast, { opacity: hint }]} pointerEvents="none">
           <Ionicons name="contract" size={14} color="#fff" /><Text style={styles.toastText}>{t('share.doubleTapExit')}</Text>
