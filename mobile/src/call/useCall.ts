@@ -2,7 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { ApiError } from '../lib/api';
 import { callApi, CallLobby, CallSummary } from './callApi';
 import { CallContext, CallEvent, Effect, initialContext, POLICY, reduce } from './call-machine';
-import { createRtcDriver, RtcDriver, rtcAvailability } from './rtc';
+import { CallMedia, createRtcDriver, EMPTY_MEDIA, LinkQuality, RtcDriver, rtcAvailability } from './rtc';
 
 export interface ChatLine {
   id: number;
@@ -23,7 +23,8 @@ export function useCall(bookingId: string, token: string | null) {
   const [summary, setSummary] = useState<CallSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [remoteJoined, setRemoteJoined] = useState(false);
-  const [remoteVideo, setRemoteVideo] = useState<unknown | null>(null);
+  const [media, setMedia] = useState<CallMedia>(EMPTY_MEDIA);
+  const [quality, setQuality] = useState<LinkQuality>({ level: 'excellent' });
   const [chat, setChat] = useState<ChatLine[]>([]);
   const driver = useRef<RtcDriver | null>(null);
   const timers = useRef<{ hb?: ReturnType<typeof setInterval>; rc?: ReturnType<typeof setTimeout>; win?: ReturnType<typeof setInterval> }>({});
@@ -133,7 +134,8 @@ export function useCall(bookingId: string, token: string | null) {
           onDisconnected: () => ctxRef.current.state === 'connected' && send({ type: 'CONNECTION_LOST', now: Date.now() }),
           onReconnecting: () => send({ type: 'CONNECTION_LOST', now: Date.now() }),
           onReconnected: () => send({ type: 'RECONNECTED', now: Date.now() }),
-          onRemoteVideo: (t) => setRemoteVideo(t),
+          onMedia: (m) => setMedia(m),
+          onQuality: (q) => setQuality(q),
           onRemoteJoined: () => setRemoteJoined(true),
           onRemoteLeft: () => setRemoteJoined(false),
           onData: (text) => setChat((c) => [...c, { id: ++lineId.current, mine: false, text }]),
@@ -177,9 +179,9 @@ export function useCall(bookingId: string, token: string | null) {
     summary,
     error,
     remoteJoined,
-    remoteVideo,
+    media,
+    quality,
     chat,
-    localVideo: () => driver.current?.localVideoTrack() ?? null,
     reload: loadLobby,
     enterLobby: () => send({ type: 'ENTER_LOBBY' }),
     join: () => send({ type: 'JOIN', now: Date.now() }),

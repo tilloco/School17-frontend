@@ -1,4 +1,6 @@
 import { SignalPill } from '../../src/lib/connection';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CallStage, QualityBadge, RoundButton } from '../../src/call/CallStage';
 import React, { useEffect, useState } from 'react';
 import { fmtTime } from '../../src/ui/format';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
@@ -14,36 +16,22 @@ import { useCall } from '../../src/call/useCall';
 import { t } from '../../src/i18n';
 import { colors, radius, spacing } from '../../src/theme/colors';
 
-/** Native video ko'rinishi: @livekit/react-native o'rnatilgan bo'lsagina; aks holda bo'sh joy. */
-function VideoSurface({ track, style }: { track: unknown | null; style: object }) {
-  if (!track) return <View style={[style, styles.videoEmpty]} />;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { VideoView } = require('@livekit/react-native');
-    return <VideoView style={style} videoTrack={track} objectFit="cover" />;
-  } catch {
-    return <View style={[style, styles.videoEmpty]} />;
-  }
-}
-
-function ControlButton({ label, onPress, active = true, danger = false }: { label: string; onPress: () => void; active?: boolean; danger?: boolean }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={[styles.ctrl, !active && styles.ctrlOff, danger && styles.ctrlDanger]}
-    >
-      <Text style={styles.ctrlText} numberOfLines={2}>{label}</Text>
-    </Pressable>
-  );
-}
+const fmtElapsed = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
 export default function CallScreen() {
   const router = useRouter();
   const { token } = useAuth();
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
   const call = useCall(bookingId, token);
+  const insets = useSafeAreaInsets();
+  const [elapsed, setElapsed] = useState(0);
+  const startedAt = React.useRef<number | null>(null);
+  useEffect(() => {
+    if (call.ctx.state !== 'connected' && call.ctx.state !== 'reconnecting') return;
+    startedAt.current ??= Date.now();
+    const h = setInterval(() => setElapsed(Math.floor((Date.now() - (startedAt.current ?? Date.now())) / 1000)), 1000);
+    return () => clearInterval(h);
+  }, [call.ctx.state]);
   const [netMs, setNetMs] = useState<number | null>(null);
   const [netBusy, setNetBusy] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -148,27 +136,23 @@ export default function CallScreen() {
 
   // ---- Qo'ng'iroq ekrani ----
   if (ctx.state === 'connecting' || ctx.state === 'connected' || ctx.state === 'reconnecting') {
-    const qualityLabel = t(`call.quality.${ctx.audioOnlyAuto ? 'poor' : ctx.tier}`);
+    const q = ctx.state === 'reconnecting' ? { ...call.quality, level: 'lost' as const } : call.quality;
     return (
-      <Screen style={{ paddingHorizontal: 0 }}>
-        {header}
+      <View style={styles.callRoot}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <CallStage media={call.media} otherName={lobby.other.name} waiting={!call.remoteJoined && ctx.state === 'connected'} sharingMine={ctx.screenSharing} onStopShare={call.toggleShare} cameraOff={ctx.cameraOff || ctx.audioOnlyAuto} />
+        <View style={[styles.topBar, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
+          <View>
+            <Text style={styles.topName} numberOfLines={1}>{lobby.other.name}</Text>
+            <Text style={styles.topTime}>{ctx.state === 'connecting' ? t('state.loading') : fmtElapsed(elapsed)}</Text>
+          </View>
+          <QualityBadge q={q} />
+        </View>
         {banner && (
-          <View accessibilityLiveRegion="polite" style={[styles.banner, ctx.banner === 'failed' && { backgroundColor: colors.danger }]}>
+          <View accessibilityLiveRegion="polite" style={[styles.banner, { top: insets.top + 64 }, ctx.banner === 'failed' && { backgroundColor: colors.danger }]}>
             <Text style={styles.bannerText}>{banner}</Text>
           </View>
         )}
-        <View style={styles.videoArea}>
-          <VideoSurface track={call.remoteVideo} style={styles.remote} />
-          {!call.remoteJoined && ctx.state === 'connected' && <Text style={styles.waiting}>{t('call.waiting', { name: lobby.other.name })}</Text>}
-          {ctx.state === 'connecting' && <ActivityIndicator style={styles.waiting} color={colors.white} />}
-          <View style={styles.localWrap}>
-            <VideoSurface track={ctx.cameraOff || ctx.audioOnlyAuto ? null : call.localVideo()} style={styles.local} />
-          </View>
-          <View style={styles.quality} accessibilityLabel={qualityLabel}>
-            <Text style={styles.qualityText}>● {qualityLabel}</Text>
-          </View>
-        </View>
-
         {chatOpen && (
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.chat}>
             <Text style={styles.chatNote}>{t('call.chatNotSaved')}</Text>
@@ -187,16 +171,15 @@ export default function CallScreen() {
             />
           </KeyboardAvoidingView>
         )}
-
-        <View style={styles.controls}>
-          <ControlButton label={ctx.micMuted ? t('call.unmute') : t('call.mute')} active={!ctx.micMuted} onPress={call.toggleMic} />
-          <ControlButton label={ctx.cameraOff ? t('call.cameraOn') : t('call.cameraOff')} active={!ctx.cameraOff} onPress={call.toggleCamera} />
-          <ControlButton label={t('call.flip')} onPress={call.flipCamera} />
-          <ControlButton label={ctx.screenSharing ? t('call.stopShare') : t('call.share')} active={!ctx.screenSharing} onPress={call.toggleShare} />
-          <ControlButton label={t('call.chat')} active={!chatOpen} onPress={() => setChatOpen((v) => !v)} />
-          <ControlButton label={t('call.leave')} danger onPress={call.leave} />
+        <View style={[styles.controlsBar, { paddingBottom: insets.bottom + 12 }]}>
+          <RoundButton icon={ctx.micMuted ? 'mic-off' : 'mic'} label={ctx.micMuted ? t('call.unmute') : t('call.mute')} active={!ctx.micMuted} onPress={call.toggleMic} />
+          <RoundButton icon={ctx.cameraOff ? 'videocam-off' : 'videocam'} label={ctx.cameraOff ? t('call.cameraOn') : t('call.cameraOff')} active={!ctx.cameraOff} onPress={call.toggleCamera} />
+          <RoundButton icon="camera-reverse" label={t('call.flip')} onPress={call.flipCamera} />
+          <RoundButton icon="desktop" label={ctx.screenSharing ? t('call.stopShare') : t('call.share')} accent={ctx.screenSharing} onPress={call.toggleShare} />
+          <RoundButton icon="chatbubble-ellipses" label={t('call.chat')} active={!chatOpen} onPress={() => setChatOpen((v) => !v)} />
+          <RoundButton icon="call" label={t('call.leave')} danger onPress={call.leave} />
         </View>
-      </Screen>
+      </View>
     );
   }
 
@@ -235,6 +218,11 @@ export default function CallScreen() {
 }
 
 const styles = StyleSheet.create({
+  callRoot: { flex: 1, backgroundColor: '#000' },
+  topBar: { position: 'absolute', left: 0, right: 0, top: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 14, paddingBottom: 10 },
+  topName: { color: '#fff', fontSize: 16, fontWeight: '800', maxWidth: 200 },
+  topTime: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontVariant: ['tabular-nums'] },
+  controlsBar: { flexDirection: 'row', justifyContent: 'space-evenly', alignItems: 'center', paddingTop: 12, paddingHorizontal: 8, backgroundColor: 'rgba(0,0,0,0.78)' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   lobby: { flex: 1, paddingTop: spacing.lg, gap: spacing.md },
   h1: { fontSize: 22, fontWeight: '700', color: colors.text, textAlign: 'center' },
@@ -244,7 +232,7 @@ const styles = StyleSheet.create({
   checkRow: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, gap: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   checkLabel: { fontSize: 14, color: colors.textMuted },
   checkValue: { fontSize: 16, color: colors.text, fontWeight: '600' },
-  banner: { backgroundColor: colors.warning, paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
+  banner: { position: 'absolute', left: 14, right: 14, backgroundColor: colors.warning, paddingVertical: 8, paddingHorizontal: spacing.md, borderRadius: 14 },
   bannerText: { color: colors.white, fontWeight: '600', textAlign: 'center' },
   bannerInline: { color: colors.danger, textAlign: 'center' },
   videoArea: { flex: 1, backgroundColor: '#000' },

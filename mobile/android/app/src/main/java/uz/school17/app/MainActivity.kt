@@ -1,4 +1,4 @@
-package uz.mamun.app
+package uz.school17.app
 
 import android.os.Build
 import android.os.Bundle

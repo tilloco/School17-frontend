@@ -22,11 +22,14 @@
         "backgroundColor": "#0B4F6C"
       },
       "permissions": [
+        "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "android.permission.FOREGROUND_SERVICE_MICROPHONE",
+        "android.permission.FOREGROUND_SERVICE_CAMERA",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION",
         "android.permission.BLUETOOTH_CONNECT"
       ]
     },
@@ -35,6 +38,14 @@
       "expo-font",
       "expo-audio",
       "expo-web-browser",
+      "@livekit/react-native-expo-plugin",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "School17 uses the camera so your teacher or pupils can see you in a lesson.",
+          "microphonePermission": "School17 uses the microphone so you can talk in a lesson."
+        }
+      ],
       [
         "expo-contacts",
         {
