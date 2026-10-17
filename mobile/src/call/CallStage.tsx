@@ -35,16 +35,15 @@ export function QualityBadge({ q }: { q: LinkQuality }) {
   const mbps = (k?: number) => (k === undefined ? '–' : k >= 1000 ? `${(k / 1000).toFixed(1)} Mb/s` : `${Math.round(k)} kb/s`);
   return (
     <View style={styles.badgeWrap}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t(`cq.${q.level}`)} onPress={() => setOpen((v) => !v)} style={[styles.badge, { borderColor: color + '88' }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t(`cq.${q.level}`)} hitSlop={8} onPress={() => setOpen((v) => !v)} style={styles.badge}>
         <View style={styles.bars}>
-          {[1, 2, 3, 4].map((i) => <View key={i} style={[styles.bar, { height: 4 + i * 3, backgroundColor: i <= bars ? color : 'rgba(255,255,255,0.28)' }]} />)}
+          {[1, 2, 3, 4].map((i) => <View key={i} style={[styles.bar, { height: 3 + i * 2.5, backgroundColor: i <= bars ? color : 'rgba(255,255,255,0.3)' }]} />)}
         </View>
-        <Text style={[styles.badgeText, { color }]} numberOfLines={1}>
-          {t(`cq.${q.level}`)}{q.level !== 'lost' && q.rttMs !== undefined ? ` · ${Math.round(q.rttMs)} ms` : ''}
-        </Text>
+        {q.level === 'lost' ? <Text style={[styles.badgeText, { color }]}>{t('cq.lost')}</Text> : q.rttMs !== undefined ? <Text style={styles.badgeText}>{Math.round(q.rttMs)}<Text style={styles.badgeUnit}> ms</Text></Text> : null}
       </Pressable>
       {open && (
         <View style={styles.badgeCard}>
+          <View style={styles.cardHead}><View style={[styles.dot, { backgroundColor: color }]} /><Text style={[styles.cardLevel, { color }]}>{t(`cq.${q.level}`)}</Text></View>
           <Row label={t('cq.ping')} value={q.rttMs === undefined ? '–' : `${Math.round(q.rttMs)} ms`} />
           <Row label={t('cq.loss')} value={q.lossPct === undefined ? '–' : `${q.lossPct.toFixed(1)} %`} />
           <Row label={t('cq.jitter')} value={q.jitterMs === undefined ? '–' : `${Math.round(q.jitterMs)} ms`} />
@@ -133,10 +132,14 @@ const styles = StyleSheet.create({
   sharingBtn: { backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
   sharingBtnText: { color: '#0A5BD6', fontWeight: '800', fontSize: 13 },
   badgeWrap: { alignItems: 'flex-end' },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.55)', borderWidth: 1, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
-  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 16 },
-  bar: { width: 3, borderRadius: 1.5 },
-  badgeText: { fontSize: 11, fontWeight: '800' },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(0,0,0,0.42)', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3, minHeight: 22 },
+  dot: { width: 7, height: 7, borderRadius: 4 },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
+  cardLevel: { fontSize: 13, fontWeight: '800' },
+  badgeUnit: { fontSize: 9, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 1.5, height: 13 },
+  bar: { width: 2.5, borderRadius: 1 },
+  badgeText: { fontSize: 10.5, fontWeight: '700', color: '#fff', fontVariant: ['tabular-nums'] },
   badgeCard: { marginTop: 6, minWidth: 170, backgroundColor: 'rgba(20,22,26,0.94)', borderRadius: 14, padding: 10, gap: 5 },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: 16 },
   rowLabel: { color: 'rgba(255,255,255,0.65)', fontSize: 12 },

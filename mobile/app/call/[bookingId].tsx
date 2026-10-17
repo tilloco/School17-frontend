@@ -249,3 +249,5 @@ const styles = StyleSheet.create({
   chatMine: { textAlign: 'right', color: colors.primary },
   chatInput: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 16, paddingHorizontal: spacing.sm, height: 40 },
 });
+
+export { RouteError as ErrorBoundary } from '../../src/ui/RouteError';

@@ -153,3 +153,5 @@ const styles = StyleSheet.create({
   help: { color: colors.textMuted, fontSize: 13 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
 });
+
+export { RouteError as ErrorBoundary } from '../../../src/ui/RouteError';

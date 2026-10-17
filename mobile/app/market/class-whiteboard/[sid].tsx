@@ -174,3 +174,5 @@ const styles = StyleSheet.create({
   swatchOn: { borderColor: colors.primary },
   help: { color: colors.textMuted, fontSize: 13 },
 });
+
+export { RouteError as ErrorBoundary } from '../../../src/ui/RouteError';

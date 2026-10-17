@@ -86,9 +86,9 @@ export function SignalPill({ compact }: { compact?: boolean }) {
   return (
     <View style={[styles.sig, { borderColor: color }]} accessibilityLabel={`${t(`net.q.${quality}`)}${rtt ? ` ${rtt} ms` : ''}`}>
       <View style={styles.bars}>
-        {[1, 2, 3, 4].map((i) => <View key={i} style={{ width: 3, height: 4 + i * 3, borderRadius: 1.5, backgroundColor: i <= level ? color : 'rgba(128,128,128,0.35)' }} />)}
+        {[1, 2, 3, 4].map((i) => <View key={i} style={{ width: 2.5, height: 3 + i * 2.5, borderRadius: 1, backgroundColor: i <= level ? color : 'rgba(128,128,128,0.35)' }} />)}
       </View>
-      {!compact && <Text style={[styles.sigText, { color }]}>{t(`net.q.${quality}`)}{rtt ? ` · ${rtt} ms` : ''}</Text>}
+      {!compact && <Text style={[styles.sigText, { color }]}>{quality === 'offline' ? t('net.q.offline') : rtt ? `${rtt} ms` : ''}</Text>}
     </View>
   );
 }
@@ -96,7 +96,7 @@ export function SignalPill({ compact }: { compact?: boolean }) {
 const styles = StyleSheet.create({
   strip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 7 },
   text: { color: '#fff', fontWeight: '700', fontSize: 13, marginLeft: 2 },
-  sig: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, borderWidth: 1.5, marginHorizontal: spacing.xs },
-  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
-  sigText: { fontSize: 12, fontWeight: '700' },
+  sig: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999, borderWidth: 1, marginHorizontal: spacing.xs, minHeight: 22 },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 1.5 },
+  sigText: { fontSize: 10.5, fontWeight: '700' },
 });

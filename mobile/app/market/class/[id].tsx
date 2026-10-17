@@ -319,3 +319,5 @@ const styles = StyleSheet.create({
   emptyText: { color: colors.textMuted, textAlign: 'center' },
   closed: { textAlign: 'center', color: colors.textMuted, padding: spacing.md },
 });
+
+export { RouteError as ErrorBoundary } from '../../../src/ui/RouteError';
