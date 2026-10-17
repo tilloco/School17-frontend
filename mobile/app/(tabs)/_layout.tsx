@@ -22,6 +22,7 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: true,
         header: () => <TopBar />,
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: { fontSize: 10.5, fontWeight: '600' },

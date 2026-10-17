@@ -16,7 +16,7 @@ export const QUALITY_COLOR: Record<LinkQuality['level'], string> = {
 };
 const BARS: Record<LinkQuality['level'], number> = { excellent: 4, good: 3, poor: 2, bad: 1, lost: 0 };
 
-function Video({ track, style, cover = true, mirror = false }: { track: unknown | null; style: object; cover?: boolean; mirror?: boolean }) {
+export function Video({ track, style, cover = true, mirror = false }: { track: unknown | null; style: object; cover?: boolean; mirror?: boolean }) {
   if (!track) return <View style={[style, { backgroundColor: '#111' }]} />;
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -87,9 +87,9 @@ export function CallStage({ media, otherName, waiting, sharingMine, onStopShare,
         </View>
       )}
       {hasScreen && <View style={styles.tag}><Ionicons name="desktop" size={13} color="#fff" /><Text style={styles.tagText}>{t('call.theirScreen', { name: otherName })}</Text></View>}
+      {!hideTiles && hasScreen && media.remoteCamera ? <View style={styles.faceRound} pointerEvents="none"><Video track={media.remoteCamera} style={styles.tileVideo} /></View> : null}
       {!hideTiles && (
         <View style={styles.tiles} pointerEvents="box-none">
-          {hasScreen && media.remoteCamera ? <View style={styles.tile} pointerEvents="none"><Video track={media.remoteCamera} style={styles.tileVideo} /></View> : null}
           {media.localCamera && !cameraOff ? <Pressable accessibilityRole="button" accessibilityLabel="flip" onPress={onFlip} style={styles.tile}><View style={styles.tileVideo} pointerEvents="none"><Video track={media.localCamera} style={styles.tileVideo} mirror /></View></Pressable> : null}
         </View>
       )}
@@ -125,6 +125,7 @@ const styles = StyleSheet.create({
   tiles: { position: 'absolute', right: 12, bottom: 110, gap: 10, alignItems: 'flex-end' },
   tile: { width: 92, height: 128, borderRadius: 16, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)', backgroundColor: '#111' },
   tileVideo: { flex: 1 },
+  faceRound: { position: 'absolute', top: 10, right: 10, width: 60, height: 60, borderRadius: 30, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)', backgroundColor: '#111' },
   muted: { position: 'absolute', left: 14, bottom: 14, width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,69,58,0.9)', alignItems: 'center', justifyContent: 'center' },
   sharing: { position: 'absolute', left: 12, right: 12, top: 84, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(0,122,255,0.92)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 9 },
   sharingDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: '#fff' },

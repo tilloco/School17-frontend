@@ -4,14 +4,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../ui/Text';
 import { t } from '../i18n';
 import { market } from '../market/marketApi';
-import { CleanCatcher, CleanHint, useCleanScreen } from './useCleanScreen';
 import { CallStage, QualityBadge, RoundButton } from './CallStage';
+import { ShareFull } from './ShareFull';
+import { useLessonKeepAlive } from './useLessonKeepAlive';
 import { CallMedia, createRtcDriver, EMPTY_MEDIA, LinkQuality, rtcAvailability, RtcDriver } from './rtc';
 
 /**
- * The picture of a live class lesson. The teacher sends camera + screen together; pupils watch the teacher (the teacher's screen
- * fills the stage, the teacher's face is a small tile). A pupil who was given the stage gets mic / camera buttons.
- * Quality adapts by itself (see adaptive.ts): the screen stays readable, the faces give way.
+ * The picture of a live class lesson, kept simple:
+ *  - nothing shared: the teacher's face fills the box;
+ *  - a screen is shared: the screen fills the box, the teacher's face is a small round picture in the top right, and a "Full" button
+ *    opens the shared screen full screen and sideways (double-tap to come back).
+ * The teacher also gets three small buttons (mic, camera, share screen). The lesson keeps running with the screen off.
  */
 export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPublish }: { token: string; sid: string; teacher: boolean; teacherId?: string | null; teacherName: string; canPublish: boolean }) {
   const [media, setMedia] = useState<CallMedia>(EMPTY_MEDIA);
@@ -20,11 +23,11 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
   const [mic, setMic] = useState(true);
   const [cam, setCam] = useState(true);
   const [sharing, setSharing] = useState(false);
-  const [big, setBig] = useState(false);
+  const [full, setFull] = useState(false);
   const driver = useRef<RtcDriver | null>(null);
   const publish = teacher || canPublish;
-  const cs = useCleanScreen();
   const avail = rtcAvailability();
+  useLessonKeepAlive(avail.ok, teacherName || t('room.title'));
 
   useEffect(() => {
     if (!avail.ok) return;
@@ -67,6 +70,8 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
     return () => { dead = true; if (timer) clearTimeout(timer); void d?.disconnect(); if (driver.current === d) driver.current = null; };
   }, [token, sid, teacherId, publish]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => { if (!media.remoteScreen) setFull(false); }, [media.remoteScreen]);
+
   if (!avail.ok) {
     return (
       <View style={styles.note}>
@@ -76,10 +81,11 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
     );
   }
   const q: LinkQuality = state === 'live' ? quality : { ...quality, level: 'lost' };
+  const showsScreen = !!media.remoteScreen;
   return (
-    <View style={[styles.box, { height: big ? 520 : 280 }]}>
+    <View style={[styles.box, { height: showsScreen ? 250 : 230 }]}>
       <CallStage
-        hideTiles={cs.clean}
+        hideTiles={false}
         onFlip={() => void driver.current?.flipCamera()}
         media={media}
         otherName={teacher ? t('room.title') : teacherName}
@@ -88,23 +94,23 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
         onStopShare={() => { setSharing(false); void driver.current?.setScreenShare(false); }}
         cameraOff={!cam}
       />
-      {!cs.clean && <View style={styles.top} pointerEvents="box-none">
+      <View style={[styles.top, showsScreen && !!media.remoteCamera && { right: 78 }]} pointerEvents="box-none">
         <View style={styles.live}><View style={styles.dot} /><Text style={styles.liveText}>{state === 'live' ? t('chan.liveNow') : t('call.banner.reconnecting')}</Text></View>
         <QualityBadge q={q} />
-      </View>}
-      {!cs.clean && <Pressable accessibilityRole="button" accessibilityLabel="expand" onPress={() => setBig((v) => !v)} style={styles.expand}>
-        <Ionicons name={big ? 'contract' : 'expand'} size={18} color="#fff" />
-      </Pressable>}
-      {publish && !cs.clean && (
+      </View>
+      {showsScreen && (
+        <Pressable accessibilityRole="button" accessibilityLabel={t('share.full')} onPress={() => setFull(true)} style={styles.fullBtn}>
+          <Ionicons name="expand" size={16} color="#fff" /><Text style={styles.fullText}>{t('share.full')}</Text>
+        </Pressable>
+      )}
+      {publish && (
         <View style={styles.controls}>
-          <RoundButton size={42} icon={mic ? 'mic' : 'mic-off'} label={mic ? t('call.mute') : t('call.unmute')} active={mic} onPress={() => { setMic(!mic); void driver.current?.setMic(!mic); }} />
-          <RoundButton size={42} icon={cam ? 'videocam' : 'videocam-off'} label={cam ? t('call.cameraOff') : t('call.cameraOn')} active={cam} onPress={() => { setCam(!cam); void driver.current?.setCamera(!cam); }} />
-          {teacher && <RoundButton size={42} icon="desktop" label={sharing ? t('call.stopShare') : t('call.share')} accent={sharing} onPress={() => { const on = !sharing; setSharing(on); void driver.current?.setScreenShare(on).catch(() => setSharing(false)); }} />}
+          <RoundButton size={40} icon={mic ? 'mic' : 'mic-off'} label={mic ? t('call.mute') : t('call.unmute')} active={mic} onPress={() => { setMic(!mic); void driver.current?.setMic(!mic); }} />
+          <RoundButton size={40} icon={cam ? 'videocam' : 'videocam-off'} label={cam ? t('call.cameraOff') : t('call.cameraOn')} active={cam} onPress={() => { setCam(!cam); void driver.current?.setCamera(!cam); }} />
+          {teacher && <RoundButton size={40} icon="desktop" label={sharing ? t('call.stopShare') : t('call.share')} accent={sharing} onPress={() => { const on = !sharing; setSharing(on); void driver.current?.setScreenShare(on).catch(() => setSharing(false)); }} />}
         </View>
       )}
-      {!cs.clean && <Pressable accessibilityRole="button" accessibilityLabel={t('clean.enter')} onPress={cs.enter} style={styles.eye}><Ionicons name="eye-off" size={18} color="#fff" /></Pressable>}
-      <CleanHint show={cs.hint && !cs.clean} onClose={cs.dismissHint} />
-      <CleanCatcher show={cs.clean} onTap={cs.onTap} />
+      <ShareFull visible={full} media={media} quality={q} onClose={() => setFull(false)} />
     </View>
   );
 }
@@ -115,9 +121,9 @@ const styles = StyleSheet.create({
   live: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,59,48,0.92)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#fff' },
   liveText: { color: '#fff', fontSize: 11, fontWeight: '800' },
-  expand: { position: 'absolute', left: 10, bottom: 10, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  eye: { position: 'absolute', right: 10, bottom: 10, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  controls: { position: 'absolute', left: 54, bottom: 8, flexDirection: 'row', gap: 8 },
+  fullBtn: { position: 'absolute', right: 10, bottom: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
+  fullText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  controls: { position: 'absolute', left: 10, bottom: 8, flexDirection: 'row', gap: 8 },
   note: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#1C1C1E', borderRadius: 16, padding: 14 },
   noteText: { color: '#fff', flex: 1, fontSize: 13 },
 });

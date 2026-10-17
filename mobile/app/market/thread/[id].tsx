@@ -10,7 +10,7 @@ import { useRealtime } from '../../../src/lib/realtime';
 import { t } from '../../../src/i18n';
 import { Bubble, Composer } from '../../../src/chat/chat-ui';
 import { ChatMessage, market } from '../../../src/market/marketApi';
-import { useKeyboardPadding } from '../../../src/lib/keyboard';
+import { useKeyboardOpen } from '../../../src/lib/keyboard';
 import { ConnectionStrip, onReconnect } from '../../../src/lib/connection';
 import { colors, spacing } from '../../../src/theme/colors';
 import { Sheet } from '../../../src/ui/Sheet';
@@ -30,7 +30,7 @@ function errorText(e: unknown): string {
 /** Direct chat in the Telegram / Instagram style: bubbles, ticks (sent, delivered, read in blue), photos and files. Block and report are in the menu. */
 export default function ThreadScreen() {
   const { token } = useAuth();
-  const kb = useKeyboardPadding();
+  const kbOpen = useKeyboardOpen();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [msgs, setMsgs] = useState<ChatMessage[]>([]);
@@ -132,7 +132,7 @@ export default function ThreadScreen() {
   return (
     <View style={styles.root}>
       {header}
-      <View style={{ flex: 1, paddingBottom: kb }}>
+      <View style={{ flex: 1 }}>
         <ConnectionStrip />
         {msgs.length + pending.length === 0 ? (
           <View style={styles.empty}><Ionicons name="chatbubbles-outline" size={46} color={colors.textMuted} /><Text style={styles.emptyText}>{t('msg.noMessages')}</Text></View>
@@ -171,7 +171,7 @@ export default function ThreadScreen() {
           </View>
         )}
         {req.status === 'REQUEST' && req.mine && <Text style={styles.ro}>{t('dm.waiting')}</Text>}
-        {readOnly || req.status === 'DECLINED' ? <Text style={styles.ro}>{t(req.status === 'DECLINED' ? 'dm.declined' : 'chat.readOnly')}</Text> : <Composer reply={replyTo ? { id: replyTo.id, body: replyTo.body, author: replyTo.mine ? t('msg.you') : title, hasFile: !!replyTo.file } : null} onCancelReply={() => setReplyTo(null)} keyboardOpen={kb > 0} token={token as string} placeholder={t('chat.placeholder')} onSend={send} onAttached={sendFile} />}
+        {readOnly || req.status === 'DECLINED' ? <Text style={styles.ro}>{t(req.status === 'DECLINED' ? 'dm.declined' : 'chat.readOnly')}</Text> : <Composer reply={replyTo ? { id: replyTo.id, body: replyTo.body, author: replyTo.mine ? t('msg.you') : title, hasFile: !!replyTo.file } : null} onCancelReply={() => setReplyTo(null)} keyboardOpen={kbOpen} token={token as string} placeholder={t('chat.placeholder')} onSend={send} onAttached={sendFile} />}
       </View>
       <Sheet visible={!!actionsFor} onClose={() => setActionsFor(null)} title={actionsFor?.body ? actionsFor.body.slice(0, 40) : undefined} actions={actionsFor ? [{ label: t('reply.action'), icon: 'arrow-undo' as const, onPress: () => setReplyTo(actionsFor) }] : []} />
       <Sheet visible={menu} onClose={() => setMenu(false)} title={title} actions={[

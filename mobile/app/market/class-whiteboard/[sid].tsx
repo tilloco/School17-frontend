@@ -8,13 +8,14 @@ import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
 import { ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
+import { useRealtime } from '../../../src/lib/realtime';
 import { useSessionProtect } from '../../../src/lib/protect';
 import { t } from '../../../src/i18n';
 import { BoardStroke, market } from '../../../src/market/marketApi';
 import { colors, radius, spacing } from '../../../src/theme/colors';
 
-const UPLOAD_EVERY_MS = 15_000; // snapshot cadence (only when changed, and on leaving)
-const POLL_MS = 3000;
+const UPLOAD_EVERY_MS = 2_000; // the board is sent while the teacher draws (only when changed, and on leaving)
+const POLL_MS = 15_000; // safety net: pupils get changes instantly over the live connection
 const COLORS = ['#111111', '#d32f2f', '#1565c0', '#2e7d32'];
 const MAX_POINTS = 4900; // keep under the server cap (5000 points)
 
@@ -41,6 +42,7 @@ export default function WhiteboardScreen() {
   strokesRef.current = strokes;
   const teacher = role === 'teacher';
 
+  useRealtime(['class:whiteboard', 'connect'], () => void pull());
   const pull = useCallback(async () => {
     try {
       const st = await market.roomState(token as string, sid);
@@ -90,6 +92,7 @@ export default function WhiteboardScreen() {
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: (e) => {
           const { w, h } = sizeRef.current;
           const total = strokesRef.current.reduce((n, s) => n + s.p.length, 0);

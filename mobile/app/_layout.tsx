@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/lib/auth-context';
 import { LocaleProvider, useLocale } from '../src/i18n/LocaleProvider';
 import { PushBootstrap } from '../src/notifications/PushBootstrap';
+import { KeyboardRoot } from '../src/lib/keyboard';
 import { RealtimeProvider } from '../src/lib/realtime';
 import { ConnectionProvider } from '../src/lib/connection';
 import { DialogHost, installDialog } from '../src/ui/Dialog';
@@ -52,11 +53,13 @@ export default function RootLayout() {
           <PushBootstrap />
           <RealtimeProvider>
           <ConnectionProvider>
+          <KeyboardRoot>
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background }, headerStyle: { backgroundColor: colors.surface }, headerTintColor: colors.text, headerShadowVisible: false, headerTitleStyle: { fontFamily: 'Inter_700Bold', fontSize: 18 }, headerBackButtonDisplayMode: 'minimal', animation: 'ios_from_right', gestureEnabled: true, fullScreenGestureEnabled: true }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
           </Stack>
+          </KeyboardRoot>
           </ConnectionProvider>
           </RealtimeProvider>
         </LocaleProvider>

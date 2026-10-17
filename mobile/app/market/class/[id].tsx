@@ -13,7 +13,7 @@ import { t } from '../../../src/i18n';
 import { Bubble, Composer } from '../../../src/chat/chat-ui';
 import { ChannelPost, market } from '../../../src/market/marketApi';
 import { useAsync } from '../../../src/market/useAsync';
-import { useKeyboardPadding } from '../../../src/lib/keyboard';
+import { useKeyboardOpen } from '../../../src/lib/keyboard';
 import { ConnectionStrip, onReconnect } from '../../../src/lib/connection';
 import { colors, radius, spacing } from '../../../src/theme/colors';
 import { fmtDayTime } from '../../../src/ui/format';
@@ -33,7 +33,7 @@ export default function ClassChannelScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
   useClassProtect(id);
-  const kb = useKeyboardPadding();
+  const kbOpen = useKeyboardOpen();
   const router = useRouter();
   const cls = useAsync(() => market.classDetail(token as string, id), [token, id]);
   const sessions = useAsync(() => market.classSessions(token as string, id), [token, id]);
@@ -226,7 +226,7 @@ export default function ClassChannelScreen() {
           <View style={styles.nextBtn}><Text style={styles.nextBtnText}>{teacher ? t('chan.start') : t('room.open')}</Text></View>
         </Pressable>
       )}
-      <View style={{ flex: 1, paddingBottom: kb }}>
+      <View style={{ flex: 1 }}>
         <ConnectionStrip />
         {posts.length + pending.length === 0 ? (
           <View style={styles.empty}>
@@ -273,7 +273,7 @@ export default function ClassChannelScreen() {
             )}
           />
         )}
-        {closed ? <Text style={styles.closed}>{t('class.cancelledLabel')}</Text> : <Composer reply={replyTo ? { id: replyTo.id, body: replyTo.body, author: replyTo.author.name, hasFile: !!replyTo.file } : null} onCancelReply={() => setReplyTo(null)} accent={th.accent} wall={wallOf(th)} keyboardOpen={kb > 0} token={token as string} placeholder={t('chan.placeholder')} onSend={send} onAttached={sendFile} />}
+        {closed ? <Text style={styles.closed}>{t('class.cancelledLabel')}</Text> : <Composer reply={replyTo ? { id: replyTo.id, body: replyTo.body, author: replyTo.author.name, hasFile: !!replyTo.file } : null} onCancelReply={() => setReplyTo(null)} accent={th.accent} wall={wallOf(th)} keyboardOpen={kbOpen} token={token as string} placeholder={t('chan.placeholder')} onSend={send} onAttached={sendFile} />}
       </View>
       <PinsSheet visible={pinList} items={pins.map((p) => ({ id: p.id, body: p.body, at: p.at, fileName: p.file?.name, image: p.file?.image }))} onClose={() => setPinList(false)}
         onJump={(p) => void jumpTo(p.id, 0)} onUnpin={teacher ? (p) => { const full = pins.find((x) => x.id === p.id); if (full) void pinPost(full, false); } : undefined} />

@@ -8,6 +8,7 @@ import { Screen } from '../../../src/components/Screen';
 import { StateView } from '../../../src/components/StateView';
 import { ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
+import { useKeyboardPadding } from '../../../src/lib/keyboard';
 import { useRealtime } from '../../../src/lib/realtime';
 import { SignalPill, useConnection } from '../../../src/lib/connection';
 import { useSessionProtect } from '../../../src/lib/protect';
@@ -48,6 +49,7 @@ export default function ClassRoomScreen() {
   const { token } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const kbModal = useKeyboardPadding({ modal: true });
   const [st, setSt] = useState<ClassRoomState | null>(null);
   const [aud, setAud] = useState<AudienceItem[]>([]);
   const [view, setView] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -214,7 +216,7 @@ export default function ClassRoomScreen() {
 
       <Modal visible={panel !== null} transparent animationType="slide" onRequestClose={() => setPanel(null)}>
         <Pressable style={styles.backdrop} onPress={() => setPanel(null)}>
-          <Pressable style={[styles.panel, { paddingBottom: insets.bottom + 12 }]} onPress={() => undefined}>
+          <Pressable style={[styles.panel, { paddingBottom: (kbModal || insets.bottom) + 12, maxHeight: kbModal ? '95%' : '82%' }]} onPress={() => undefined}>
             <View style={styles.grip} />
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               {panel === 'poll' && <PollPanel token={token as string} sessionId={sid} teacher={teacher} />}
