@@ -146,3 +146,12 @@
 
 ## A9 push notifications
 - Never tested against the real Expo push service or a real phone (needs a development build with FCM credentials and EXPO_PUSH_ENABLED=true). Push receipts (to detect dead tokens after delivery) are not polled yet; tokens are dropped only when Expo reports DeviceNotRegistered at send time. Telegram fallback is C1 (not built). Settings, inbox and bootstrap screens are type-checked and bundled only.
+
+## UI rebuild, sign-in, chat and files (this stretch)
+- Phone sign-in works with a dev code only. Real Telegram Gateway codes need `backend/.devdb/telegram.token`; not tested with a real token (user chose to wait, the Gateway costs money).
+- Friends from contacts: matching uses SHA-256 of E.164 numbers (`User.phoneHash`). Hashes of phone numbers can be brute-forced, so this is privacy-by-convention, not secrecy. Only phone-registered accounts can be found. Under-18s are included on purpose (owner's decision) but their chat rules did not change. The consent text and privacy policy for reading contacts: NEEDS LAWYER.
+- Real-time chat: server events verified with a script (~100 ms); the app side (`src/lib/realtime.tsx`) is type-checked and was not seen on two phones at once. Polling (15 s) stays as a safety net. Class chat, polls and whiteboard still poll (events exist on the server, screens not switched).
+- Any file type up to 100 GiB (class material, chat, homework): streamed from disk, served as attachment with nosniff and sandbox CSP, never inline. These files are NOT virus-scanned (the scanner works on in-memory buffers); with `FILE_SCAN_REQUIRED=true` they are refused. Sizes are stored as DOUBLE (exact to 2^53). Never tested with a file over a few MB. Disk guard (`DISK_MIN_FREE_BYTES`) and the 1 TiB teacher quota are the only brakes: this is local disk, there is no object storage.
+- Phone uploads read big files piece by piece with expo-file-system (File.open/readBytes); written against the type definitions, not run on a phone with a large file. No upload retry UI for a 100 GB transfer beyond the existing resume.
+- No in-app video player yet: videos download and open in the phone's own app. Recorded-lesson playback (expo-video with Range requests, which the server now supports) is the next piece.
+- Courses (a paid one-month course: price, curriculum, enrolment, progress) are not built; only classes, files and live rooms exist.

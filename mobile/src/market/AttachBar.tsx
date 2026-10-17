@@ -64,9 +64,9 @@ export function AttachBar({ token, disabled, onUploaded }: { token: string; disa
   const pickPdf = async () => {
     const DP = documentPicker();
     if (!DP) return;
-    const r = await DP.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+    const r = await DP.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
     const a = r.canceled ? null : r.assets[0];
-    if (a) await run({ uri: a.uri, name: a.name || 'document.pdf', mime: 'application/pdf' });
+    if (a) await run({ uri: a.uri, name: a.name || 'file', mime: a.mimeType || 'application/octet-stream' });
   };
 
   const busy = progress !== null;

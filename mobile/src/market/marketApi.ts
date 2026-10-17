@@ -359,7 +359,7 @@ export interface ClassQuestionItem {
   id: string; text: string; status: 'OPEN' | 'ANSWERED' | 'LATER' | 'HIDDEN'; pinned: boolean; upvotes: number; author: string | null; anonymous: boolean;
   mine: boolean; voted: boolean; reply: { text: string } | null;
 }
-export interface ClassFileItem { id: string; name: string; pageCount: number; renderedPages: number; renderStatus: 'PREPARING' | 'READY' | 'FAILED'; allowDownload: boolean; sizeBytes: number | null }
+export interface ClassFileItem { id: string; name: string; pageCount: number; renderedPages: number; renderStatus: 'PREPARING' | 'READY' | 'FAILED'; allowDownload: boolean; sizeBytes: number | null; mime?: string | null }
 export interface BoardStroke { c: string; w: number; p: [number, number][] }
 export interface FeedPost { id: string; kind: string; sessionId: string | null; title: string | null; text: string | null; data: unknown; hasImage: boolean; at: string }
 export interface ClassBoardRow { id: string; pupilId: string; name: string | null; status: string; amountMinor: number; periodKey: string; teacherConfirmedAt: string | null }

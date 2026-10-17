@@ -42,6 +42,28 @@ function readBlob(uri: string): Promise<Blob> {
   });
 }
 
+interface Source { size: number; slice: (start: number, end: number) => Promise<any> }
+
+/**
+ * Opens a local file for chunked upload. Images are small, so they are read once. Everything else (videos, archives, up to 100 GB)
+ * is read piece by piece from disk, so the phone never holds the whole file in memory.
+ */
+async function openSource(uri: string, small: boolean): Promise<Source> {
+  if (!small) {
+    try {
+      const FS = require('expo-file-system') as typeof import('expo-file-system');
+      const file = new FS.File(uri);
+      const size = file.size ?? 0;
+      if (size > 0) {
+        const handle = file.open();
+        return { size, slice: async (a, b) => { handle.offset = a; return handle.readBytes(b - a); } };
+      }
+    } catch { /* fall back to reading it whole */ }
+  }
+  const blob = await readBlob(uri);
+  return { size: blob.size, slice: async (a, b) => blob.slice(a, b) };
+}
+
 /** Any phone photo (HEIC, AVIF, huge camera files…) becomes a normal JPEG of at most 1600 px, so the server always accepts it. */
 async function toJpeg(o: UploadOptions): Promise<UploadOptions> {
   if (!o.mime.startsWith('image/')) return o;
@@ -56,7 +78,7 @@ async function toJpeg(o: UploadOptions): Promise<UploadOptions> {
 
 export async function uploadFile(input: UploadOptions): Promise<{ fileId: string }> {
   const o = input.resumeFileId ? input : await toJpeg(input);
-  const blob = await readBlob(o.uri);
+  const blob = await openSource(o.uri, o.mime.startsWith('image/'));
   if (!blob.size) throw new UploadError('EMPTY_FILE', 'The file is empty or could not be read');
   let info: UploadInit & { received?: number[] };
   try {
@@ -74,7 +96,7 @@ export async function uploadFile(input: UploadOptions): Promise<{ fileId: string
       await apiRequest(`/files/${info.fileId}/cancel`, { method: 'POST', token: o.token, body: {} }).catch(() => undefined);
       throw new UploadError('CANCELLED', 'cancelled', info.fileId);
     }
-    const body = blob.slice(part.index * info.chunkSize, Math.min(blob.size, (part.index + 1) * info.chunkSize));
+    const body = await blob.slice(part.index * info.chunkSize, Math.min(blob.size, (part.index + 1) * info.chunkSize));
     let ok = false;
     for (let attempt = 0; attempt < 3 && !ok; attempt++) {
       try {

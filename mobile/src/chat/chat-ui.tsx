@@ -132,9 +132,9 @@ export function Composer({ token, placeholder, onSend, onAttached, disabled, key
     setMenu(false);
     const DP = documentPicker();
     if (!DP) return;
-    const r = await DP.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+    const r = await DP.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
     const a = r.canceled ? null : r.assets[0];
-    if (a) await attach(a.uri, a.name || 'document.pdf', 'application/pdf');
+    if (a) await attach(a.uri, a.name || 'file', a.mimeType || 'application/octet-stream');
   };
 
   return (

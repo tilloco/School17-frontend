@@ -62,3 +62,6 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 - [ ] E4 Safety page
 
 - [ ] S12 (in progress: hardening tests added, docs pending) Hardening
+
+## Latest
+- Mobile UI rebuilt in an Apple-like style (fonts, warm palette, sheets, dialogs, outbox, offline strip); phone/email/Google sign-in with change-number; edit profile with round photo crop, @username live check, bio; profile card in group chats; message-requests switch; friends from contacts; real-time chat socket; any-file class material (streamed, Range).

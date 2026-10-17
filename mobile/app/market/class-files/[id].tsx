@@ -15,6 +15,14 @@ import { uploadFile } from '../../../src/market/uploader';
 import { useAsync } from '../../../src/market/useAsync';
 import { colors, radius, spacing } from '../../../src/theme/colors';
 
+function fmtBytes(n?: number | null) {
+  if (!n) return '';
+  const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let i = 0, v = n;
+  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+  return `${v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)} ${u[i]}`;
+}
+
 /** Class library: PDF files with search. Teacher: upload (chunked, resumable), delete, allow/deny download. Members: open download (if allowed) and report. */
 export default function ClassFilesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -29,12 +37,12 @@ export default function ClassFilesScreen() {
   const upload = async () => {
     const DP = documentPicker();
     if (!DP) return;
-    const r = await DP.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+    const r = await DP.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
     const a = r.canceled ? null : r.assets[0];
     if (!a) return;
     setProgress(0);
     try {
-      const { fileId } = await uploadFile({ token: token as string, uri: a.uri, name: a.name || 'book.pdf', mime: 'application/pdf', purpose: 'CLASS_FILE', onProgress: setProgress });
+      const { fileId } = await uploadFile({ token: token as string, uri: a.uri, name: a.name || 'file', mime: a.mimeType || 'application/octet-stream', purpose: 'CLASS_FILE', onProgress: setProgress });
       await market.addClassFile(token as string, id, fileId);
       files.reload();
     } catch (e) {
@@ -76,7 +84,7 @@ export default function ClassFilesScreen() {
             <View key={f.id} style={styles.card}>
               <Text style={styles.strong}>{f.name}</Text>
               <Text style={styles.help}>
-                {f.renderStatus === 'READY' ? t('cfile.pages', { n: f.pageCount }) : f.renderStatus === 'PREPARING' ? t('cfile.preparing', { n: f.renderedPages, total: f.pageCount || '?' }) : t('cfile.failed')}
+                {f.mime && f.mime !== 'application/pdf' ? fmtBytes(f.sizeBytes) : f.renderStatus === 'READY' ? t('cfile.pages', { n: f.pageCount }) : f.renderStatus === 'PREPARING' ? t('cfile.preparing', { n: f.renderedPages, total: f.pageCount || '?' }) : t('cfile.failed')}
                 {f.sizeBytes ? ` · ${(f.sizeBytes / 1048576).toFixed(1)} MB` : ''}
               </Text>
               <View style={styles.row}>
