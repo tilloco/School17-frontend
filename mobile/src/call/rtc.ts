@@ -1,3 +1,5 @@
+import { AdaptiveController, CallContext, Plan } from './adaptive';
+
 // WebRTC driver (LiveKit). Needs a development build: livekit-client and @livekit/react-native contain native code and do not run in Expo Go.
 // The libraries are loaded with require() so that Expo Go still starts the app and the call screen explains what is missing.
 import Constants from 'expo-constants';
@@ -17,6 +19,8 @@ export interface LinkQuality {
   jitterMs?: number;
   upKbps?: number;
   downKbps?: number;
+  /** what the adaptive controller currently sends/receives, for the small line in the quality card */
+  adapt?: { camera: string; screen?: string; remoteCamera: 'high' | 'low' | 'off' };
 }
 
 /** Everything a call screen draws: camera and screen of both sides, simultaneously. */
@@ -105,6 +109,11 @@ export function createRtcDriver(): RtcDriver | null {
   let ev: RtcDriverEvents | null = null;
   let lkLevel: LinkQuality['level'] = 'excellent';
   let rttEma: number | undefined;
+  let lastLoss: number | undefined;
+  const adaptive = new AdaptiveController();
+  let lastPlan: Plan | null = null;
+  let autoPaused = false; // the camera was paused by the controller (not by the person)
+  let userCameraOn = true;
   let prev: { t: number; up: number; down: number; lost: number; recv: number } | null = null;
 
   const remote = () => (room && room.remoteParticipants ? (Array.from(room.remoteParticipants.values())[0] as any) : null);
@@ -130,6 +139,7 @@ export function createRtcDriver(): RtcDriver | null {
     if (!room || !ev) return;
     const state = room.state as string;
     if (state !== 'connected') return void ev.onQuality({ level: 'lost' });
+    let availKbps: number | undefined;
     let rttMs: number | undefined;
     let lossPct: number | undefined;
     let jitterMs: number | undefined;
@@ -141,7 +151,10 @@ export function createRtcDriver(): RtcDriver | null {
       const pcm = room.engine?.pcManager;
       const [pub, sub] = await Promise.all([pcm?.publisher?.getStats?.(), pcm?.subscriber?.getStats?.()]);
       pub?.forEach((s: any) => {
-        if (s.type === 'candidate-pair' && (s.nominated || s.state === 'succeeded') && typeof s.currentRoundTripTime === 'number') rttMs = s.currentRoundTripTime * 1000;
+        if (s.type === 'candidate-pair' && (s.nominated || s.state === 'succeeded') && typeof s.currentRoundTripTime === 'number') {
+          rttMs = s.currentRoundTripTime * 1000;
+          if (typeof s.availableOutgoingBitrate === 'number' && s.availableOutgoingBitrate > 0) availKbps = s.availableOutgoingBitrate / 1000;
+        }
         if (s.type === 'outbound-rtp') up += s.bytesSent ?? 0;
         if (s.type === 'remote-inbound-rtp') {
           if (typeof s.roundTripTime === 'number' && rttMs === undefined) rttMs = s.roundTripTime * 1000;
@@ -175,7 +188,70 @@ export function createRtcDriver(): RtcDriver | null {
     prev = { t: now, up, down, lost, recv };
     if (rttMs !== undefined) rttEma = rttEma === undefined ? rttMs : rttEma * 0.6 + rttMs * 0.4;
     const measured = levelFrom({ rttMs: rttEma, lossPct, jitterMs });
-    ev.onQuality({ level: worse(measured, lkLevel === 'excellent' ? 'excellent' : lkLevel), rttMs: rttEma, lossPct, jitterMs, upKbps, downKbps });
+    lastLoss = lossPct;
+    const adaptCtx: CallContext = {
+      screenOn: !!trackOf(room.localParticipant, lk.Track.Source.ScreenShare),
+      cameraOn: userCameraOn,
+      remoteScreenOn: !!trackOf(remote(), lk.Track.Source.ScreenShare),
+    };
+    const plan = adaptive.update({ availKbps, upKbps, downKbps, rttMs: rttEma, lossPct }, adaptCtx, now);
+    if (plan) void applyPlan(plan);
+    const shown = plan ?? lastPlan;
+    ev.onQuality({
+      level: worse(measured, lkLevel === 'excellent' ? 'excellent' : lkLevel), rttMs: rttEma, lossPct, jitterMs, upKbps, downKbps,
+      adapt: shown ? { camera: shown.camera.label, screen: shown.screen?.label, remoteCamera: shown.remoteCamera } : undefined,
+    });
+  };
+
+  const tune = async (sender: any, fn: (enc: any, rid: string | undefined) => void) => {
+    try {
+      const params = sender?.getParameters?.();
+      if (!params?.encodings?.length) return;
+      params.encodings.forEach((e: any) => fn(e, e.rid));
+      await sender.setParameters(params);
+    } catch {
+      /* the platform may refuse a change: the previous setting stays, nothing breaks */
+    }
+  };
+
+  /** Puts a plan from the controller into effect: camera layers and caps, screen frame rate and caps, what we receive. */
+  const applyPlan = async (plan: Plan) => {
+    if (!room) return;
+    lastPlan = plan;
+    const me = room.localParticipant;
+    const camTrack = me.getTrackPublication(lk.Track.Source.Camera)?.videoTrack;
+    if (camTrack && userCameraOn) {
+      try {
+        if (plan.camera.layer === 'off') {
+          if (!autoPaused) { await camTrack.mute(); autoPaused = true; }
+        } else {
+          if (autoPaused) { await camTrack.unmute(); autoPaused = false; }
+          const q = plan.camera.layer === 'high' ? lk.VideoQuality.HIGH : plan.camera.layer === 'medium' ? lk.VideoQuality.MEDIUM : lk.VideoQuality.LOW;
+          await camTrack.setPublishingQuality?.(q);
+          const kbps = plan.camera.kbps;
+          await tune(camTrack.sender, (enc, rid) => {
+            if (rid === 'q') { enc.maxBitrate = Math.min(kbps, 150) * 1000; enc.maxFramerate = Math.min(plan.camera.fps, 15); }
+            else if (rid === 'h') { enc.maxBitrate = Math.min(kbps, 700) * 1000; enc.maxFramerate = plan.camera.fps; }
+            else { enc.maxBitrate = kbps * 1000; enc.maxFramerate = plan.camera.fps; }
+          });
+        }
+      } catch { /* keep going with the previous setting */ }
+    }
+    const scr = me.getTrackPublication(lk.Track.Source.ScreenShare)?.videoTrack;
+    if (scr && plan.screen) {
+      const tier = plan.screen;
+      await tune(scr.sender, (enc) => { enc.maxBitrate = tier.kbps * 1000; enc.maxFramerate = tier.fps; });
+    }
+    const r = remote();
+    const rcam = r?.getTrackPublication?.(lk.Track.Source.Camera);
+    try {
+      if (rcam) {
+        if (plan.remoteCamera === 'off') rcam.setEnabled?.(false);
+        else { rcam.setEnabled?.(true); rcam.setVideoQuality?.(plan.remoteCamera === 'low' ? lk.VideoQuality.LOW : lk.VideoQuality.HIGH); }
+      }
+      r?.getTrackPublication?.(lk.Track.Source.ScreenShare)?.setVideoQuality?.(lk.VideoQuality.HIGH); // the other person's screen always keeps its full quality
+    } catch { /* ignore */ }
+    emitMedia();
   };
 
   return {
@@ -225,7 +301,9 @@ export function createRtcDriver(): RtcDriver | null {
         .on(lk.RoomEvent.DataReceived, (payload: Uint8Array) => ev?.onData(dec.decode(payload)));
       await room.connect(url, token);
       await room.localParticipant.setMicrophoneEnabled(true);
+      userCameraOn = opts.videoEnabled;
       await room.localParticipant.setCameraEnabled(opts.videoEnabled);
+      try { const mt = room.localParticipant.getTrackPublication(lk.Track.Source.Camera)?.videoTrack?.mediaStreamTrack; if (mt) mt.contentHint = 'motion'; } catch { /* optional */ }
       if (room.remoteParticipants?.size > 0) ev.onRemoteJoined();
       emitMedia();
       if (statsTimer) clearInterval(statsTimer);
@@ -244,6 +322,8 @@ export function createRtcDriver(): RtcDriver | null {
       emitMedia();
     },
     async setCamera(on) {
+      userCameraOn = on;
+      if (on) autoPaused = false;
       await room?.localParticipant.setCameraEnabled(on);
       emitMedia();
     },
@@ -262,7 +342,7 @@ export function createRtcDriver(): RtcDriver | null {
       await room?.localParticipant.publishData(enc.encode(text), { reliable: true });
     },
     async sampleStats() {
-      return { rttMs: rttEma };
+      return { rttMs: rttEma, lossPct: lastLoss };
     },
     localVideoTrack() {
       return room?.localParticipant.getTrackPublication(lk.Track.Source.Camera)?.videoTrack ?? null;

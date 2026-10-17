@@ -50,6 +50,8 @@ export function QualityBadge({ q }: { q: LinkQuality }) {
           <Row label={t('cq.jitter')} value={q.jitterMs === undefined ? '–' : `${Math.round(q.jitterMs)} ms`} />
           <Row label={t('cq.up')} value={mbps(q.upKbps)} />
           <Row label={t('cq.down')} value={mbps(q.downKbps)} />
+          {q.adapt && <Row label={t('cq.video')} value={q.adapt.camera === 'off' ? t('cq.paused') : q.adapt.camera} />}
+          {q.adapt?.screen && <Row label={t('cq.screen')} value={q.adapt.screen} />}
         </View>
       )}
     </View>
