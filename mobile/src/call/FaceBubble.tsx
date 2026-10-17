@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, LayoutChangeEvent, PanResponder, StyleSheet, View } from 'react-native';
 import { Text } from '../ui/Text';
 import { Video } from './CallStage';
@@ -8,15 +8,19 @@ import { Video } from './CallStage';
  * It starts in the top right corner; drag it anywhere and it snaps to the nearest corner so it never covers the middle of the material.
  * It never takes touches away from the material: only the bubble itself reacts.
  */
-export function FaceBubble({ track, name, size = 60, inset = 10 }: { track: unknown | null; name: string; size?: number; inset?: number }) {
+export function FaceBubble({ track, name, size = 60, inset = 10, rect = false, onPress }: { track: unknown | null; name: string; size?: number; inset?: number; rect?: boolean; onPress?: () => void }) {
+  const pw = rect ? Math.round(size * 1.8) : size;
+  const ph = size;
   const [box, setBox] = useState({ w: 0, h: 0 });
   const pos = useRef(new Animated.ValueXY({ x: 0, y: inset })).current;
   const corner = useRef({ right: true, bottom: false }); // which corner it sits in: kept when the screen turns sideways
   const start = useRef({ x: 0, y: 0 });
   const boxRef = useRef(box);
   boxRef.current = box;
+  const onPressRef = useRef(onPress);
+  onPressRef.current = onPress;
 
-  const corners = (b: { w: number; h: number }) => ({ left: inset, right: Math.max(inset, b.w - size - inset), top: inset, bottom: Math.max(inset, b.h - size - inset) });
+  const corners = (b: { w: number; h: number }) => ({ left: inset, right: Math.max(inset, b.w - pw - inset), top: inset, bottom: Math.max(inset, b.h - ph - inset) });
 
   const onLayout = (e: LayoutChangeEvent) => {
     const w = e.nativeEvent.layout.width;
@@ -27,6 +31,15 @@ export function FaceBubble({ track, name, size = 60, inset = 10 }: { track: unkn
       pos.setValue({ x: corner.current.right ? c.right : c.left, y: corner.current.bottom ? c.bottom : c.top });
     }
   };
+
+  // the picture changed shape (round <-> screen thumbnail): keep it in the same corner
+  useEffect(() => {
+    if (box.w > 0 && box.h > 0) {
+      const c = corners(box);
+      pos.setValue({ x: corner.current.right ? c.right : c.left, y: corner.current.bottom ? c.bottom : c.top });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pw, ph, box.w, box.h]);
 
   const pan = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
@@ -43,18 +56,19 @@ export function FaceBubble({ track, name, size = 60, inset = 10 }: { track: unkn
       const c = corners(boxRef.current);
       const x = Math.min(c.right, Math.max(c.left, start.current.x + g.dx));
       const y = Math.min(c.bottom, Math.max(c.top, start.current.y + g.dy));
-      const toX = x + size / 2 < boxRef.current.w / 2 ? c.left : c.right;
-      const toY = y + size / 2 < boxRef.current.h / 2 ? c.top : c.bottom;
+      if (Math.abs(g.dx) < 6 && Math.abs(g.dy) < 6) { onPressRef.current?.(); }
+      const toX = x + pw / 2 < boxRef.current.w / 2 ? c.left : c.right;
+      const toY = y + ph / 2 < boxRef.current.h / 2 ? c.top : c.bottom;
       corner.current = { right: toX === c.right, bottom: toY === c.bottom };
       Animated.spring(pos, { toValue: { x: toX, y: toY }, useNativeDriver: false, friction: 8, tension: 90 }).start();
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [size, inset]);
+  }), [pw, ph, inset]);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none" onLayout={onLayout}>
-      <Animated.View {...pan.panHandlers} style={[styles.bubble, { width: size, height: size, borderRadius: size / 2 }, { transform: pos.getTranslateTransform() }]}>
-        {track ? <Video track={track} style={styles.fill} mirror={false} /> : <View style={[styles.fill, styles.empty]}><Text style={styles.letter}>{(name || '?').trim().slice(0, 1).toUpperCase()}</Text></View>}
+      <Animated.View {...pan.panHandlers} style={[styles.bubble, { width: pw, height: ph, borderRadius: rect ? 12 : size / 2 }, { transform: pos.getTranslateTransform() }]}>
+        {track ? <Video track={track} style={styles.fill} mirror={false} cover={!rect} /> : <View style={[styles.fill, styles.empty]}><Text style={styles.letter}>{(name || '?').trim().slice(0, 1).toUpperCase()}</Text></View>}
       </Animated.View>
     </View>
   );

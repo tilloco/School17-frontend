@@ -11,7 +11,7 @@ import type { CallMedia, LinkQuality } from './rtc';
  * Full-screen viewer for a shared screen, like YouTube: the phone turns sideways, the shared screen fills it edge to edge,
  * the teacher's face becomes a small round picture in the top right corner. Double-tap (or the back button) returns to the lesson.
  */
-export function ShareFull({ visible, media, quality, onClose, name = '' }: { name?: string; visible: boolean; media: CallMedia; quality: LinkQuality; onClose: () => void }) {
+export function ShareFull({ visible, media, quality, onClose, name = '', swapped = false, onSwap }: { swapped?: boolean; onSwap?: () => void; name?: string; visible: boolean; media: CallMedia; quality: LinkQuality; onClose: () => void }) {
   const last = useRef(0);
   const hint = useRef(new Animated.Value(1)).current;
 
@@ -33,9 +33,9 @@ export function ShareFull({ visible, media, quality, onClose, name = '' }: { nam
       <StatusBar hidden />
       <View style={styles.root}>
         <Pressable style={StyleSheet.absoluteFill} onPress={tap} accessibilityLabel={t('share.exitFull')}>
-          <Video track={media.remoteScreen} style={StyleSheet.absoluteFill} cover={false} />
+          <Video track={swapped ? media.remoteCamera : media.remoteScreen} style={StyleSheet.absoluteFill} cover={swapped} />
         </Pressable>
-        <FaceBubble track={media.remoteCamera} name={name} size={64} inset={14} />
+        <FaceBubble track={swapped ? media.remoteScreen : media.remoteCamera} name={name} size={64} inset={14} rect={swapped} onPress={onSwap} />
         <View style={styles.badge} pointerEvents="box-none"><QualityBadge q={quality} /></View>
         <Animated.View style={[styles.toast, { opacity: hint }]} pointerEvents="none">
           <Ionicons name="contract" size={14} color="#fff" /><Text style={styles.toastText}>{t('share.doubleTapExit')}</Text>

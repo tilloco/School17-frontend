@@ -1,6 +1,7 @@
 import { Platform, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Redirect, Tabs } from 'expo-router';
+import { Intro } from '../../src/ui/Intro';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/lib/auth-context';
@@ -18,6 +19,8 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   if (!isLoading && !user) return <Redirect href="/(auth)/welcome" />; // signed out, or the saved sign-in is no longer valid
   return (
+    <>
+    <Intro />
     <Tabs
       screenOptions={{
         headerShown: true,
@@ -39,5 +42,6 @@ export default function TabsLayout() {
       <Tabs.Screen name="messages" options={{ href: null }} />
       <Tabs.Screen name="more" options={{ title: t('tab.settings'), tabBarIcon: icon('settings-outline', 'settings') }} />
     </Tabs>
+    </>
   );
 }

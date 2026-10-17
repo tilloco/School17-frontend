@@ -24,6 +24,12 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
   const [cam, setCam] = useState(true);
   const [sharing, setSharing] = useState(false);
   const [full, setFull] = useState(false);
+  const [swapped, setSwapped] = useState(false);
+  const lastTap = useRef(0);
+  const tapStage = () => {
+    const now = Date.now();
+    if (media.remoteScreen && now - lastTap.current < 350) { lastTap.current = 0; setFull(true); } else lastTap.current = now;
+  };
   const driver = useRef<RtcDriver | null>(null);
   const publish = teacher || canPublish;
   const avail = rtcAvailability();
@@ -70,7 +76,7 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
     return () => { dead = true; if (timer) clearTimeout(timer); void d?.disconnect(); if (driver.current === d) driver.current = null; };
   }, [token, sid, teacherId, publish]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { if (!media.remoteScreen) setFull(false); }, [media.remoteScreen]);
+  useEffect(() => { if (!media.remoteScreen) { setFull(false); setSwapped(false); } }, [media.remoteScreen]);
 
   if (!avail.ok) {
     return (
@@ -86,6 +92,9 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
     <View style={[styles.box, { height: showsScreen ? 250 : 230 }]}>
       <CallStage
         hideTiles={false}
+        swapped={swapped}
+        onSwap={() => setSwapped((v) => !v)}
+        onTapStage={tapStage}
         onFlip={() => void driver.current?.flipCamera()}
         media={media}
         otherName={teacher ? t('room.title') : teacherName}
@@ -98,11 +107,6 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
         <View style={styles.live}><View style={styles.dot} /><Text style={styles.liveText}>{state === 'live' ? t('chan.liveNow') : t('call.banner.reconnecting')}</Text></View>
         <QualityBadge q={q} />
       </View>
-      {showsScreen && (
-        <Pressable accessibilityRole="button" accessibilityLabel={t('share.full')} onPress={() => setFull(true)} style={styles.fullBtn}>
-          <Ionicons name="expand" size={16} color="#fff" /><Text style={styles.fullText}>{t('share.full')}</Text>
-        </Pressable>
-      )}
       {publish && (
         <View style={styles.controls}>
           <RoundButton size={40} icon={mic ? 'mic' : 'mic-off'} label={mic ? t('call.mute') : t('call.unmute')} active={mic} onPress={() => { setMic(!mic); void driver.current?.setMic(!mic); }} />
@@ -110,7 +114,7 @@ export function LiveLesson({ token, sid, teacher, teacherId, teacherName, canPub
           {teacher && <RoundButton size={40} icon="desktop" label={sharing ? t('call.stopShare') : t('call.share')} accent={sharing} onPress={() => { const on = !sharing; setSharing(on); void driver.current?.setScreenShare(on).catch(() => setSharing(false)); }} />}
         </View>
       )}
-      <ShareFull visible={full} media={media} quality={q} name={teacherName} onClose={() => setFull(false)} />
+      <ShareFull visible={full} media={media} quality={q} name={teacherName} swapped={swapped} onSwap={() => setSwapped((v) => !v)} onClose={() => setFull(false)} />
     </View>
   );
 }

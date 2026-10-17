@@ -67,9 +67,10 @@ const Row = ({ label, value }: { label: string; value: string }) => (
  *  - otherwise the other person's camera fills the stage and my camera is a small tile;
  *  - while I share my own screen, a card says so (showing my screen to myself would only mirror it forever).
  */
-export function CallStage({ media, otherName, waiting, sharingMine, onStopShare, cameraOff, onTapStage, onFlip, hideTiles }: { onTapStage?: () => void; onFlip?: () => void; hideTiles?: boolean; media: CallMedia; otherName: string; waiting: boolean; sharingMine: boolean; onStopShare: () => void; cameraOff: boolean }) {
+export function CallStage({ media, otherName, waiting, sharingMine, onStopShare, cameraOff, onTapStage, onFlip, hideTiles, swapped = false, onSwap }: { swapped?: boolean; onSwap?: () => void; onTapStage?: () => void; onFlip?: () => void; hideTiles?: boolean; media: CallMedia; otherName: string; waiting: boolean; sharingMine: boolean; onStopShare: () => void; cameraOff: boolean }) {
   const hasScreen = !!media.remoteScreen;
-  const main = hasScreen ? media.remoteScreen : media.remoteCamera;
+  const screenIsMain = hasScreen && !swapped; // swapped: the teacher's face fills the stage and the screen becomes the small picture
+  const main = hasScreen ? (swapped ? media.remoteCamera : media.remoteScreen) : media.remoteCamera;
   const pulse = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.loop(Animated.sequence([Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }), Animated.timing(pulse, { toValue: 0, duration: 900, useNativeDriver: true })])).start();
@@ -77,7 +78,7 @@ export function CallStage({ media, otherName, waiting, sharingMine, onStopShare,
   return (
     <View style={styles.stage}>
       <Pressable style={StyleSheet.absoluteFill} onPress={onTapStage} accessible={false} />
-      <View style={StyleSheet.absoluteFill} pointerEvents="none"><Video track={main} style={StyleSheet.absoluteFill} cover={!hasScreen} /></View>
+      <View style={StyleSheet.absoluteFill} pointerEvents="none"><Video track={main} style={StyleSheet.absoluteFill} cover={!screenIsMain} /></View>
       {!main && (
         <View style={styles.center}>
           <Animated.View style={[styles.avatar, { opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }]}>
@@ -87,8 +88,7 @@ export function CallStage({ media, otherName, waiting, sharingMine, onStopShare,
           <Text style={styles.sub}>{waiting ? t('call.waiting', { name: otherName }) : media.remoteMicMuted ? t('call.cameraOffOther') : ''}</Text>
         </View>
       )}
-      {hasScreen && <View style={styles.tag}><Ionicons name="desktop" size={13} color="#fff" /><Text style={styles.tagText}>{t('call.theirScreen', { name: otherName })}</Text></View>}
-      {!hideTiles && hasScreen ? <FaceBubble track={media.remoteCamera} name={otherName} /> : null}
+      {!hideTiles && hasScreen ? <FaceBubble track={swapped ? media.remoteScreen : media.remoteCamera} name={otherName} rect={swapped} size={swapped ? 64 : 60} onPress={onSwap} /> : null}
       {!hideTiles && (
         <View style={styles.tiles} pointerEvents="box-none">
           {media.localCamera && !cameraOff ? <Pressable accessibilityRole="button" accessibilityLabel="flip" onPress={onFlip} style={styles.tile}><View style={styles.tileVideo} pointerEvents="none"><Video track={media.localCamera} style={styles.tileVideo} mirror /></View></Pressable> : null}

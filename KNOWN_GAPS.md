@@ -178,3 +178,9 @@
 
 ## Local video testing needs one network
 - Phone and laptop must be on the SAME network (for example the laptop joined to the phone's hotspot, or both on one Wi-Fi) for live video in the dev build: the local LiveKit server hands out the laptop's LAN addresses and the phone has to reach them (UDP). Over USB alone only the signalling works (adb reverse carries TCP only), so the picture stays on "connecting". Verified: phone 192.168.0.x and laptop 192.168.1.x could not reach each other. Windows may also need a firewall rule for livekit-server.exe (admin).
+
+## Shared-screen viewer, intro, keyboard (latest)
+- Shared screen: double-tap turns it sideways full screen (checked on a phone with a layout preview, not with a live share), double-tap goes back, tapping the small picture swaps face and screen, the small picture can be dragged to any corner. Not yet seen with real video: needs phone and laptop on one network.
+- Background lessons: a silent looping sound keeps the lesson alive with the screen off; added but NOT verified with the screen off yet.
+- Keyboard: the whole app shrinks above the keyboard (one place: src/lib/keyboard.tsx). Checked on the phone for the pop-up sheets; not every screen was opened.
+- A first-run intro (4 cards) is shown once; the "seen" flag is stored on the device.
