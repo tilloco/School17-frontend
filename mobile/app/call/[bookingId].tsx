@@ -1,5 +1,6 @@
 import { SignalPill } from '../../src/lib/connection';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CleanCatcher, CleanHint, useCleanScreen } from '../../src/call/useCleanScreen';
 import { CallStage, QualityBadge, RoundButton } from '../../src/call/CallStage';
 import React, { useEffect, useState } from 'react';
 import { fmtTime } from '../../src/ui/format';
@@ -24,6 +25,7 @@ export default function CallScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
   const call = useCall(bookingId, token);
   const insets = useSafeAreaInsets();
+  const cs = useCleanScreen();
   const [elapsed, setElapsed] = useState(0);
   const startedAt = React.useRef<number | null>(null);
   useEffect(() => {
@@ -141,19 +143,19 @@ export default function CallScreen() {
       <View style={styles.callRoot}>
         <Stack.Screen options={{ headerShown: false }} />
         <CallStage media={call.media} otherName={lobby.other.name} waiting={!call.remoteJoined && ctx.state === 'connected'} sharingMine={ctx.screenSharing} onStopShare={call.toggleShare} cameraOff={ctx.cameraOff || ctx.audioOnlyAuto} />
-        <View style={[styles.topBar, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
+        {!cs.clean && <View style={[styles.topBar, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
           <View>
             <Text style={styles.topName} numberOfLines={1}>{lobby.other.name}</Text>
             <Text style={styles.topTime}>{ctx.state === 'connecting' ? t('state.loading') : fmtElapsed(elapsed)}</Text>
           </View>
           <QualityBadge q={q} />
-        </View>
+        </View>}
         {banner && (
           <View accessibilityLiveRegion="polite" style={[styles.banner, { top: insets.top + 64 }, ctx.banner === 'failed' && { backgroundColor: colors.danger }]}>
             <Text style={styles.bannerText}>{banner}</Text>
           </View>
         )}
-        {chatOpen && (
+        {chatOpen && !cs.clean && (
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.chat}>
             <Text style={styles.chatNote}>{t('call.chatNotSaved')}</Text>
             <FlatList
@@ -171,14 +173,17 @@ export default function CallScreen() {
             />
           </KeyboardAvoidingView>
         )}
-        <View style={[styles.controlsBar, { paddingBottom: insets.bottom + 12 }]}>
+        {!cs.clean && <View style={[styles.controlsBar, { paddingBottom: insets.bottom + 12 }]}>
           <RoundButton icon={ctx.micMuted ? 'mic-off' : 'mic'} label={ctx.micMuted ? t('call.unmute') : t('call.mute')} active={!ctx.micMuted} onPress={call.toggleMic} />
           <RoundButton icon={ctx.cameraOff ? 'videocam-off' : 'videocam'} label={ctx.cameraOff ? t('call.cameraOn') : t('call.cameraOff')} active={!ctx.cameraOff} onPress={call.toggleCamera} />
           <RoundButton icon="camera-reverse" label={t('call.flip')} onPress={call.flipCamera} />
           <RoundButton icon="desktop" label={ctx.screenSharing ? t('call.stopShare') : t('call.share')} accent={ctx.screenSharing} onPress={call.toggleShare} />
           <RoundButton icon="chatbubble-ellipses" label={t('call.chat')} active={!chatOpen} onPress={() => setChatOpen((v) => !v)} />
+          <RoundButton icon="eye-off" label={t('clean.enter')} onPress={cs.enter} />
           <RoundButton icon="call" label={t('call.leave')} danger onPress={call.leave} />
-        </View>
+        </View>}
+        <CleanHint show={cs.hint && !cs.clean} onClose={cs.dismissHint} />
+        <CleanCatcher show={cs.clean} onTap={cs.onTap} />
       </View>
     );
   }
