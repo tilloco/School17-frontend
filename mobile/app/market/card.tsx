@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../../src/ui/Text';
 import { Stack } from 'expo-router';
-import { Screen } from '../../src/components/Screen';
-import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { StateView } from '../../src/components/StateView';
 import { ApiError } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth-context';
@@ -10,8 +9,11 @@ import { t } from '../../src/i18n';
 import { market } from '../../src/market/marketApi';
 import { useAsync } from '../../src/market/useAsync';
 import { colors, radius, spacing } from '../../src/theme/colors';
+import { cardDigits, cardGroups, luhnOk } from '../../src/lib/card';
+import { Action, Card, Page } from '../../src/ui';
+import { BankCard } from '../../src/ui/BankCard';
 
-/** O'qituvchi: to'lov kartasi. Faqat raqam va ism; CVV/muddat/SMS maydonlari YO'Q. */
+/** Teacher: the card pupils pay to. Only the number and the holder's name: never an expiry date, a CVV or an SMS code. Shown to a pupil only after a lesson is accepted. */
 export default function CardScreen() {
   const { token } = useAuth();
   const info = useAsync(() => market.getPaymentInfo(token as string), [token]);
@@ -20,8 +22,8 @@ export default function CardScreen() {
   const [busy, setBusy] = useState(false);
 
   const header = <Stack.Screen options={{ headerShown: true, title: t('card.title'), headerBackTitle: t('common.back') }} />;
-  if (info.state === 'loading') return <Screen>{header}<StateView state="loading" /></Screen>;
-  if (info.state === 'offline' || info.state === 'error') return <Screen>{header}<StateView state={info.state} onRetry={info.reload} /></Screen>;
+  if (info.state === 'loading') return <View style={styles.root}>{header}<StateView state="loading" /></View>;
+  if (info.state === 'offline' || info.state === 'error') return <View style={styles.root}>{header}<StateView state={info.state} onRetry={info.reload} /></View>;
 
   const fail = (e: unknown) => {
     const code = e instanceof ApiError ? e.code : undefined;
@@ -31,7 +33,7 @@ export default function CardScreen() {
     setBusy(true);
     try {
       await market.setPaymentInfo(token as string, number, holder);
-      setNumber(''); // to'liq raqam ekranda qolmaydi
+      setNumber(''); // the full number never stays on the screen
       setHolder('');
       info.reload();
       Alert.alert(t('card.saved'));
@@ -41,53 +43,41 @@ export default function CardScreen() {
       setBusy(false);
     }
   };
+  const digits = cardDigits(number);
+  const full = digits.length === 16;
+  const valid = luhnOk(digits);
 
   return (
-    <Screen>
+    <View style={styles.root}>
       {header}
-      <ScrollView contentContainerStyle={{ gap: spacing.md, paddingVertical: spacing.md }} keyboardShouldPersistTaps="handled">
-        <Text style={styles.warn} accessibilityRole="alert">{t('card.warning')}</Text>
-        <Text style={styles.help}>{t('card.shownTo')}</Text>
-        <Text style={styles.current}>
-          {info.data?.set ? t('card.current', { last4: info.data.cardLast4 ?? '', holder: info.data.holderName ?? '' }) : t('card.none')}
-        </Text>
-        <View style={styles.box}>
-          <TextInput
-            accessibilityLabel={t('card.number')}
-            placeholder={t('card.number')}
-            value={number}
-            onChangeText={setNumber}
-            keyboardType="number-pad"
-            maxLength={19}
-            autoComplete="off"
-            importantForAutofill="no"
-            style={styles.input}
-          />
-          <TextInput
-            accessibilityLabel={t('card.holder')}
-            placeholder={t('card.holder')}
-            value={holder}
-            onChangeText={setHolder}
-            autoCapitalize="characters"
-            maxLength={40}
-            autoComplete="off"
-            importantForAutofill="no"
-            style={styles.input}
-          />
-          <PrimaryButton title={t('card.save')} onPress={save} loading={busy} disabled={number.replace(/\D/g, '').length < 16 || holder.trim().length < 2} />
-        </View>
-        {info.data?.set && (
-          <PrimaryButton title={t('card.remove')} variant="outline" onPress={() => market.removePaymentInfo(token as string).then(info.reload).catch(fail)} />
-        )}
-      </ScrollView>
-    </Screen>
+      <Page edges={[]}>
+        <BankCard last4={info.data?.set ? info.data.cardLast4 : null} number={digits.length >= 4 ? digits : null} holder={holder || info.data?.holderName} verifiedName />
+        {info.data?.set && !digits ? <Text style={styles.current}>{t('card.current', { last4: info.data.cardLast4 ?? '', holder: info.data.holderName ?? '' })}</Text> : null}
+
+        <Card style={{ gap: spacing.sm }}>
+          <TextInput accessibilityLabel={t('card.number')} placeholderTextColor={colors.textMuted} placeholder={t('card.number')} value={cardGroups(digits)} onChangeText={(v) => setNumber(cardDigits(v))} keyboardType="number-pad" maxLength={19} autoComplete="off" importantForAutofill="no" style={styles.input} />
+          <TextInput accessibilityLabel={t('card.holder')} placeholderTextColor={colors.textMuted} placeholder={t('card.holder')} value={holder} onChangeText={setHolder} autoCapitalize="characters" maxLength={40} autoComplete="off" importantForAutofill="no" style={styles.input} />
+          {full && <Text style={[styles.check, { color: valid ? colors.success : colors.danger }]}>{valid ? t('card.checkOk') : t('card.checkBad')}</Text>}
+          <Action label={busy ? t('state.loading') : t('card.save')} kind="accent" onPress={save} disabled={busy || !valid || holder.trim().length < 2} />
+        </Card>
+
+        <Card tone="warning" style={{ gap: 4 }}>
+          <Text style={styles.ruleTitle}>{t('card.rulesTitle')}</Text>
+          <Text style={styles.rule}>• {t('card.rule1')}</Text>
+          <Text style={styles.rule}>• {t('card.rule2')}</Text>
+          <Text style={styles.rule}>• {t('card.rule3')}</Text>
+        </Card>
+        {info.data?.set && <Action label={t('card.remove')} kind="outline" onPress={() => market.removePaymentInfo(token as string).then(info.reload).catch(fail)} />}
+      </Page>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  warn: { backgroundColor: '#FEF3C7', color: '#92400E', padding: spacing.md, borderRadius: radius.md, fontWeight: '600' },
-  help: { color: colors.textMuted },
-  current: { fontSize: 16, color: colors.text, fontWeight: '600' },
-  box: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, gap: spacing.sm, borderWidth: 1, borderColor: colors.border },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.sm, minHeight: 48, fontSize: 16 },
+  root: { flex: 1, backgroundColor: colors.background },
+  check: { fontWeight: '700', fontSize: 14 },
+  current: { textAlign: 'center', color: colors.textMuted },
+  input: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: radius.lg, paddingHorizontal: spacing.md, minHeight: 52, fontSize: 17, color: colors.text, backgroundColor: colors.background },
+  ruleTitle: { fontWeight: '800', color: colors.warningText },
+  rule: { color: colors.warningText, lineHeight: 20 },
 });

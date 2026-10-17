@@ -40,7 +40,7 @@ function Start-Tunnel($port) {
 try {
   Write-Host '1/5 Starting the local test database...'
   & bash (Join-Path $root 'backend/scripts/dev-db.sh') start | Out-Null
-  $env:DATABASE_URL = 'postgresql://postgres@127.0.0.1:54329/school17_test?schema=public'
+  $env:DATABASE_URL = 'postgresql://postgres@127.0.0.1:54329/school17_demo_test?schema=public'  # demo data lives here; the tests use school17_test
   Push-Location (Join-Path $root 'backend')
   & npx prisma migrate deploy 2>&1 | Out-Null
   Pop-Location

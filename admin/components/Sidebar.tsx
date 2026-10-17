@@ -9,8 +9,6 @@ import { DICT, Lang } from '@/lib/dict';
 export function Sidebar({ lang = 'uz' }: { lang?: Lang }) {
   const T = DICT[lang];
   const navItems = [
-    { href: '/', label: 'Umumiy holat' },
-    { href: '/users', label: 'Foydalanuvchilar' },
     { href: '/teachers', label: T['a.nav.teachers'] },
     { href: '/reports', label: T['a.nav.reports'] },
     { href: '/people', label: T['a.nav.people'] },
@@ -28,7 +26,7 @@ export function Sidebar({ lang = 'uz' }: { lang?: Lang }) {
   return (
     <aside className="w-60 shrink-0 bg-ink min-h-screen flex flex-col">
       <div className="px-6 py-6 border-b border-white/10">
-        <p className="font-display text-xl text-paper tracking-tight">Huquq Admin</p>
+        <p className="font-display text-xl text-paper tracking-tight">School17 Admin</p>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">

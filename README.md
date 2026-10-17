@@ -1,25 +1,10 @@
-# Huquq Imtihoniga Tayyorgarlik — Monorepo
+# School17
 
-Bu repo uchta qismdan iborat bo'ladi:
+A free tutoring marketplace for Uzbekistan (uz / ru / en). Teachers publish profiles, run 1:1 lessons and live classes of up to 30 pupils; pupils and guardians find teachers, book, attend and track their learning. The platform takes no commission and holds no money: pupils pay teachers directly and the app only records "marked paid / confirmed received".
 
-```
-/backend   → NestJS + Prisma + PostgreSQL API (TAYYOR — shu bosqichda)
-/mobile    → React Native + Expo + TypeScript ilova (KEYINGI BOSQICH)
-/admin     → Next.js + Tailwind admin panel (KEYINGI BOSQICH)
-/shared    → umumiy TypeScript typelar (mobile va admin uchun) (KEYINGI BOSQICH)
-```
-
-## Qurish tartibi (rejadagi 8 bosqich)
-
-- [x] 1. Monorepo struktura
-- [x] 2. Backend: Prisma schema, SMS OTP autentifikatsiya, asosiy CRUD + XAVFSIZLIK YAMOG'I
-- [x] 3. Mobil: onboarding, dashboard, lesson, quiz ekranlari
-- [ ] 4. Referral va premium logikasi backend'da
-- [ ] 5. Click/Payme webhook integratsiyasi
-- [ ] 6. Admin panel: login, kontent CRUD, foydalanuvchilar, analitika
-- [ ] 7. Push notification scheduled job
-- [ ] 8. AI shaxsiylashtirilgan tavsiya endpointi
-
-Har bir bosqich alohida, ishlaydigan holatda beriladi — avvalgisi tugamaguncha keyingisiga o'tilmaydi.
-
-Batafsil ishga tushirish uchun `/backend/README.md` ga qarang.
+- `backend/` NestJS + Prisma + PostgreSQL API (its own git repo)
+- `mobile/` Expo (React Native) app
+- `admin/` Next.js admin panel (teacher verification, reports, storage)
+- `shared/` pure logic and tests shared by the apps
+- `scripts/` and `Start-School17.bat` one-click phone testing (USB or tunnel + QR) against a local throwaway backend
+- Docs: HANDOFF.md (status), PROGRESS.md, DECISIONS.md, KNOWN_GAPS.md, LAWYER_QUESTIONS.md, NEW_FEATURES_SPEC.md, CLASSROOM_SPEC.md

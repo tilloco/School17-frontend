@@ -1,5 +1,7 @@
 import React from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { fmtTime } from '../../src/ui/format';
+import { FlatList, StyleSheet, View } from 'react-native';
+import { Text } from '../../src/ui/Text';
 import { Stack, useRouter } from 'expo-router';
 import { Screen } from '../../src/components/Screen';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
@@ -37,7 +39,7 @@ export default function TodayScreen() {
           keyExtractor={(b) => b.id}
           renderItem={({ item: b }) => (
             <View style={styles.card}>
-              <Text style={styles.when}>{new Date(b.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {b.durationMin} min</Text>
+              <Text style={styles.when}>{fmtTime(new Date(b.startAt))} · {b.durationMin} min</Text>
               <Text>{b.student.name}</Text>
               <Text style={styles.help}>{t(`status.${b.status}`)}</Text>
               {b.canJoinNow && <PrimaryButton title={t('lessons.join')} onPress={() => router.push(`/call/${b.id}` as never)} />}
@@ -57,9 +59,9 @@ export default function TodayScreen() {
 
 const styles = StyleSheet.create({
   h1: { fontSize: 22, fontWeight: '700', color: colors.text, marginVertical: spacing.md },
-  warn: { backgroundColor: '#FEF3C7', color: '#92400E', padding: spacing.sm, borderRadius: radius.sm, marginBottom: spacing.sm },
+  warn: { backgroundColor: colors.warningSoft, color: colors.warningText, padding: spacing.sm, borderRadius: radius.sm, marginBottom: spacing.sm },
   help: { color: colors.textMuted },
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border, gap: 4 },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 4 },
   when: { fontSize: 18, fontWeight: '700', color: colors.text },
   links: { gap: spacing.sm, paddingVertical: spacing.md },
 });

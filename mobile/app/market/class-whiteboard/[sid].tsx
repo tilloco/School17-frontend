@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, LayoutChangeEvent, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, LayoutChangeEvent, PanResponder, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../../../src/ui/Text';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Screen } from '../../../src/components/Screen';
@@ -164,7 +165,7 @@ export default function WhiteboardScreen() {
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
 
 const styles = StyleSheet.create({
-  board: { flex: 1, minHeight: 240, backgroundColor: '#ffffff', borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, marginVertical: spacing.sm, overflow: 'hidden' },
+  board: { flex: 1, minHeight: 240, backgroundColor: '#ffffff', borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, marginVertical: spacing.sm, overflow: 'hidden' },
   tools: { gap: spacing.xs, paddingBottom: spacing.sm },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, alignItems: 'center' },
   swatch: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: 'transparent' },

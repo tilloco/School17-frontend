@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { fmtDayShort, fmtTime } from '../../../src/ui/format';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../../../src/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../../src/components/Screen';
 import { PrimaryButton } from '../../../src/components/PrimaryButton';
@@ -51,7 +53,7 @@ export default function RescheduleScreen() {
           <View style={styles.slots}>
             {[1, 2, 3, 4, 5, 6, 7].map((n) => (
               <Pressable key={n} accessibilityRole="button" onPress={() => setDay(n)} style={[styles.chip, day === n && styles.chipOn]}>
-                <Text style={{ color: day === n ? '#fff' : colors.text }}>{new Date(Date.now() + n * DAY).toLocaleDateString([], { weekday: 'short', day: 'numeric' })}</Text>
+                <Text style={{ color: day === n ? '#fff' : colors.text }}>{fmtDayShort(new Date(Date.now() + n * DAY))}</Text>
               </Pressable>
             ))}
           </View>
@@ -63,7 +65,7 @@ export default function RescheduleScreen() {
             <View style={styles.slots}>
               {slots.data.slots.map((s) => (
                 <Pressable key={s} accessibilityRole="button" onPress={() => pick(s)} style={styles.chip}>
-                  <Text style={{ color: colors.text }}>{new Date(s).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                  <Text style={{ color: colors.text }}>{fmtTime(new Date(s))}</Text>
                 </Pressable>
               ))}
             </View>
@@ -77,7 +79,7 @@ export default function RescheduleScreen() {
 const styles = StyleSheet.create({
   help: { color: colors.textMuted, fontSize: 13 },
   label: { fontWeight: '700', color: colors.text },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, minHeight: 44, justifyContent: 'center' },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface, minHeight: 44, justifyContent: 'center' },
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   slots: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
 });

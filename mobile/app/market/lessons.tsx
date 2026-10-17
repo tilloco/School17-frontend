@@ -1,5 +1,7 @@
 import React from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { fmtDateTime } from '../../src/ui/format';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
+import { Text } from '../../src/ui/Text';
 import { Stack, useRouter } from 'expo-router';
 import { Screen } from '../../src/components/Screen';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
@@ -57,12 +59,12 @@ export default function LessonsScreen() {
             const open = b.status === 'REQUESTED' || b.status === 'CONFIRMED';
             return (
               <View style={styles.card}>
-                <Text style={styles.when}>{new Date(b.startAt).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · {b.durationMin} min</Text>
+                <Text style={styles.when}>{fmtDateTime(new Date(b.startAt))} · {b.durationMin} min</Text>
                 <Text style={styles.who}>{b.myRole === 'teacher' ? b.student.name : b.teacher.name}</Text>
                 <Text style={styles.status}>{t(`status.${b.status}`)}</Text>
                 {b.reschedule && !b.reschedule.byMe && (
                   <View style={{ gap: spacing.sm }}>
-                    <Text style={styles.status}>{t('lessons.counter', { time: new Date(b.reschedule.proposedStartAt).toLocaleString() })}</Text>
+                    <Text style={styles.status}>{t('lessons.counter', { time: fmtDateTime(new Date(b.reschedule.proposedStartAt)) })}</Text>
                     <PrimaryButton title={t('lessons.acceptTime')} onPress={() => act(() => market.acceptTime(token as string, b.id))} />
                     <PrimaryButton title={t('lessons.declineTime')} variant="outline" onPress={() => act(() => market.rejectTime(token as string, b.id))} />
                   </View>
@@ -93,7 +95,7 @@ export default function LessonsScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border, gap: 4 },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 4 },
   when: { fontSize: 16, fontWeight: '700', color: colors.text },
   who: { color: colors.text },
   status: { color: colors.textMuted },

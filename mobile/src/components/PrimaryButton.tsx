@@ -1,7 +1,8 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
-import { colors, radius, spacing } from '../theme/colors';
-import { useTapSound } from '../hooks/useTapSound';
+import { ActivityIndicator, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
+import { PressScale } from '../ui/PressScale';
+import { colors, spacing } from '../theme/colors';
 
 interface Props {
   title: string;
@@ -11,48 +12,25 @@ interface Props {
   variant?: 'primary' | 'outline';
 }
 
+/** Main button: solid tint colour. The "outline" variant is a soft tinted button (no border), like iOS secondary buttons. */
 export function PrimaryButton({ title, onPress, disabled, loading, variant = 'primary' }: Props) {
-  const isOutline = variant === 'outline';
-  const playTap = useTapSound();
-
-  const handlePress = () => {
-    playTap();
-    onPress();
-  };
-
+  const soft = variant === 'outline';
   return (
-    <Pressable
-      onPress={handlePress}
+    <PressScale
+      onPress={onPress}
       disabled={disabled || loading}
-      style={({ pressed }) => [
-        styles.base,
-        isOutline ? styles.outline : styles.solid,
-        (disabled || loading) && styles.disabled,
-        pressed && !disabled && !loading && styles.pressed,
-      ]}
+      scaleTo={0.96}
+      style={[styles.base, soft ? styles.soft : styles.solid, (disabled || loading) && styles.disabled]}
     >
-      {loading ? (
-        <ActivityIndicator color={isOutline ? colors.primary : colors.white} />
-      ) : (
-        <Text style={[styles.text, isOutline ? styles.textOutline : styles.textSolid]}>{title}</Text>
-      )}
-    </Pressable>
+      {loading ? <ActivityIndicator color={soft ? colors.primary : '#fff'} /> : <Text style={[styles.text, { color: soft ? colors.primary : '#fff' }]}>{title}</Text>}
+    </PressScale>
   );
 }
 
 const styles = StyleSheet.create({
-  base: {
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 52,
-  },
+  base: { borderRadius: 16, paddingVertical: spacing.md, paddingHorizontal: spacing.lg, alignItems: 'center', justifyContent: 'center', minHeight: 52 },
   solid: { backgroundColor: colors.primary },
-  outline: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.primary },
+  soft: { backgroundColor: colors.primarySoft },
   disabled: { opacity: 0.5 },
-  pressed: { opacity: 0.85 },
-  text: { fontSize: 16, fontWeight: '600' },
-  textSolid: { color: colors.white },
-  textOutline: { color: colors.primary },
+  text: { fontSize: 17, fontWeight: '700', letterSpacing: -0.2 },
 });

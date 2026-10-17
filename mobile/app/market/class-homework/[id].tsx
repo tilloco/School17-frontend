@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { fmtDateTime } from '../../../src/ui/format';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../../../src/ui/Text';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { imagePicker } from '../../../src/lib/native';
 import { Screen } from '../../../src/components/Screen';
@@ -68,9 +70,9 @@ export default function ClassHomeworkScreen() {
         {teacher && (
           <View style={styles.card}>
             <Text style={styles.strong}>{t('hw.assign')}</Text>
-            <TextInput value={title} onChangeText={setTitle} maxLength={200} placeholder={t('hw.fTitle')} accessibilityLabel={t('hw.fTitle')} style={styles.input} />
-            <TextInput value={text} onChangeText={setText} multiline maxLength={4000} placeholder={t('hw.fText')} accessibilityLabel={t('hw.fText')} style={styles.input} />
-            <TextInput value={days} onChangeText={setDays} keyboardType="number-pad" maxLength={3} placeholder={t('hw.fDays')} accessibilityLabel={t('hw.fDays')} style={styles.input} />
+            <TextInput value={title} onChangeText={setTitle} maxLength={200} placeholderTextColor={colors.textMuted} placeholder={t('hw.fTitle')} accessibilityLabel={t('hw.fTitle')} style={styles.input} />
+            <TextInput value={text} onChangeText={setText} multiline maxLength={4000} placeholderTextColor={colors.textMuted} placeholder={t('hw.fText')} accessibilityLabel={t('hw.fText')} style={styles.input} />
+            <TextInput value={days} onChangeText={setDays} keyboardType="number-pad" maxLength={3} placeholderTextColor={colors.textMuted} placeholder={t('hw.fDays')} accessibilityLabel={t('hw.fDays')} style={styles.input} />
             <PrimaryButton title={t('hw.assign')} onPress={create} />
           </View>
         )}
@@ -83,7 +85,7 @@ export default function ClassHomeworkScreen() {
             <View key={h.id} style={styles.card}>
               <Text style={styles.strong}>{h.title}</Text>
               {!!h.text && <Text>{h.text}</Text>}
-              <Text style={styles.help}>{t('hw.due', { time: new Date(h.dueAt).toLocaleString() })}{h.overdue ? ` · ${t('hw.overdue')}` : ''}</Text>
+              <Text style={styles.help}>{t('hw.due', { time: fmtDateTime(new Date(h.dueAt)) })}{h.overdue ? ` · ${t('hw.overdue')}` : ''}</Text>
               {teacher && <Text style={styles.help}>{t('hw.counts', { s: h.submitted ?? 0, m: h.marked ?? 0 })}</Text>}
               {!teacher && h.mine?.map((s) => <Text key={s.id}>{s.marked ? t('hw.score', { score: s.score ?? 0 }) : t('hw.submitted')}{s.late ? ` · ${t('hw.late')}` : ''}{s.comment ? ` — ${s.comment}` : ''}</Text>)}
               <PrimaryButton title={open === h.id ? t('hw.close') : t('hw.open')} variant="outline" onPress={() => setOpen(open === h.id ? null : h.id)} />
@@ -100,7 +102,7 @@ export default function ClassHomeworkScreen() {
                             <Text style={styles.help}>{p.submission.late ? t('hw.late') : t('hw.onTime')}{p.submission.marked ? ` · ${t('hw.score', { score: p.submission.score ?? 0 })}` : ''}</Text>
                             {!p.submission.marked && (
                               <View style={styles.row}>
-                                <TextInput value={score[p.pupilId] ?? ''} onChangeText={(v) => setScore((s) => ({ ...s, [p.pupilId]: v }))} keyboardType="number-pad" maxLength={3} placeholder={t('hw.scorePlaceholder')} accessibilityLabel={t('hw.scorePlaceholder')} style={[styles.input, { flex: 1 }]} />
+                                <TextInput value={score[p.pupilId] ?? ''} onChangeText={(v) => setScore((s) => ({ ...s, [p.pupilId]: v }))} keyboardType="number-pad" maxLength={3} placeholderTextColor={colors.textMuted} placeholder={t('hw.scorePlaceholder')} accessibilityLabel={t('hw.scorePlaceholder')} style={[styles.input, { flex: 1 }]} />
                                 <PrimaryButton title={t('hw.mark')} onPress={() => { const n = Number(score[p.pupilId]); if (!(n >= 0 && n <= 100)) return Alert.alert(t('hw.invalid')); market.markHomework(token as string, id, h.id, p.pupilId, n).then(() => detail.reload()).catch(fail); }} />
                               </View>
                             )}
@@ -112,7 +114,7 @@ export default function ClassHomeworkScreen() {
                     ))
                   ) : (
                     <>
-                      <TextInput value={answer} onChangeText={setAnswer} multiline maxLength={4000} placeholder={t('hw.yourAnswer')} accessibilityLabel={t('hw.yourAnswer')} style={styles.input} />
+                      <TextInput value={answer} onChangeText={setAnswer} multiline maxLength={4000} placeholderTextColor={colors.textMuted} placeholder={t('hw.yourAnswer')} accessibilityLabel={t('hw.yourAnswer')} style={styles.input} />
                       <View style={styles.row}>
                         <PrimaryButton title={t('hw.send')} disabled={!answer.trim()} onPress={() => submit(h)} />
                         <PrimaryButton title={t('hw.sendPhoto')} variant="outline" onPress={() => photo(h)} />
@@ -130,10 +132,10 @@ export default function ClassHomeworkScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: 4 },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 4 },
   sub: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.xs, gap: 2 },
   strong: { fontWeight: '700', color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, alignItems: 'center' },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, minHeight: 44, color: colors.text, backgroundColor: colors.surface },
+  input: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 16, padding: spacing.sm, minHeight: 44, color: colors.text, backgroundColor: colors.surface },
 });

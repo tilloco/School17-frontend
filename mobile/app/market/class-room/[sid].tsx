@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { fmtTime } from '../../../src/ui/format';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
+import { Text } from '../../../src/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { SignalPill, useConnection } from '../../../src/lib/connection';
 import { Screen } from '../../../src/components/Screen';
 import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
@@ -23,6 +26,7 @@ export default function ClassRoomScreen() {
   const [st, setSt] = useState<ClassRoomState | null>(null);
   const [roster, setRoster] = useState<RosterRow[]>([]);
   const [view, setView] = useState<'loading' | 'ready' | 'error'>('loading');
+  const { online } = useConnection();
 
   const load = useCallback(async () => {
     try {
@@ -50,21 +54,22 @@ export default function ClassRoomScreen() {
     }
   };
 
-  if (view !== 'ready' || !st) return <Screen><Stack.Screen options={{ headerShown: true, title: t('room.title'), headerBackTitle: t('common.back') }} /><StateView state={view === 'error' ? 'error' : 'loading'} onRetry={load} /></Screen>;
+  if (view !== 'ready' || !st) return <Screen><Stack.Screen options={{ headerShown: true, title: t('room.title'), headerBackTitle: t('common.back'), headerRight: () => <SignalPill /> }} /><StateView state={view === 'error' ? 'error' : 'loading'} onRetry={load} /></Screen>;
   const teacher = st.role === 'teacher';
   const live = st.status === 'LIVE';
   return (
     <Screen>
-      <Stack.Screen options={{ headerShown: true, title: t('room.title'), headerBackTitle: t('common.back') }} />
+      <Stack.Screen options={{ headerShown: true, title: t('room.title'), headerBackTitle: t('common.back'), headerRight: () => <SignalPill /> }} />
       <FlatList
         data={teacher && live ? roster : []}
         keyExtractor={(r) => r.pupilId}
         ListHeaderComponent={
           <View style={{ gap: spacing.sm, paddingVertical: spacing.md }}>
+            {!online && <View style={[styles.card, { backgroundColor: colors.warningSoft }]}><Text style={{ color: colors.warningText, fontWeight: '700' }}>{t('net.lessonLost')}</Text></View>}
             <View style={styles.card}>
               <Text style={styles.strong}>{t(`class.status.${st.status}`)}</Text>
               {st.status === 'LOBBY' && !teacher && <Text>{t('room.waiting')}</Text>}
-              {st.status === 'SCHEDULED' && <Text style={styles.help}>{t('room.lobbyAt', { time: new Date(st.lobbyOpensAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })}</Text>}
+              {st.status === 'SCHEDULED' && <Text style={styles.help}>{t('room.lobbyAt', { time: fmtTime(new Date(st.lobbyOpensAt)) })}</Text>}
               {st.teacherReconnecting && <Text accessibilityLiveRegion="polite">{t('room.teacherReconnecting')}</Text>}
               {st.status === 'ENDED' && st.teacherNoShow && <Text>{t('room.noShow')}</Text>}
               {live && <Text style={styles.help}>{t('room.stageCount', { n: st.stageCount, max: st.stageMax })}</Text>}
@@ -138,8 +143,8 @@ export default function ClassRoomScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border, gap: 4 },
-  h2: { fontSize: 16, fontWeight: '700', color: colors.text },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 4 },
+  h2: { fontSize: 20, fontWeight: '800', color: colors.text },
   strong: { fontWeight: '700', color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },

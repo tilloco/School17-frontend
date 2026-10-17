@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../../src/ui/Text';
 import { Stack } from 'expo-router';
 import { Screen } from '../../src/components/Screen';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
@@ -31,7 +32,7 @@ function ReviewForm({ initial, onSave }: { initial?: { rating: number; text: str
   return (
     <View style={{ gap: spacing.sm }}>
       <StarPicker value={rating} onChange={setRating} />
-      <TextInput value={text} onChangeText={setText} maxLength={1000} multiline placeholder={t('rev.placeholder')} accessibilityLabel={t('rev.placeholder')} style={styles.input} />
+      <TextInput value={text} onChangeText={setText} maxLength={1000} multiline placeholderTextColor={colors.textMuted} placeholder={t('rev.placeholder')} accessibilityLabel={t('rev.placeholder')} style={styles.input} />
       <PrimaryButton
         title={t('rev.save')}
         disabled={rating < 1 || busy}
@@ -125,7 +126,7 @@ function TeacherReviews({ token }: { token: string }) {
             <Text style={styles.help}>{t('rev.reply')}: {r.reply.text}</Text>
           ) : replyFor === r.id ? (
             <View style={{ gap: spacing.sm }}>
-              <TextInput value={text} onChangeText={setText} maxLength={1000} multiline placeholder={t('rev.replyPlaceholder')} accessibilityLabel={t('rev.replyPlaceholder')} style={styles.input} />
+              <TextInput value={text} onChangeText={setText} maxLength={1000} multiline placeholderTextColor={colors.textMuted} placeholder={t('rev.replyPlaceholder')} accessibilityLabel={t('rev.replyPlaceholder')} style={styles.input} />
               <PrimaryButton title={t('rev.send')} disabled={!text.trim()} onPress={() => send(r.id)} />
             </View>
           ) : (
@@ -157,10 +158,10 @@ export default function ReviewsScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: 4 },
-  h2: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: spacing.sm },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 4 },
+  h2: { fontSize: 20, fontWeight: '800', color: colors.text, marginTop: spacing.sm },
   strong: { fontWeight: '700', color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },
   row: { flexDirection: 'row', gap: spacing.xs ?? 4, flexWrap: 'wrap' },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, minHeight: 80, color: colors.text, backgroundColor: colors.surface, textAlignVertical: 'top' },
+  input: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 16, padding: spacing.sm, minHeight: 80, color: colors.text, backgroundColor: colors.surface, textAlignVertical: 'top' },
 });

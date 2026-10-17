@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../ui/Text';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ApiError } from '../lib/api';
 import { t } from '../i18n';
@@ -50,9 +51,9 @@ export function PollPanel({ token, sessionId, teacher }: { token: string; sessio
       {!poll && !teacher && <Text style={styles.help}>{t('poll.none')}</Text>}
       {teacher && !open && (
         <View style={{ gap: spacing.xs }}>
-          <TextInput value={q} onChangeText={setQ} maxLength={200} placeholder={t('poll.question')} accessibilityLabel={t('poll.question')} style={styles.input} />
+          <TextInput value={q} onChangeText={setQ} maxLength={200} placeholderTextColor={colors.textMuted} placeholder={t('poll.question')} accessibilityLabel={t('poll.question')} style={styles.input} />
           {opts.map((o, i) => (
-            <TextInput key={i} value={o} onChangeText={(v) => setOpts((a) => a.map((x, j) => (j === i ? v : x)))} maxLength={100} placeholder={t('poll.option', { n: i + 1 })} accessibilityLabel={t('poll.option', { n: i + 1 })} style={styles.input} />
+            <TextInput key={i} value={o} onChangeText={(v) => setOpts((a) => a.map((x, j) => (j === i ? v : x)))} maxLength={100} placeholderTextColor={colors.textMuted} placeholder={t('poll.option', { n: i + 1 })} accessibilityLabel={t('poll.option', { n: i + 1 })} style={styles.input} />
           ))}
           <View style={styles.row}>
             {opts.length < 6 && <PrimaryButton title={t('poll.addOption')} variant="outline" onPress={() => setOpts((a) => [...a, ''])} />}
@@ -65,10 +66,10 @@ export function PollPanel({ token, sessionId, teacher }: { token: string; sessio
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: spacing.xs },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: spacing.xs },
   strong: { fontWeight: '700', color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },
   bar: { height: 8, borderRadius: 4, backgroundColor: colors.primary },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, minHeight: 44, color: colors.text, backgroundColor: colors.surface },
+  input: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 16, padding: spacing.sm, minHeight: 44, color: colors.text, backgroundColor: colors.surface },
 });

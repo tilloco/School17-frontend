@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../../src/ui/Text';
 import { Stack } from 'expo-router';
 import { Screen } from '../../src/components/Screen';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
@@ -69,7 +70,7 @@ export default function SafetyScreen() {
         {me.data?.role === 'GUARDIAN' && (
           <View style={styles.box}>
             <Text style={styles.h3}>{t('safety.linkChild')}</Text>
-            <TextInput accessibilityLabel={t('safety.enterCode')} value={childCode} onChangeText={setChildCode} placeholder={t('safety.enterCode')} autoCapitalize="characters" maxLength={9} style={styles.input} />
+            <TextInput accessibilityLabel={t('safety.enterCode')} value={childCode} onChangeText={setChildCode} placeholderTextColor={colors.textMuted} placeholder={t('safety.enterCode')} autoCapitalize="characters" maxLength={9} style={styles.input} />
             <PrimaryButton title={t('safety.linkChild')} disabled={childCode.length < 8} onPress={() => run(() => market.linkChild(token as string, childCode), t('safety.linked'))} />
           </View>
         )}
@@ -112,14 +113,14 @@ export default function SafetyScreen() {
 }
 
 const styles = StyleSheet.create({
-  freeNotice: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, color: colors.text, borderWidth: 1, borderColor: colors.border },
-  h2: { fontSize: 18, fontWeight: '700', color: colors.text },
+  freeNotice: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, color: colors.text, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  h2: { fontSize: 20, fontWeight: '800', color: colors.text },
   h3: { fontSize: 16, fontWeight: '700', color: colors.text },
   draft: { fontSize: 12, color: colors.warning },
   tip: { color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },
-  box: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, gap: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  box: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, gap: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   code: { fontSize: 28, fontWeight: '800', letterSpacing: 4, textAlign: 'center', color: colors.primary },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.sm, minHeight: 48, fontSize: 18, textAlign: 'center' },
+  input: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 16, padding: spacing.sm, minHeight: 48, fontSize: 18, textAlign: 'center' },
   blockRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

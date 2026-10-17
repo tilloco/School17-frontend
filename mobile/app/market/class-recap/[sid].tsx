@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { fmtDateTime } from '../../../src/ui/format';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../../../src/ui/Text';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Screen } from '../../../src/components/Screen';
 import { PrimaryButton } from '../../../src/components/PrimaryButton';
@@ -30,7 +32,7 @@ export default function RecapScreen() {
       <Stack.Screen options={{ headerShown: true, title: t('recap.title'), headerBackTitle: t('common.back') }} />
       <ScrollView contentContainerStyle={{ paddingVertical: spacing.md, gap: spacing.sm }}>
         <View style={styles.card}>
-          <Text style={styles.strong}>{new Date(d.startAt).toLocaleString()}</Text>
+          <Text style={styles.strong}>{fmtDateTime(new Date(d.startAt))}</Text>
           <Text>{t('recap.duration', { min: mins(d.durationSec) })}</Text>
           <Text style={styles.help}>{t('recap.questions', { asked: d.questions.asked, answered: d.questions.answered })}</Text>
         </View>
@@ -68,7 +70,7 @@ export default function RecapScreen() {
             {d.questions.unanswered!.map((q) => (
               <View key={q.id} style={styles.card}>
                 <Text style={styles.strong}>{q.text}</Text>
-                <TextInput value={answer[q.id] ?? ''} onChangeText={(v) => setAnswer((a) => ({ ...a, [q.id]: v }))} multiline maxLength={1500} placeholder={t('recap.lateAnswer')} accessibilityLabel={t('recap.lateAnswer')} style={styles.input} />
+                <TextInput value={answer[q.id] ?? ''} onChangeText={(v) => setAnswer((a) => ({ ...a, [q.id]: v }))} multiline maxLength={1500} placeholderTextColor={colors.textMuted} placeholder={t('recap.lateAnswer')} accessibilityLabel={t('recap.lateAnswer')} style={styles.input} />
                 <PrimaryButton title={t('recap.postAnswer')} variant="outline" disabled={!(answer[q.id] ?? '').trim()} onPress={() => market.classLateAnswer(token as string, sid, q.id, answer[q.id].trim()).then(() => { setAnswer((a) => ({ ...a, [q.id]: '' })); r.reload(); }).catch(fail)} />
               </View>
             ))}
@@ -87,7 +89,7 @@ export default function RecapScreen() {
         {teacher && (
           <View style={styles.card}>
             {(['topic', 'homework', 'nextStep'] as const).map((k) => (
-              <TextInput key={k} value={note[k] || (d.note?.[k] ?? '')} onChangeText={(v) => setNote((n) => ({ ...n, [k]: v }))} multiline maxLength={k === 'homework' ? 1000 : 500} placeholder={t(`feed.${k}`)} accessibilityLabel={t(`feed.${k}`)} style={styles.input} />
+              <TextInput key={k} value={note[k] || (d.note?.[k] ?? '')} onChangeText={(v) => setNote((n) => ({ ...n, [k]: v }))} multiline maxLength={k === 'homework' ? 1000 : 500} placeholderTextColor={colors.textMuted} placeholder={t(`feed.${k}`)} accessibilityLabel={t(`feed.${k}`)} style={styles.input} />
             ))}
             <Text style={styles.help}>{t('recap.noteHint')}</Text>
             <PrimaryButton title={t('common.save')} onPress={() => market.classNote(token as string, sid, { topic: note.topic || d.note?.topic || '', homework: note.homework || d.note?.homework || '', nextStep: note.nextStep || d.note?.nextStep || '' }).then(() => { Alert.alert(t('common.ok')); r.reload(); }).catch(fail)} />
@@ -99,9 +101,9 @@ export default function RecapScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: 4 },
-  h2: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: spacing.sm },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 4 },
+  h2: { fontSize: 20, fontWeight: '800', color: colors.text, marginTop: spacing.sm },
   strong: { fontWeight: '700', color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, minHeight: 44, color: colors.text, backgroundColor: colors.surface },
+  input: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 16, padding: spacing.sm, minHeight: 44, color: colors.text, backgroundColor: colors.surface },
 });

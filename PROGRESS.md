@@ -36,7 +36,7 @@ Test DB: throwaway local PostgreSQL via `backend/scripts/dev-db.sh start` (port 
 - [ ] R12 Scale-ready backend
 - [x] A7 Reviews + reschedule on mobile
 - [x] A8 Chat attachments on mobile
-- [ ] A9 Push token registration
+- [x] A9 Push token registration
 - [ ] B1 Invite link
 - [ ] B2 Public teacher page
 - [ ] B3 Credentials

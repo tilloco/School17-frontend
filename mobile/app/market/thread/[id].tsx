@@ -1,50 +1,56 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, Linking, Pressable, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
-import { Screen } from '../../../src/components/Screen';
-import { PrimaryButton } from '../../../src/components/PrimaryButton';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../../../src/ui/Text';
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StateView } from '../../../src/components/StateView';
-import { API_URL, ApiError } from '../../../src/lib/api';
-import { AttachBar } from '../../../src/market/AttachBar';
+import { ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
 import { t } from '../../../src/i18n';
+import { Bubble, Composer } from '../../../src/chat/chat-ui';
 import { ChatMessage, market } from '../../../src/market/marketApi';
-import { colors, radius, spacing } from '../../../src/theme/colors';
+import { useKeyboardPadding } from '../../../src/lib/keyboard';
+import { ConnectionStrip, onReconnect } from '../../../src/lib/connection';
+import { colors, spacing } from '../../../src/theme/colors';
+import { Sheet } from '../../../src/ui/Sheet';
 
-const POLL_MS = 5000; // real vaqt kanali (socket.io) hali ulanmagan: oddiy so'rov (polling)
+const POLL_MS = 4000; // real-time sockets are not connected yet: plain polling
 
 function errorText(e: unknown): string {
   if (e instanceof ApiError) {
-    const code = e.code;
-    if (code === 'CONTACT_INFO_NOT_ALLOWED') return t('chat.contactBlocked');
-    if (code === 'GUARDIAN_REQUIRED') return t('chat.guardianRequired');
-    if (code === 'BLOCKED') return t('chat.blocked');
+    if (e.code === 'CONTACT_INFO_NOT_ALLOWED') return t('chat.contactBlocked');
+    if (e.code === 'GUARDIAN_REQUIRED') return t('chat.guardianRequired');
+    if (e.code === 'BLOCKED') return t('chat.blocked');
     return e.message;
   }
   return t('common.error');
 }
 
+/** Direct chat in the Telegram / Instagram style: bubbles, ticks (sent, delivered, read in blue), photos and files. Block and report are in the menu. */
 export default function ThreadScreen() {
   const { token } = useAuth();
+  const kb = useKeyboardPadding();
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [msgs, setMsgs] = useState<ChatMessage[]>([]);
   const [state, setState] = useState<'loading' | 'ready' | 'error' | 'offline'>('loading');
-  const [draft, setDraft] = useState('');
-  const [sending, setSending] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
   const [readOnly, setReadOnly] = useState(false);
+  const [title, setTitle] = useState('');
+  const [req, setReq] = useState<{ status?: string; mine?: boolean }>({});
+  const [menu, setMenu] = useState(false);
   const last = useRef(0);
+  const list = useRef<FlatList<ChatMessage>>(null);
 
   const load = useCallback(async (initial: boolean) => {
     if (!token) return;
     try {
-      const fresh = await market.messages(token, id, initial ? undefined : last.current);
-      if (initial) setMsgs(fresh);
-      else if (fresh.length) setMsgs((m) => [...m, ...fresh.filter((f) => !m.some((x) => x.id === f.id))]);
-      const max = Math.max(last.current, ...fresh.map((m) => m.seq));
+      // After the first load we ask from 0 again so that tick changes (delivered, read) on my own messages show up too.
+      const fresh = await market.messages(token, id, undefined);
+      setMsgs((old) => (old.length === fresh.length && old.every((m, i) => m.id === fresh[i].id && m.state === fresh[i].state) ? old : fresh));
+      const max = Math.max(0, ...fresh.map((m) => m.seq));
       if (max > last.current) {
         last.current = max;
-        void market.markRead(token, id, max).catch(() => undefined); // faqat ishtirokchi; vasiy 403 oladi — e'tiborsiz
+        void market.markRead(token, id, max).catch(() => undefined);
       }
       setState('ready');
     } catch (e) {
@@ -54,100 +60,116 @@ export default function ThreadScreen() {
 
   useEffect(() => {
     void load(true);
-    market.threads(token as string).then((l) => setReadOnly(!!l.find((x) => x.id === id)?.readOnly)).catch(() => undefined);
+    market.threads(token as string).then((l) => {
+      const th = l.find((x) => x.id === id);
+      setReadOnly(!!th?.readOnly);
+      setTitle(th?.other.name ?? '');
+      setReq({ status: th?.status, mine: th?.requestedByMe });
+    }).catch(() => undefined);
     const timer = setInterval(() => void load(false), POLL_MS);
     return () => clearInterval(timer);
   }, [load, token, id]);
 
-  const send = async () => {
-    const text = draft.trim();
-    if (!text || !token) return;
-    setSending(true);
-    setProblem(null);
+  // Messages go out through a small outbox: shown at once as "sending", marked "not sent" when the connection drops, and re-sent by themselves when it returns.
+  const [pending, setPending] = useState<ChatMessage[]>([]);
+  const pendingRef = useRef<ChatMessage[]>([]);
+  pendingRef.current = pending;
+  const deliver = async (tmp: ChatMessage) => {
+    setPending((p) => p.map((x) => (x.id === tmp.id ? { ...x, state: 'SENDING' as never } : x)));
     try {
-      const m = await market.send(token, id, text);
-      setDraft('');
+      const m = await market.send(token as string, id, tmp.body);
+      last.current = Math.max(last.current, m.seq);
+      setMsgs((x) => (x.some((y) => y.id === m.id) ? x : [...x, m]));
+      setPending((p) => p.filter((x) => x.id !== tmp.id));
+    } catch (e) {
+      if (e instanceof ApiError && e.statusCode === 0) setPending((p) => p.map((x) => (x.id === tmp.id ? { ...x, state: 'FAILED' as never } : x)));
+      else { setPending((p) => p.filter((x) => x.id !== tmp.id)); Alert.alert(t('common.error'), errorText(e)); }
+    }
+  };
+  const send = (text: string) => {
+    const tmp = { id: `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, seq: 0, mine: true, from: 'STUDENT', body: text, createdAt: new Date().toISOString(), state: 'SENDING' as never, file: null } as ChatMessage;
+    setPending((p) => [...p, tmp]);
+    void deliver(tmp);
+  };
+  useEffect(() => onReconnect(() => pendingRef.current.filter((x) => (x.state as string) === 'FAILED').forEach((x) => void deliver(x))), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const sendFile = async (fileId: string) => {
+    try {
+      const m = await market.send(token as string, id, '', fileId);
       last.current = Math.max(last.current, m.seq);
       setMsgs((x) => [...x, m]);
     } catch (e) {
-      setProblem(errorText(e));
-    } finally {
-      setSending(false);
+      throw new Error(errorText(e));
     }
   };
-  const sendFile = async (fileId: string, name: string) => {
-    const m = await market.send(token as string, id, '', fileId);
-    last.current = Math.max(last.current, m.seq);
-    setMsgs((x) => [...x, m]);
-  };
-  const openFile = async (fileId: string) => {
-    try {
-      const { url } = await market.fileUrl(token as string, fileId);
-      await Linking.openURL(url.startsWith('/') ? `${API_URL}${url}` : url);
-    } catch {
-      setProblem(t('attach.openFailed'));
-    }
-  };
+  const answer = (accept: boolean) => market.answerRequest(token as string, id, accept).then((r) => { if (accept) setReq({ status: 'ACTIVE' }); else { setReq({ status: 'DECLINED' }); router.back(); } return r; }).catch((e) => Alert.alert(t('common.error'), errorText(e)));
   const block = () => Alert.alert(t('chat.block'), undefined, [
     { text: t('common.cancel'), style: 'cancel' },
-    { text: t('chat.block'), style: 'destructive', onPress: () => market.blockThread(token as string, id).then(() => setProblem(t('chat.blocked'))).catch(() => undefined) },
+    { text: t('chat.block'), style: 'destructive', onPress: () => market.blockThread(token as string, id).then(() => Alert.alert(t('chat.blocked'))).catch(() => undefined) },
   ]);
   const report = () => market.reportThread(token as string, id, 'OTHER').then(() => Alert.alert(t('chat.report'), t('common.ok'))).catch((e) => Alert.alert(t('common.error'), errorText(e)));
 
-  const header = <Stack.Screen options={{ headerShown: true, title: t('chat.title'), headerBackTitle: t('common.back') }} />;
-  if (state === 'loading') return <Screen>{header}<StateView state="loading" /></Screen>;
-  if (state === 'error' || state === 'offline') return <Screen>{header}<StateView state={state} onRetry={() => { setState('loading'); void load(true); }} /></Screen>;
+  const header = (
+    <Stack.Screen options={{
+      headerShown: true, title: title || t('chat.title'), headerBackTitle: t('common.back'),
+      headerRight: () => <Pressable onPress={() => setMenu(true)} hitSlop={12} accessibilityLabel={t('common.more')}><Ionicons name="ellipsis-vertical" size={22} color={colors.text} /></Pressable>,
+    }} />
+  );
+  if (state === 'loading') return <View style={styles.root}>{header}<StateView state="loading" /></View>;
+  if (state === 'error' || state === 'offline') return <View style={styles.root}>{header}<StateView state={state} onRetry={() => { setState('loading'); void load(true); }} /></View>;
 
-  const stateLabel = (s?: string) => (s === 'READ' ? t('chat.read') : s === 'DELIVERED' ? t('chat.delivered') : s === 'SENT' ? t('chat.sent') : '');
   return (
-    <Screen>
+    <View style={styles.root}>
       {header}
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        {msgs.length === 0 ? <StateView state="empty" /> : (
+      <View style={{ flex: 1, paddingBottom: kb }}>
+        <ConnectionStrip />
+        {msgs.length + pending.length === 0 ? (
+          <View style={styles.empty}><Ionicons name="chatbubbles-outline" size={46} color={colors.textMuted} /><Text style={styles.emptyText}>{t('msg.noMessages')}</Text></View>
+        ) : (
           <FlatList
-            data={msgs}
+            ref={list}
+            data={[...msgs, ...pending]}
             keyExtractor={(m) => m.id}
-            contentContainerStyle={{ paddingVertical: spacing.md, gap: spacing.sm }}
+            contentContainerStyle={{ padding: spacing.sm, paddingBottom: spacing.md }}
+            onContentSizeChange={() => list.current?.scrollToEnd({ animated: false })}
             renderItem={({ item }) => (
-              <View style={[styles.bubble, item.mine ? styles.mine : styles.theirs]}>
-                {/* Matn HECH QACHON HTML sifatida emas, oddiy matn sifatida ko'rsatiladi */}
-                <Text style={item.mine ? styles.mineText : undefined}>{item.body}</Text>
-                {item.file && (
-                  <Pressable accessibilityRole="button" accessibilityLabel={t('attach.open', { name: item.file.name })} onPress={() => openFile(item.file!.id)}>
-                    <Text style={[item.mine ? styles.mineText : undefined, { textDecorationLine: 'underline' }]}>📎 {item.file.name}{item.file.sizeBytes ? ` (${Math.max(1, Math.round(item.file.sizeBytes / 1024))} KB)` : ''}</Text>
-                  </Pressable>
-                )}
-                {item.mine && <Text style={styles.state}>{stateLabel(item.state)}</Text>}
-              </View>
+              <Bubble
+                token={token as string}
+                mine={item.mine}
+                body={item.body}
+                at={item.createdAt}
+                state={item.state as never}
+                onRetry={() => void deliver(item)}
+                file={item.file ? { id: item.file.id, name: item.file.name, size: item.file.sizeBytes, image: !!item.file.mime?.startsWith('image/') } : null}
+              />
             )}
           />
         )}
-        {!!problem && <Text style={styles.problem} accessibilityLiveRegion="polite">{problem}</Text>}
-        {readOnly ? <Text style={styles.ro}>{t('chat.readOnly')}</Text> : (
-          <View style={styles.composer}>
-            <TextInput accessibilityLabel={t('chat.placeholder')} value={draft} onChangeText={setDraft} placeholder={t('chat.placeholder')} style={styles.input} maxLength={2000} multiline />
-            <PrimaryButton title={t('chat.send')} onPress={send} loading={sending} disabled={!draft.trim()} />
+        {req.status === 'REQUEST' && !req.mine && (
+          <View style={styles.request}>
+            <Text style={styles.requestText}>{t('dm.requestBanner', { name: title })}</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Pressable accessibilityRole="button" onPress={() => answer(false)} style={[styles.reqBtn, { backgroundColor: colors.neutralSoft }]}><Text style={{ color: colors.text, fontWeight: '700' }}>{t('dm.decline')}</Text></Pressable>
+              <Pressable accessibilityRole="button" onPress={() => answer(true)} style={[styles.reqBtn, { backgroundColor: colors.primary }]}><Text style={{ color: '#fff', fontWeight: '700' }}>{t('dm.accept')}</Text></Pressable>
+            </View>
           </View>
         )}
-        {!readOnly && <AttachBar token={token as string} onUploaded={async (fid, name) => { try { await sendFile(fid, name); } catch (e) { setProblem(errorText(e)); } }} />}
-        <View style={styles.tools}>
-          <PrimaryButton title={t('chat.report')} variant="outline" onPress={report} />
-          <PrimaryButton title={t('chat.block')} variant="outline" onPress={block} />
-        </View>
-      </KeyboardAvoidingView>
-    </Screen>
+        {req.status === 'REQUEST' && req.mine && <Text style={styles.ro}>{t('dm.waiting')}</Text>}
+        {readOnly || req.status === 'DECLINED' ? <Text style={styles.ro}>{t(req.status === 'DECLINED' ? 'dm.declined' : 'chat.readOnly')}</Text> : <Composer keyboardOpen={kb > 0} token={token as string} placeholder={t('chat.placeholder')} onSend={send} onAttached={sendFile} />}
+      </View>
+      <Sheet visible={menu} onClose={() => setMenu(false)} title={title} actions={[
+        { label: t('chat.report'), icon: 'flag', onPress: report },
+        { label: t('chat.block'), icon: 'ban', onPress: block, danger: true },
+      ]} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bubble: { maxWidth: '85%', padding: spacing.sm, borderRadius: radius.md },
-  mine: { alignSelf: 'flex-end', backgroundColor: colors.primary },
-  theirs: { alignSelf: 'flex-start', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  mineText: { color: colors.white },
-  state: { fontSize: 10, color: colors.white, opacity: 0.8, textAlign: 'right', marginTop: 2 },
-  composer: { gap: spacing.sm, paddingVertical: spacing.sm },
-  input: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.sm, minHeight: 48, maxHeight: 120 },
-  problem: { color: colors.danger, paddingVertical: spacing.xs },
+  root: { flex: 1, backgroundColor: colors.background },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  emptyText: { color: colors.textMuted },
+  request: { margin: spacing.sm, padding: spacing.md, borderRadius: 18, backgroundColor: colors.primarySoft, gap: 10 },
+  requestText: { color: colors.text, fontSize: 15, lineHeight: 21 },
+  reqBtn: { flex: 1, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   ro: { color: colors.textMuted, textAlign: 'center', padding: spacing.md },
-  tools: { gap: spacing.sm, paddingBottom: spacing.sm },
 });

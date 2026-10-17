@@ -1,18 +1,4 @@
-import type {
-  AiRecommendation,
-  ApiErrorBody,
-  CourseModule,
-  DashboardData,
-  ExamHistoryItem,
-  ExamResult,
-  ExamSessionPayload,
-  FreeQuota,
-  LessonDetail,
-  RequestOtpResponse,
-  SubmitAnswerResult,
-  User,
-  VerifyOtpResponse,
-} from '../types/api';
+import type { ApiErrorBody, User, VerifyOtpResponse } from '../types/api';
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 const DEFAULT_TIMEOUT_MS = 15000;
@@ -30,17 +16,33 @@ export class ApiError extends Error {
     this.details = body as unknown as Record<string, unknown>;
   }
 }
+let unauthorized: (() => void) | null = null;
+/** The auth provider registers what to do when the server says the saved sign-in is not valid any more. */
+export function setUnauthorizedHandler(fn: (() => void) | null) { unauthorized = fn; }
+
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   token?: string | null;
-  adminKey?: string | null;
 }
 
+/** Reads (GET) are tried once more after a short pause when the network blinks; writes are never repeated by themselves. */
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const isRead = !options.method || options.method === 'GET';
+  try {
+    return await requestOnce<T>(path, options);
+  } catch (e) {
+    if (isRead && e instanceof ApiError && e.statusCode === 0) {
+      await new Promise((r) => setTimeout(r, 700));
+      return requestOnce<T>(path, options);
+    }
+    throw e;
+  }
+}
+
+async function requestOnce<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (options.token) headers.Authorization = `Bearer ${options.token}`;
-  if (options.adminKey) headers['x-admin-key'] = options.adminKey;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
@@ -73,6 +75,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const data = isJson ? await res.json().catch(() => ({})) : {};
 
   if (!res.ok) {
+    if (res.status === 401 && options.token) unauthorized?.(); // the saved sign-in is no longer valid: the app goes back to the welcome screen
     throw new ApiError(data as ApiErrorBody, res.status);
   }
 
@@ -100,92 +103,13 @@ export interface AdminModuleTree {
 }
 
 export const api = {
-  // --- Auth ---
-  
-  // --- Profile ---
-  getMe: (token: string) => request<User>('/users/me', { token }),
-
-  updateProfile: (token: string, dto: { name?: string; examDate?: string }) =>
-    request<User>('/users/me', { method: 'PATCH', token, body: dto }),
-
-  getDashboard: (token: string) => request<DashboardData>('/users/dashboard', { token }),
-
-  // --- Content ---
-  // Backend endi bu ikkalasini ham login talab qiladi (anonim scraping'dan himoya
-  // uchun) - shuning uchun token har doim yuborilishi kerak.
-  listModules: (token: string) => request<CourseModule[]>('/content/modules', { token }),
-
-  getLesson: (token: string, lessonId: string) =>
-    request<LessonDetail>(`/content/lessons/${lessonId}`, { token }),
-
-  // --- Quiz ---
-  submitAnswer: (token: string, questionId: string, chosenIndex: number) =>
-    request<SubmitAnswerResult>('/quiz/answer', { method: 'POST', token, body: { questionId, chosenIndex } }),
-
-  completeLesson: (token: string, lessonId: string) =>
-    request<{ message: string }>(`/quiz/lessons/${lessonId}/complete`, { method: 'POST', token }),
-
-  getFreeQuota: (token: string) => request<FreeQuota>('/quiz/free-quota', { token }),
-
-  // --- AI shaxsiylashtirilgan tavsiyalar (faqat Premium) ---
-   getAiRecommendation: (token: string, forceRefresh = false) =>
-    request<AiRecommendation>(`/ai/recommendation${forceRefresh ? '?refresh=true' : ''}`, { token }),
-
-  // --- Messaging ---
-  getConversations: (token: string) => request<any[]>('/conversations', { token }),
-
-  startDm: (token: string, otherUserId: string) =>
-    request<any>(`/conversations/dm/${otherUserId}`, { method: 'POST', token }),
-
-  createGroup: (token: string, name: string, memberIds: string[]) =>
-    request<any>('/conversations/group', { method: 'POST', token, body: { name, memberIds } }),
-
-    getMessages: (token: string, conversationId: string, cursor?: string) =>
-    request<any[]>(`/conversations/${conversationId}/messages${cursor ? `?cursor=${cursor}` : ''}`, { token }),
-
-  // --- Sinov imtihoni (mock exam) ---
-  startExam: (token: string) => request<ExamSessionPayload>('/exam/start', { method: 'POST', token }),
-
-  saveExamAnswer: (
-    token: string,
-    sessionId: string,
-    answerId: string,
-    data: { chosenIndex?: number; partAText?: string; partBText?: string },
-  ) =>
-    request<{ saved: boolean }>(`/exam/${sessionId}/answer/${answerId}`, {
-      method: 'POST',
-      token,
-      body: data,
-    }),
-
-  submitExam: (token: string, sessionId: string) =>
-    request<ExamResult>(`/exam/${sessionId}/submit`, { method: 'POST', token }),
-  loginWithGoogle: (idToken: string) =>
-  request<VerifyOtpResponse>('/auth/google', { method: 'POST', body: { idToken } }),
-
-  adminLogin: (email: string, password: string) =>
-  request<{ accessToken: string; admin: { id: string; email: string; role: string } }>(
-    '/admin/auth/login',
-    { method: 'POST', body: { email, password } },
-  ),
-
-  getExamResult: (token: string, sessionId: string) =>
-    request<ExamResult>(`/exam/${sessionId}/result`, { token }),
-  getExamHistory: (token: string) => request<ExamHistoryItem[]>('/exam/history', { token }),
-
-  // --- Admin: savol qo'shish ---
-  listModulesAdmin: (adminKey: string) => request<AdminModuleTree[]>('/content/admin/modules', { adminKey }),
-    searchUsers: (token: string, query: string) =>
-    request<any[]>(`/users/search?q=${encodeURIComponent(query)}`, { token }),
-
-  createQuestionAdmin: (
-    adminKey: string,
-    dto: { lessonId: string; text: string; options: string[]; correctIndex: number; explanation: string },
-  ) => request<{ id: string }>('/content/questions', { method: 'POST', adminKey, body: dto }),
-
-  createQuestionsBulkAdmin: (adminKey: string, dto: { lessonId: string; text: string }) =>
-    request<{ message: string; count: number }>('/content/questions/bulk', { method: 'POST', adminKey, body: dto }),
+  getMe: (token: string) => request<User>('/me', { token }),
+  registerEmail: (body: { email: string; password: string; name: string; role: 'STUDENT' | 'TEACHER' | 'GUARDIAN'; dateOfBirth: string; acceptTerms: boolean; locale: string; username?: string }) =>
+    request<{ accessToken: string }>('/auth/email/register', { method: 'POST', body }),
+  loginEmail: (email: string, password: string) => request<{ accessToken: string }>('/auth/email/login', { method: 'POST', body: { email, password } }),
+  requestPhoneCode: (phone: string) => request<{ sent: boolean; ttlSeconds: number; devCode?: string }>('/auth/phone/request', { method: 'POST', body: { phone } }),
+  verifyPhoneCode: (body: Record<string, unknown>) => request<{ accessToken?: string; needsProfile?: boolean }>('/auth/phone/verify', { method: 'POST', body }),
+  loginWithGoogle: (idToken: string) => request<VerifyOtpResponse>('/auth/google', { method: 'POST', body: { idToken } }),
 };
 
-// Qo'shimcha modullar (masalan src/call) uchun umumiy so'rov funksiyasi
 export const apiRequest = request;

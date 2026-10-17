@@ -1,21 +1,23 @@
 {
   "expo": {
     "name": "School17",
-    "slug": "mamun-2-0",
-    "scheme": "mamun2",
+    "slug": "school17",
+    "scheme": "school17",
     "version": "0.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "splash": { "image": "./assets/logo.png", "resizeMode": "contain", "backgroundColor": "#0B4F6C" },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "uz.mamun.app",
+      "bundleIdentifier": "uz.school17.app",
       "infoPlist": { "UIBackgroundModes": ["audio"] }
     },
     "android": {
-      "package": "uz.mamun.app",
+      "package": "uz.school17.app",
       "adaptiveIcon": {
         "backgroundColor": "#0B4F6C"
       },

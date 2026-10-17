@@ -1,5 +1,7 @@
 import React from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { fmtDateTime } from '../../src/ui/format';
+import { FlatList, StyleSheet, View } from 'react-native';
+import { Text } from '../../src/ui/Text';
 import { Stack, useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 import { ApiError } from '../../src/lib/api';
@@ -62,7 +64,7 @@ export default function MyPaymentsScreen() {
           renderItem={({ item: r }) => (
             <View style={styles.card}>
               <Text style={styles.strong}>{r.teacher.name}</Text>
-              <Text>{new Date(r.startAt).toLocaleString()} · {Math.round(r.amountMinor / 100).toLocaleString()}</Text>
+              <Text>{fmtDateTime(new Date(r.startAt))} · {Math.round(r.amountMinor / 100).toLocaleString()}</Text>
               <Text style={styles.help}>{r.status}</Text>
               <PrimaryButton title={t('mypay.open')} variant="outline" onPress={() => router.push(`/market/pay/${r.bookingId}` as never)} />
             </View>
@@ -74,7 +76,7 @@ export default function MyPaymentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border, gap: 4 },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 4 },
   strong: { fontWeight: '700', color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },
 });

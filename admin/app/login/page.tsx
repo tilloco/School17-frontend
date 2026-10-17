@@ -37,7 +37,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-ink flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <p className="font-display text-3xl text-paper tracking-tight">Huquq Admin</p>
+          <p className="font-display text-3xl text-paper tracking-tight">School17 Admin</p>
           <p className="text-inkLight text-sm mt-1">Boshqaruv paneliga kirish</p>
         </div>
 

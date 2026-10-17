@@ -30,8 +30,34 @@ export class UploadError extends Error {
   }
 }
 
-export async function uploadFile(o: UploadOptions): Promise<{ fileId: string }> {
-  const blob = await (await fetch(o.uri)).blob();
+/** Reads a local file as a Blob. XMLHttpRequest is the reliable way on Android (fetch().blob() on a file:// address returned a few bytes). */
+function readBlob(uri: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.onload = () => resolve(x.response as Blob);
+    x.onerror = () => reject(new Error('Could not read the file'));
+    x.responseType = 'blob';
+    x.open('GET', uri, true);
+    x.send(null);
+  });
+}
+
+/** Any phone photo (HEIC, AVIF, huge camera files…) becomes a normal JPEG of at most 1600 px, so the server always accepts it. */
+async function toJpeg(o: UploadOptions): Promise<UploadOptions> {
+  if (!o.mime.startsWith('image/')) return o;
+  try {
+    const IM = require('expo-image-manipulator') as typeof import('expo-image-manipulator');
+    const r = await IM.manipulateAsync(o.uri, [{ resize: { width: 1600 } }], { compress: 0.85, format: IM.SaveFormat.JPEG });
+    return { ...o, uri: r.uri, mime: 'image/jpeg', name: o.name.replace(/\.[^.]+$/, '') + '.jpg' };
+  } catch {
+    return o;
+  }
+}
+
+export async function uploadFile(input: UploadOptions): Promise<{ fileId: string }> {
+  const o = input.resumeFileId ? input : await toJpeg(input);
+  const blob = await readBlob(o.uri);
+  if (!blob.size) throw new UploadError('EMPTY_FILE', 'The file is empty or could not be read');
   let info: UploadInit & { received?: number[] };
   try {
     info = o.resumeFileId

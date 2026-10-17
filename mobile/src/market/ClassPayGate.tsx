@@ -1,5 +1,6 @@
 import React from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
+import { Text } from '../ui/Text';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ApiError } from '../lib/api';
 import { t } from '../i18n';
@@ -42,7 +43,7 @@ export function ClassPayGate({ token, gate, onChanged }: { token: string; gate: 
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: spacing.xs },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: spacing.xs },
   strong: { fontWeight: '700', color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },

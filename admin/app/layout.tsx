@@ -6,8 +6,8 @@ const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-fraunces', wei
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Huquq Admin',
-  description: "Huquq imtihoniga tayyorgarlik - admin panel",
+  title: 'School17 Admin',
+  description: "School17 - admin panel",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

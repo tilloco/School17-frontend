@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../../../src/ui/Text';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { documentPicker } from '../../../src/lib/native';
 import { Screen } from '../../../src/components/Screen';
@@ -64,7 +65,7 @@ export default function ClassFilesScreen() {
     <Screen>
       <Stack.Screen options={{ headerShown: true, title: t('cfile.title'), headerBackTitle: t('common.back') }} />
       <ScrollView contentContainerStyle={{ paddingVertical: spacing.md, gap: spacing.sm }}>
-        <TextInput value={q} onChangeText={setQ} placeholder={t('cfile.search')} accessibilityLabel={t('cfile.search')} style={styles.input} />
+        <TextInput value={q} onChangeText={setQ} placeholderTextColor={colors.textMuted} placeholder={t('cfile.search')} accessibilityLabel={t('cfile.search')} style={styles.input} />
         {teacher && (progress === null ? <PrimaryButton title={t('cfile.upload')} onPress={upload} /> : <Text accessibilityLiveRegion="polite">{t('attach.uploading', { pct: Math.round(progress * 100) })}</Text>)}
         {files.state !== 'ready' || !files.data ? (
           <StateView state={files.state === 'ready' ? 'loading' : files.state} onRetry={files.reload} />
@@ -98,9 +99,9 @@ export default function ClassFilesScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: 4 },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 4 },
   strong: { fontWeight: '700', color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, minHeight: 44, color: colors.text, backgroundColor: colors.surface },
+  input: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 16, padding: spacing.sm, minHeight: 44, color: colors.text, backgroundColor: colors.surface },
 });

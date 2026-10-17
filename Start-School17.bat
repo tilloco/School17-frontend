@@ -16,4 +16,4 @@ echo No phone on USB: using the tunnel and QR code.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\dev-tunnel.ps1"
 :end
 echo.
-pause
+if not "%S17_NOPAUSE%"=="1" pause

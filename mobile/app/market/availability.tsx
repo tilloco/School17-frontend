@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../../src/ui/Text';
 import { Stack } from 'expo-router';
 import { Screen } from '../../src/components/Screen';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
@@ -69,9 +70,9 @@ export default function AvailabilityScreen() {
             <Text style={styles.dayName}>{t(`avail.weekday.${d}`)}</Text>
             {list.map((r, i) => r.weekday === d && (
               <View key={i} style={styles.range}>
-                <TextInput accessibilityLabel={t('avail.from')} placeholder={t('avail.from')} value={r.start} onChangeText={(v) => setRule(i, { start: v })} style={styles.time} maxLength={5} keyboardType="numbers-and-punctuation" />
+                <TextInput accessibilityLabel={t('avail.from')} placeholderTextColor={colors.textMuted} placeholder={t('avail.from')} value={r.start} onChangeText={(v) => setRule(i, { start: v })} style={styles.time} maxLength={5} keyboardType="numbers-and-punctuation" />
                 <Text>–</Text>
-                <TextInput accessibilityLabel={t('avail.to')} placeholder={t('avail.to')} value={r.end} onChangeText={(v) => setRule(i, { end: v })} style={styles.time} maxLength={5} keyboardType="numbers-and-punctuation" />
+                <TextInput accessibilityLabel={t('avail.to')} placeholderTextColor={colors.textMuted} placeholder={t('avail.to')} value={r.end} onChangeText={(v) => setRule(i, { end: v })} style={styles.time} maxLength={5} keyboardType="numbers-and-punctuation" />
                 <PrimaryButton title={t('avail.remove')} variant="outline" onPress={() => setList((l) => l.filter((_, k) => k !== i))} />
               </View>
             ))}
@@ -88,8 +89,8 @@ export default function AvailabilityScreen() {
             <PrimaryButton title={t('avail.remove')} variant="outline" onPress={() => market.removeTimeOff(token as string, o.id).then(prof.reload).catch(() => undefined)} />
           </View>
         ))}
-        <TextInput accessibilityLabel={t('avail.dayOffFrom')} placeholder={t('avail.dayOffFrom')} value={from} onChangeText={setFrom} maxLength={10} style={styles.input} />
-        <TextInput accessibilityLabel={t('avail.dayOffTo')} placeholder={t('avail.dayOffTo')} value={to} onChangeText={setTo} maxLength={10} style={styles.input} />
+        <TextInput accessibilityLabel={t('avail.dayOffFrom')} placeholderTextColor={colors.textMuted} placeholder={t('avail.dayOffFrom')} value={from} onChangeText={setFrom} maxLength={10} style={styles.input} />
+        <TextInput accessibilityLabel={t('avail.dayOffTo')} placeholderTextColor={colors.textMuted} placeholder={t('avail.dayOffTo')} value={to} onChangeText={setTo} maxLength={10} style={styles.input} />
         <PrimaryButton title={t('avail.addDayOff')} variant="outline" onPress={addOff} />
       </ScrollView>
     </Screen>
@@ -98,9 +99,9 @@ export default function AvailabilityScreen() {
 
 const styles = StyleSheet.create({
   help: { color: colors.textMuted, fontSize: 13 },
-  day: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, gap: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  day: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, gap: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   dayName: { fontSize: 16, fontWeight: '700', color: colors.text },
   range: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  time: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.sm, minWidth: 76, minHeight: 44, textAlign: 'center' },
-  input: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.sm, minHeight: 48 },
+  time: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 16, padding: spacing.sm, minWidth: 76, minHeight: 44, textAlign: 'center' },
+  input: { backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 16, padding: spacing.sm, minHeight: 48 },
 });

@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { colors, spacing } from '../theme/colors';
 
 export function ErrorText({ message }: { message: string | null }) {

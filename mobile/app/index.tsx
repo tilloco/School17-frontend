@@ -6,7 +6,6 @@ import { colors } from '../src/theme/colors';
 
 export default function Index() {
   const { isLoading, token, user } = useAuth();
-
   if (isLoading) {
     return (
       <View style={styles.center}>
@@ -14,17 +13,8 @@ export default function Index() {
       </View>
     );
   }
-
-  if (!token || !user) {
-    return <Redirect href="/(auth)/phone" />;
-  }
-
-  // Ism va imtihon sanasi hali kiritilmagan bo'lsa (yangi foydalanuvchi) - onboardingni yakunlashga yuboramiz
-  if (!user.name || !user.examDate) {
-    return <Redirect href="/(auth)/profile-setup" />;
-  }
-
-  return <Redirect href="/(tabs)/dashboard" />;
+  if (!token || !user) return <Redirect href="/(auth)/welcome" />;
+  return <Redirect href="/(tabs)/home" />;
 }
 
 const styles = StyleSheet.create({

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../../src/ui/Text';
 import { Stack } from 'expo-router';
 import { audioModule } from '../../src/lib/native';
+import { SignalPill } from '../../src/lib/connection';
 import { Screen } from '../../src/components/Screen';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { API_URL } from '../../src/lib/api';
@@ -68,7 +70,7 @@ export default function PrecheckScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ headerShown: true, title: t('pre.title'), headerBackTitle: t('common.back') }} />
+      <Stack.Screen options={{ headerShown: true, title: t('pre.title'), headerBackTitle: t('common.back'), headerRight: () => <SignalPill /> }} />
       <ScrollView contentContainerStyle={{ paddingVertical: spacing.md, gap: spacing.sm }}>
         <Text style={styles.help}>{t('pre.help')}</Text>
         <PrimaryButton title={t('pre.run')} onPress={run} loading={busy} />
@@ -89,7 +91,7 @@ export default function PrecheckScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: 4 },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 4 },
   strong: { fontWeight: '700', color: colors.text, fontSize: 16 },
   help: { color: colors.textMuted, fontSize: 13 },
   bad: { color: '#b00020' },

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { fmtDayShort, fmtDateTime, fmtTime } from '../../src/ui/format';
+import { Alert, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../../src/ui/Text';
 import { Stack } from 'expo-router';
 import { Screen } from '../../src/components/Screen';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
@@ -12,7 +14,7 @@ import { useAsync } from '../../src/market/useAsync';
 import { colors, radius, spacing } from '../../src/theme/colors';
 
 const DAY = 86_400_000;
-const fmt = (iso: string) => new Date(iso).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const fmt = (iso: string) => fmtDateTime(new Date(iso));
 
 /** O'qituvchi: kelgan so'rovlar. Qabul qilish / rad etish / boshqa vaqt taklif qilish (o'z bo'sh vaqtlaridan). */
 export default function RequestsScreen() {
@@ -73,7 +75,7 @@ export default function RequestsScreen() {
                           const d = new Date(new Date().setHours(0, 0, 0, 0) + n * DAY);
                           return (
                             <Pressable key={n} accessibilityRole="button" onPress={() => setDay(n)} style={[styles.chip, day === n && styles.chipOn]}>
-                              <Text style={day === n ? { color: colors.white } : undefined}>{d.toLocaleDateString([], { weekday: 'short', day: 'numeric' })}</Text>
+                              <Text style={day === n ? { color: colors.white } : undefined}>{fmtDayShort(d)}</Text>
                             </Pressable>
                           );
                         })}
@@ -81,7 +83,7 @@ export default function RequestsScreen() {
                       <View style={styles.slots}>
                         {slots.data?.slots.map((s) => (
                           <Pressable key={s} accessibilityRole="button" onPress={() => act(async () => { await market.counterOffer(token as string, b.id, s); Alert.alert(t('req.sent')); })} style={styles.chip}>
-                            <Text>{new Date(s).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                            <Text>{fmtTime(new Date(s))}</Text>
                           </Pressable>
                         ))}
                         {slots.data && slots.data.slots.length === 0 && <Text style={styles.help}>{t('teacher.noSlots')}</Text>}
@@ -99,11 +101,11 @@ export default function RequestsScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border, gap: 4 },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 4 },
   when: { fontSize: 16, fontWeight: '700', color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },
   label: { fontWeight: '700', color: colors.text },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, minHeight: 44, justifyContent: 'center' },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface, minHeight: 44, justifyContent: 'center' },
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   slots: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
 });

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Text, TextInput } from '../../src/ui/Text';
 import { Stack, useRouter } from 'expo-router';
 import { imagePicker } from '../../src/lib/native';
 import { Screen } from '../../src/components/Screen';
@@ -13,6 +14,7 @@ import { UploadError, uploadFile } from '../../src/market/uploader';
 import { useAsync } from '../../src/market/useAsync';
 import { colors, radius, spacing } from '../../src/theme/colors';
 
+const label = (o: string) => { const k = [`subj.${o}`, `level.${o}`, `lang.${o}`].find((x) => t(x) !== x); return k ? t(k) : o.toUpperCase().length <= 3 ? o.toUpperCase() : o.replace(/_/g, ' '); };
 function Chips({ options, value, onChange }: { options: string[]; value: string[]; onChange: (v: string[]) => void }) {
   return (
     <View style={styles.chips}>
@@ -20,7 +22,7 @@ function Chips({ options, value, onChange }: { options: string[]; value: string[
         const on = value.includes(o);
         return (
           <Pressable key={o} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => onChange(on ? value.filter((x) => x !== o) : [...value, o])} style={[styles.chip, on && styles.chipOn]}>
-            <Text style={on ? { color: colors.white } : undefined}>{o}</Text>
+            <Text style={on ? { color: colors.white } : undefined}>{label(o)}</Text>
           </Pressable>
         );
       })}
@@ -148,9 +150,9 @@ const styles = StyleSheet.create({
   help: { color: colors.textMuted, fontSize: 13 },
   err: { color: colors.danger },
   label: { fontWeight: '700', color: colors.text },
-  input: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.sm, minHeight: 48, fontSize: 16 },
+  input: { backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 16, padding: spacing.sm, minHeight: 48, fontSize: 16 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, minHeight: 40, justifyContent: 'center' },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface, minHeight: 40, justifyContent: 'center' },
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
 });

@@ -143,3 +143,6 @@
 ## R9 polls and the startup crash
 - Poll panel is type-checked only. The startup crash fix was found by reasoning (new native modules vs the old dev build in mobile/android), not by reading the device error; if the app still fails, the exact red-screen text is needed.
 - To use photo/PDF pickers and clipboard the development build must be rebuilt (expo run:android or an EAS dev build).
+
+## A9 push notifications
+- Never tested against the real Expo push service or a real phone (needs a development build with FCM credentials and EXPO_PUSH_ENABLED=true). Push receipts (to detect dead tokens after delivery) are not polled yet; tokens are dropped only when Expo reports DeviceNotRegistered at send time. Telegram fallback is C1 (not built). Settings, inbox and bootstrap screens are type-checked and bundled only.

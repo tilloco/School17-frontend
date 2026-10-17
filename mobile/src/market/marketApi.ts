@@ -5,6 +5,10 @@ import { API_URL, ApiError, apiRequest } from '../lib/api';
 export interface Me {
   id: string;
   name: string | null;
+  username?: string | null;
+  bio?: string | null;
+  dmRequests?: boolean;
+  hasPhoto?: boolean;
   role: 'STUDENT' | 'GUARDIAN' | 'TEACHER' | 'ADMIN';
   locale: 'uz' | 'ru' | 'en';
   timezone: string;
@@ -15,12 +19,14 @@ export interface Me {
 export interface TeacherCard {
   id: string;
   name: string | null;
+  username?: string | null;
   headline: string;
   subjects: string[];
   languages: string[];
   priceMinor: number;
   currency: string;
   instantBooking: boolean;
+  hasPhoto?: boolean;
   verified: true;
   rating: { count: number; average: number | null; bayesian: number };
 }
@@ -80,7 +86,7 @@ export interface AvailabilityRuleView { weekday: number; start: string; end: str
 
 export interface ReviewList {
   summary: { count: number; average: number | null };
-  items: { id: string; rating: number; text: string; author: string; createdAt: string; reply: { text: string } | null }[];
+  items: { id: string; rating: number; text: string; textHidden?: boolean; author: string; createdAt: string; reply: { text: string } | null }[];
 }
 
 export interface SlotList {
@@ -109,7 +115,9 @@ export interface Booking {
 export interface ThreadItem {
   id: string;
   myRole: 'TEACHER' | 'STUDENT' | 'GUARDIAN';
-  other: { name: string | null };
+  other: { id?: string; name: string | null; hasPhoto?: boolean };
+  status?: 'ACTIVE' | 'REQUEST' | 'DECLINED';
+  requestedByMe?: boolean;
   lastMessage: { preview: string; at: string; mine: boolean } | null;
   unread: number;
   readOnly: boolean;
@@ -133,7 +141,7 @@ export interface InboxItem {
   body: string;
   at: string;
   read: boolean;
-  data: { bookingId?: string; threadId?: string } | null;
+  data: Record<string, unknown> | null;
 }
 
 export interface Tips {
@@ -157,6 +165,11 @@ export const market = {
   search: (token: string, p: { q?: string; subject?: string; sort?: string; page?: number }) =>
     apiRequest<SearchResult>(`/teachers?${q({ q: p.q, subject: p.subject, sort: p.sort, page: p.page, pageSize: 20 })}`, { token }),
   teacher: (token: string, id: string) => apiRequest<TeacherDetail>(`/teachers/${id}`, { token }),
+  reviewsAll: (token: string, id: string) => apiRequest<ReviewList>(`/teachers/${id}/reviews?pageSize=30`, { token }),
+  comments: (token: string, id: string) => apiRequest<CommentList>(`/teachers/${id}/comments`, { token }),
+  writeComment: (token: string, id: string, text: string) => apiRequest(`/teachers/${id}/comments`, { method: 'POST', token, body: { text } }),
+  deleteComment: (token: string, id: string) => apiRequest(`/teachers/${id}/comments/mine`, { method: 'DELETE', token }),
+  findPupils: (token: string, q: string) => apiRequest<{ username: string; name: string }[]>(`/teachers/me/find-students?q=${encodeURIComponent(q)}`, { token }),
   reviews: (token: string, id: string) => apiRequest<ReviewList>(`/teachers/${id}/reviews?pageSize=3`, { token }),
   slots: (token: string, id: string, from: string, to: string, duration = 60) =>
     apiRequest<SlotList>(`/teachers/${id}/slots?${q({ from, to, duration })}`, { token }),
@@ -180,6 +193,16 @@ export const market = {
   setPaymentInfo: (token: string, cardNumber: string, holderName: string) =>
     apiRequest<{ set: boolean; cardLast4: string; holderName: string }>('/teachers/me/payment-info', { method: 'PUT', token, body: { cardNumber, holderName } }),
   removePaymentInfo: (token: string) => apiRequest<{ set: boolean }>('/teachers/me/payment-info', { method: 'DELETE', token }),
+  setAvatar: (token: string, fileId: string) => apiRequest('/me/avatar', { method: 'PUT', token, body: { fileId } }),
+  removeAvatar: (token: string) => apiRequest('/me/avatar', { method: 'DELETE', token }),
+  userCard: (token: string, userId: string) => apiRequest<UserCard>(`/users/${userId}/card`, { token }),
+  directOpen: (token: string, userId: string) => apiRequest<ThreadItem>('/threads/direct', { method: 'POST', token, body: { userId } }),
+  people: (token: string, q: string) => apiRequest<PersonHit[]>(`/threads/people?q=${encodeURIComponent(q)}`, { token }),
+  contacts: (token: string) => apiRequest<ContactItem[]>('/threads/contacts', { token }),
+  answerRequest: (token: string, threadId: string, accept: boolean) => apiRequest<ThreadItem>(`/threads/${threadId}/${accept ? 'accept' : 'decline'}`, { method: 'POST', token, body: {} }),
+  classReviewState: (token: string, classId: string) => apiRequest<{ attended: number; canReview: boolean; review: OwnReview | null }>(`/classes/${classId}/review`, { token }),
+  createClassReview: (token: string, classId: string, rating: number, text: string) => apiRequest<OwnReview>(`/classes/${classId}/review`, { method: 'POST', token, body: { rating, text } }),
+  reportComment: (token: string, teacherId: string, commentId: string, reason: string) => apiRequest(`/teachers/${teacherId}/comments/${commentId}/report`, { method: 'POST', token, body: { reason } }),
   pendingReviews: (token: string) => apiRequest<PendingReview[]>('/reviews/pending', { token }),
   myReviews: (token: string) => apiRequest<OwnReview[]>('/reviews/mine', { token }),
   createReview: (token: string, bookingId: string, rating: number, text: string) => apiRequest<OwnReview>(`/bookings/${bookingId}/review`, { method: 'POST', token, body: { rating, text } }),
@@ -189,6 +212,10 @@ export const market = {
   requestReschedule: (token: string, bookingId: string, startAt: string) => apiRequest<Booking>(`/bookings/${bookingId}/reschedule`, { method: 'POST', token, body: { startAt } }),
   myClasses: (token: string) => apiRequest<ClassItem[]>('/classes/mine', { token }),
   classDetail: (token: string, id: string) => apiRequest<ClassDetail>(`/classes/${id}`, { token }),
+  channel: (token: string, id: string, opts: { before?: number; after?: number } = {}) => apiRequest<{ items: ChannelPost[]; more: boolean }>(`/classes/${id}/channel?${q({ before: opts.before, after: opts.after })}`, { token }),
+  channelPost: (token: string, id: string, body: { body?: string; fileId?: string }) => apiRequest<ChannelPost>(`/classes/${id}/channel`, { method: 'POST', token, body }),
+  channelRemove: (token: string, id: string, pid: string) => apiRequest(`/classes/${id}/channel/${pid}`, { method: 'DELETE', token }),
+  addClassSession: (token: string, id: string, body: { startAt: string; durationMin?: number }) => apiRequest(`/classes/${id}/sessions`, { method: 'POST', token, body }),
   classSessions: (token: string, id: string) => apiRequest<ClassSessionItem[]>(`/classes/${id}/sessions`, { token }),
   createClass: (token: string, body: Record<string, unknown>) => apiRequest<{ id: string; joinCode: string; inviteToken: string }>('/classes', { method: 'POST', token, body }),
   updateClass: (token: string, id: string, body: Record<string, unknown>) => apiRequest<ClassDetail>(`/classes/${id}`, { method: 'PATCH', token, body }),
@@ -243,6 +270,16 @@ export const market = {
   pollOpen: (token: string, sid: string, question: string, options: string[]) => apiRequest<PollView>(`/class-sessions/${sid}/polls`, { method: 'POST', token, body: { question, options } }),
   pollClose: (token: string, sid: string, pid: string) => apiRequest<PollView>(`/class-sessions/${sid}/polls/${pid}/close`, { method: 'POST', token, body: {} }),
   pollVote: (token: string, sid: string, pid: string, option: number) => apiRequest(`/class-sessions/${sid}/polls/${pid}/vote`, { method: 'POST', token, body: { option } }),
+  notifPrefs: (token: string) => apiRequest<NotifPrefs>('/notifications/preferences', { token }),
+  setNotifPrefs: (token: string, body: { disabled: string[]; quietStart: string | null; quietEnd: string | null }) => apiRequest<NotifPrefs>('/notifications/preferences', { method: 'PUT', token, body }),
+  testPush: (token: string) => apiRequest('/notifications/test', { method: 'POST', token, body: {} }),
+  readNotif: (token: string, id: string) => apiRequest(`/notifications/${id}/read`, { method: 'POST', token, body: {} }),
+  home: (token: string) => apiRequest<HomeData>('/me/home', { token }),
+  learning: (token: string, studentId?: string) => apiRequest<LearningData>(`/me/learning${studentId ? `?studentId=${studentId}` : ''}`, { token }),
+  students: (token: string) => apiRequest<StudentRow[]>('/teachers/me/students', { token }),
+  studentDetail: (token: string, id: string) => apiRequest<StudentDetail>(`/teachers/me/students/${id}`, { token }),
+  usernameCheck: (token: string, u: string) => apiRequest<{ ok: boolean; reason?: 'TAKEN' | 'BAD' }>(`/me/username-check?u=${encodeURIComponent(u)}`, { token }),
+  updateMe: (token: string, body: { name?: string; locale?: string; timezone?: string; username?: string; bio?: string; dmRequests?: boolean }) => apiRequest('/me', { method: 'PATCH', token, body }),
   owed: (token: string) => apiRequest<OwedGroup[]>('/teachers/me/money/owed', { token }),
   remind: (token: string, bookingId: string) => apiRequest<{ reminded: number }>('/teachers/me/money/remind', { method: 'POST', token, body: { bookingId } }),
   income: (token: string, month: string) => apiRequest<IncomeView>(`/teachers/me/money/income?month=${month}`, { token }),
@@ -274,6 +311,10 @@ export const market = {
   unblock: (token: string, id: string) => apiRequest(`/blocks/${id}`, { method: 'DELETE', token }),
   inbox: (token: string) => apiRequest<InboxItem[]>('/notifications', { token }),
   readAll: (token: string) => apiRequest('/notifications/read-all', { method: 'POST', token, body: {} }),
+  messageUnread: (token: string) => apiRequest<{ unread: number }>('/threads/unread-count', { token }),
+  unread: (token: string) => apiRequest<{ messages: number; channels: number; byClass: Record<string, number>; total: number }>('/me/unread', { token }),
+  ranking: (token: string, classId: string) => apiRequest<RankingData>(`/classes/${classId}/ranking`, { token }),
+  giveBonus: (token: string, classId: string, pupilId: string, points: number, note?: string) => apiRequest(`/classes/${classId}/bonus`, { method: 'POST', token, body: { pupilId, points, note } }),
   unreadCount: (token: string) => apiRequest<{ unread: number }>('/notifications/unread-count', { token }),
   tips: (audience: string, locale: string) => apiRequest<Tips>(`/safety/tips?${q({ audience, locale })}`),
   terms: (locale: string) => apiRequest<LegalDoc>(`/legal/terms?${q({ locale })}`),
@@ -332,3 +373,58 @@ export interface HomeworkSub { id: string; pupilId: string; text: string; fileId
 export interface HomeworkItem { id: string; title: string; text: string; dueAt: string; overdue: boolean; submitted?: number; marked?: number; mine?: HomeworkSub[] }
 export interface HomeworkDetail { id: string; pupils?: { pupilId: string; name: string | null; submission: HomeworkSub | null }[]; mine?: HomeworkSub[] }
 export interface PollView { id: string; question: string; status: 'OPEN' | 'CLOSED'; options: { text: string; votes?: number }[]; total?: number; myVote: number | null }
+export interface NotifPrefs { categories: { id: string; enabled: boolean; canDisable: boolean }[]; quiet: { start: string; end: string } | null; pushOnServer: boolean }
+
+export interface AgendaItem { kind: 'lesson' | 'class'; id: string; classId?: string; startAt: string; endAt: string; title: string; counterpart: string; pupil?: string; status: string; canJoin: boolean; isTrial?: boolean }
+export interface HomeData {
+  role: 'STUDENT' | 'TEACHER' | 'GUARDIAN';
+  name: string | null;
+  agenda: AgendaItem[];
+  counts: Record<string, number>;
+  monthIncomeMinor?: number;
+  homework?: { id: string; classId: string; classTitle: string; title: string; dueAt: string; overdue: boolean }[];
+}
+export interface LearningData {
+  pupil: { id: string; name: string };
+  children?: { id: string; name: string }[];
+  classes: { id: string; title: string; subject: string; teacher: { id: string; name: string | null }; next: { id: string; startAt: string; status: string } | null; attendance: { attended: number; total: number }; homework: { total: number; submitted: number; avgScore: number | null } }[];
+  upcoming: { kind: 'lesson' | 'class'; id: string; classId?: string; startAt: string; endAt: string; title: string; counterpart: string; status: string }[];
+  history: { kind: 'lesson' | 'class'; id: string; at: string; title: string; teacher: string | null; status: string; durationMin: number | null; rating: number | null }[];
+  stats: { lessonsCompleted: number; classSessionsAttended: number; homeworkSubmitted: number; avgScore: number | null };
+}
+export interface StudentRow {
+  pupilId: string; hasPhoto?: boolean; name: string; minor: boolean; since: string | null; lessonsCompleted: number; nextAt: string | null; lastLessonAt: string | null; classes: { id: string; title: string }[]; chatBookingId: string | null;
+  homework: { assigned: number; submitted: number; toMark: number; avgScore: number | null }; payment: { owedCount: number; owedMinor: number }; attention: boolean;
+}
+export interface StudentDetail {
+  pupil: { id: string; name: string; minor: boolean };
+  lessons: { id: string; startAt: string; durationMin: number; status: string; isTrial: boolean; priceMinor: number; payment: string | null }[];
+  classes: { id: string; title: string; subject: string; since?: string; enrolled: boolean; attendance: { attended: number; total: number; late: number } }[];
+  homework: { id: string; classId: string; title: string; dueAt: string; submitted: boolean; late: boolean; score: number | null; marked: boolean }[];
+  payments: { lessonsOwed: number; classOwed: number; confirmed: number };
+  chatBookingId: string | null;
+}
+
+export interface ChannelPost {
+  id: string; seq: number; at: string; body: string; mine: boolean;
+  author: { id: string | null; name: string | null; teacher: boolean; username: string | null; hasPhoto: boolean };
+  file: { id: string; name: string; size: number; mime: string; image: boolean } | null;
+}
+
+export interface CommentList {
+  items: { id: string; text: string; at: string; author: string; exStudent: boolean; mine: boolean }[];
+  mine: { id: string; text: string } | null;
+}
+
+export interface PersonHit { userId: string; name: string | null; username: string; role: string; hasPhoto: boolean }
+export interface ContactItem { userId: string; name: string; role: string; hasPhoto: boolean; classes: string[] }
+
+export interface RankRow {
+  rank: number; name: string; username: string | null; hasPhoto: boolean; userId: string | null; mine: boolean; points: number; base: number; bonus: number;
+  attendance: { attended: number; total: number; percent: number | null };
+  homework: { done: number; total: number; avgScore: number | null };
+  polls: { done: number; total: number };
+}
+export interface RankingData { weights: { attendance: number; homework: number; polls: number }; canGiveBonus: boolean; bonusMax: number; items: RankRow[] }
+
+export interface UserCard { id: string; name: string | null; username: string | null; bio: string | null; role: string; hasPhoto: boolean; relation: 'self' | 'known' | 'none' }

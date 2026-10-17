@@ -1,5 +1,8 @@
+import { SignalPill } from '../../src/lib/connection';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { fmtTime } from '../../src/ui/format';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../../src/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../src/components/Screen';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
@@ -69,7 +72,7 @@ export default function CallScreen() {
     setNetBusy(false);
   };
 
-  const header = <Stack.Screen options={{ headerShown: true, title: t('call.title'), headerBackTitle: t('common.back') }} />;
+  const header = <Stack.Screen options={{ headerShown: true, title: t('call.title'), headerBackTitle: t('common.back'), headerRight: () => <SignalPill /> }} />;
 
   if (!call.availability.ok) {
     return (
@@ -178,7 +181,7 @@ export default function CallScreen() {
               value={draft}
               onChangeText={setDraft}
               onSubmitEditing={() => { call.sendChat(draft); setDraft(''); }}
-              placeholder={t('call.chat')}
+              placeholderTextColor={colors.textMuted} placeholder={t('call.chat')}
               style={styles.chatInput}
               maxLength={500}
             />
@@ -198,7 +201,7 @@ export default function CallScreen() {
   }
 
   // ---- Lobby (qo'ng'iroqdan oldin tekshiruv) yoki 'failed' ----
-  const opensAt = new Date(lobby.joinWindow.opensAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const opensAt = fmtTime(new Date(lobby.joinWindow.opensAt));
   const reasonText =
     lobby.reason === 'TOO_EARLY' ? t('call.lobby.opensAt', { time: opensAt })
     : lobby.reason === 'WINDOW_CLOSED' ? t('call.lobby.closed')
@@ -238,7 +241,7 @@ const styles = StyleSheet.create({
   body: { fontSize: 16, color: colors.textMuted, textAlign: 'center' },
   hint: { fontSize: 13, color: colors.textMuted },
   warn: { fontSize: 15, color: colors.warning, fontWeight: '600' },
-  checkRow: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, gap: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  checkRow: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, gap: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   checkLabel: { fontSize: 14, color: colors.textMuted },
   checkValue: { fontSize: 16, color: colors.text, fontWeight: '600' },
   banner: { backgroundColor: colors.warning, paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
@@ -261,5 +264,5 @@ const styles = StyleSheet.create({
   chatNote: { fontSize: 11, color: colors.textMuted, marginBottom: 4 },
   chatLine: { paddingVertical: 2, color: colors.text },
   chatMine: { textAlign: 'right', color: colors.primary },
-  chatInput: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm, height: 40 },
+  chatInput: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 16, paddingHorizontal: spacing.sm, height: 40 },
 });

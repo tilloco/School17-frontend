@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Switch, View } from 'react-native';
+import { Text, TextInput } from '../../../src/ui/Text';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Screen } from '../../../src/components/Screen';
 import { PrimaryButton } from '../../../src/components/PrimaryButton';
@@ -146,7 +147,7 @@ export default function ClassChatScreen() {
               </View>
             )}
             {!(teacher && tab === 'questions') || draft ? null : <Text style={styles.help}>{t('cchat.replyHint')}</Text>}
-            <TextInput value={draft} onChangeText={setDraft} multiline maxLength={tab === 'chat' ? 500 : 500} placeholder={t(tab === 'chat' ? 'cchat.messagePlaceholder' : teacher ? 'cchat.replyPlaceholder' : 'cchat.questionPlaceholder')} accessibilityLabel={t('cchat.messagePlaceholder')} style={styles.input} />
+            <TextInput value={draft} onChangeText={setDraft} multiline maxLength={tab === 'chat' ? 500 : 500} placeholderTextColor={colors.textMuted} placeholder={t(tab === 'chat' ? 'cchat.messagePlaceholder' : teacher ? 'cchat.replyPlaceholder' : 'cchat.questionPlaceholder')} accessibilityLabel={t('cchat.messagePlaceholder')} style={styles.input} />
             {!(teacher && tab === 'questions') && <PrimaryButton title={t(tab === 'chat' ? 'chat.send' : 'cchat.ask')} onPress={send} disabled={!draft.trim()} />}
           </View>
         ) : null}
@@ -157,10 +158,10 @@ export default function ClassChatScreen() {
 
 const styles = StyleSheet.create({
   tabs: { flexDirection: 'row', gap: spacing.sm, paddingTop: spacing.sm },
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.sm, borderWidth: 1, borderColor: colors.border, gap: 2 },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 2 },
   strong: { fontWeight: '700', color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, alignItems: 'center' },
   problem: { color: '#b00020' },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, minHeight: 44, color: colors.text, backgroundColor: colors.surface },
+  input: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 16, padding: spacing.sm, minHeight: 44, color: colors.text, backgroundColor: colors.surface },
 });

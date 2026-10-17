@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Image, StyleSheet, Switch, View } from 'react-native';
+import { Text } from '../ui/Text';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { API_URL, ApiError } from '../lib/api';
 import { t } from '../i18n';
@@ -77,7 +78,7 @@ export function PresentationPanel({ token, classId, sessionId, state, teacher, o
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: spacing.xs },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: spacing.xs },
   strong: { fontWeight: '700', color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },
   page: { width: '100%', aspectRatio: 1.4, backgroundColor: '#fff' },

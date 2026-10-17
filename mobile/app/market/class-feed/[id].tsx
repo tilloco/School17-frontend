@@ -1,5 +1,7 @@
 import React from 'react';
-import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { fmtDateTime } from '../../../src/ui/format';
+import { FlatList, Image, StyleSheet, View } from 'react-native';
+import { Text } from '../../../src/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../../src/components/Screen';
 import { PrimaryButton } from '../../../src/components/PrimaryButton';
@@ -34,7 +36,7 @@ export default function ClassFeedScreen() {
           <>
             <Text style={styles.strong}>{p.title}</Text>
             {!!p.text && <Text>{p.text}</Text>}
-            {!!d.dueAt && <Text style={styles.help}>{t('hw.due', { time: new Date(d.dueAt).toLocaleString() })}</Text>}
+            {!!d.dueAt && <Text style={styles.help}>{t('hw.due', { time: fmtDateTime(new Date(d.dueAt)) })}</Text>}
             <PrimaryButton title={t('hw.open')} variant="outline" onPress={() => router.push(`/market/class-homework/${id}` as never)} />
           </>
         );
@@ -64,7 +66,7 @@ export default function ClassFeedScreen() {
           contentContainerStyle={{ paddingVertical: spacing.md, gap: spacing.sm }}
           renderItem={({ item: p }) => (
             <View style={styles.card}>
-              <Text style={styles.help}>{t(`feed.kind.${p.kind}`)} · {new Date(p.at).toLocaleString()}</Text>
+              <Text style={styles.help}>{t(`feed.kind.${p.kind}`)} · {fmtDateTime(new Date(p.at))}</Text>
               {body(p)}
             </View>
           )}
@@ -75,7 +77,7 @@ export default function ClassFeedScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: 4 },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 4 },
   strong: { fontWeight: '700', color: colors.text },
   help: { color: colors.textMuted, fontSize: 13 },
   img: { width: '100%', aspectRatio: 16 / 9, backgroundColor: '#fff' },

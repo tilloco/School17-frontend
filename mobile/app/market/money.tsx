@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, Share, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Text } from '../../src/ui/Text';
 import { Stack } from 'expo-router';
-import { Screen } from '../../src/components/Screen';
-import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { StateView } from '../../src/components/StateView';
 import { ApiError } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth-context';
 import { t } from '../../src/i18n';
 import { market } from '../../src/market/marketApi';
 import { useAsync } from '../../src/market/useAsync';
-import { colors, radius, spacing } from '../../src/theme/colors';
+import { colors, spacing } from '../../src/theme/colors';
+import { Action, Avatar, Card, Empty, Group, Page, SectionTitle } from '../../src/ui';
 
-const som = (minor: number) => Math.round(minor / 100).toLocaleString();
+const som = (minor: number) => Math.round(minor / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 const ym = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 
-/** Teacher: who owes, reminders, monthly income, CSV. Only the teacher's own marks; the platform holds no money. */
+/** Teacher's own notebook: who owes, reminders, monthly total, CSV. These are only the teacher's marks; the platform holds no money. */
 export default function MoneyScreen() {
   const { token } = useAuth();
   const [cursor, setCursor] = useState(() => new Date());
@@ -42,61 +43,88 @@ export default function MoneyScreen() {
       Alert.alert(t('common.error'), e instanceof ApiError ? e.message : t('state.error'));
     }
   };
+  const i = income.data;
 
   return (
-    <Screen>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack.Screen options={{ headerShown: true, title: t('money.title'), headerBackTitle: t('common.back') }} />
-      <ScrollView contentContainerStyle={{ paddingVertical: spacing.md, gap: spacing.sm }}>
-        <Text style={styles.help}>{t('money.note')}</Text>
-        <Text style={styles.h2}>{t('money.income')} · {month}</Text>
-        {income.state !== 'ready' || !income.data ? (
-          <StateView state={income.state === 'ready' ? 'loading' : income.state} onRetry={income.reload} />
-        ) : (
-          <View style={styles.card}>
-            <Text style={styles.strong}>{t('money.confirmed', { n: income.data.confirmedCount, sum: som(income.data.confirmedMinor) })}</Text>
-            <Text>{t('money.awaiting', { n: income.data.awaitingConfirmation })}</Text>
-            <Text>{t('money.unpaid', { n: income.data.unpaidLessons })}</Text>
-          </View>
-        )}
-        <View style={styles.row}>
-          <PrimaryButton title={t('money.prev')} variant="outline" onPress={() => shift(-1)} />
-          <PrimaryButton title={t('money.next')} variant="outline" onPress={() => shift(1)} />
+      <Page edges={[]} onRefresh={() => { owed.reload(); classOwed.reload(); income.reload(); }}>
+        <Text style={styles.note}>{t('money.note')}</Text>
+
+        <View style={styles.monthRow}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('money.prev')} onPress={() => shift(-1)} hitSlop={10} style={styles.arrow}><Ionicons name="chevron-back" size={22} color={colors.primary} /></Pressable>
+          <Text style={styles.month}>{month}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('money.next')} onPress={() => shift(1)} hitSlop={10} style={styles.arrow}><Ionicons name="chevron-forward" size={22} color={colors.primary} /></Pressable>
         </View>
-        <PrimaryButton title={t('money.export')} variant="outline" onPress={exportCsv} />
-        <Text style={styles.h2}>{t('money.owed')}</Text>
+
+        {income.state !== 'ready' || !i ? <StateView state={income.state === 'ready' ? 'loading' : income.state} onRetry={income.reload} /> : (
+          <Card style={{ gap: spacing.md }}>
+            <View>
+              <Text style={styles.big}>{som(i.confirmedMinor)} <Text style={styles.cur}>{t('common.currency')}</Text></Text>
+              <Text style={styles.sub}>{t('money.confirmedShort', { n: i.confirmedCount })}</Text>
+            </View>
+            <View style={styles.stats}>
+              <View style={[styles.stat, { backgroundColor: colors.warningSoft }]}><Text style={[styles.statN, { color: colors.warningText }]}>{i.awaitingConfirmation}</Text><Text style={[styles.statL, { color: colors.warningText }]}>{t('money.awaitingShort')}</Text></View>
+              <View style={[styles.stat, { backgroundColor: colors.dangerSoft }]}><Text style={[styles.statN, { color: colors.danger }]}>{i.unpaidLessons}</Text><Text style={[styles.statL, { color: colors.danger }]}>{t('money.unpaidShort')}</Text></View>
+            </View>
+          </Card>
+        )}
+        <Action label={t('money.export')} icon="download" kind="outline" onPress={exportCsv} />
+
+        <SectionTitle title={t('money.owed')} />
         {owed.state !== 'ready' || !owed.data ? (
           <StateView state={owed.state === 'ready' ? 'loading' : owed.state} onRetry={owed.reload} />
         ) : owed.data.length === 0 ? (
-          <Text style={styles.help}>{t('money.none')}</Text>
+          <Empty icon="checkmark-circle" title={t('money.none')} />
         ) : (
-          owed.data.map((g) => (
-            <View key={g.remindBookingId} style={styles.card}>
-              <Text style={styles.strong}>{g.pupilName}</Text>
-              <Text>{t('money.lessons', { n: g.count })} · {som(g.totalMinor)}</Text>
-              <PrimaryButton title={t('money.remind')} variant="outline" disabled={!g.canRemind} onPress={() => remind(g.remindBookingId)} />
-            </View>
-          ))
+          <Group>
+            {owed.data.map((g) => (
+              <View key={g.remindBookingId} style={styles.owe}>
+                <Avatar name={g.pupilName} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.name} numberOfLines={1}>{g.pupilName}</Text>
+                  <Text style={styles.sub}>{t('money.lessons', { n: g.count })} · {som(g.totalMinor)} {t('common.currency')}</Text>
+                </View>
+                <Pressable accessibilityRole="button" disabled={!g.canRemind} onPress={() => remind(g.remindBookingId)} style={[styles.remind, !g.canRemind && { opacity: 0.4 }]}><Text style={styles.remindText}>{t('money.remind')}</Text></Pressable>
+              </View>
+            ))}
+          </Group>
         )}
         {(classOwed.data?.length ?? 0) > 0 && (
           <>
-            <Text style={styles.h2}>{t('cmoney.title')}</Text>
-            {classOwed.data!.map((g) => (
-              <View key={g.classId + g.pupilName} style={styles.card}>
-                <Text style={styles.strong}>{g.pupilName} · {g.classTitle}</Text>
-                <Text>{t('money.lessons', { n: g.count })} · {som(g.totalMinor)}</Text>
-              </View>
-            ))}
+            <SectionTitle title={t('cmoney.title')} />
+            <Group>
+              {classOwed.data!.map((g) => (
+                <View key={g.classId + g.pupilName} style={styles.owe}>
+                  <Avatar name={g.pupilName} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.name} numberOfLines={1}>{g.pupilName}</Text>
+                    <Text style={styles.sub} numberOfLines={1}>{g.classTitle} · {t('money.lessons', { n: g.count })} · {som(g.totalMinor)} {t('common.currency')}</Text>
+                  </View>
+                </View>
+              ))}
+            </Group>
           </>
         )}
-      </ScrollView>
-    </Screen>
+      </Page>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: 4 },
-  h2: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: spacing.sm },
-  strong: { fontWeight: '700', color: colors.text },
-  help: { color: colors.textMuted, fontSize: 13 },
-  row: { flexDirection: 'row', gap: spacing.sm },
+  note: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
+  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  month: { fontSize: 22, fontWeight: '800', color: colors.text },
+  arrow: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  big: { fontSize: 36, fontWeight: '800', color: colors.text, letterSpacing: -1 },
+  cur: { fontSize: 16, fontWeight: '600', color: colors.textMuted },
+  sub: { fontSize: 13, color: colors.textMuted },
+  stats: { flexDirection: 'row', gap: spacing.sm },
+  stat: { flex: 1, borderRadius: 16, padding: spacing.md, gap: 2 },
+  statN: { fontSize: 24, fontWeight: '800' },
+  statL: { fontSize: 12, fontWeight: '600' },
+  owe: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
+  name: { fontSize: 16, fontWeight: '700', color: colors.text },
+  remind: { backgroundColor: colors.primarySoft, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  remindText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
 });
