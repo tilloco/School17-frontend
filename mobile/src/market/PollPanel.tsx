@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '../ui/Text';
+import { useRealtime } from '../lib/realtime';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ApiError } from '../lib/api';
 import { t } from '../i18n';
 import { colors, radius, spacing } from '../theme/colors';
 import { market, PollView } from './marketApi';
 
-const POLL_MS = 3000;
+const POLL_MS = 15000;
 
 /** Live poll. Teacher: open (question + 2-6 options), see live counts, close. Pupil: vote once; results appear when the poll is closed. Nobody sees who voted for what. */
 export function PollPanel({ token, sessionId, teacher }: { token: string; sessionId: string; teacher: boolean }) {
@@ -20,6 +21,7 @@ export function PollPanel({ token, sessionId, teacher }: { token: string; sessio
     const timer = setInterval(() => void load(), POLL_MS);
     return () => clearInterval(timer);
   }, [token, sessionId]);
+  useRealtime(['class:poll', 'connect'], () => void load());
   const fail = (e: unknown) => Alert.alert(t('common.error'), e instanceof ApiError ? (e.code === 'POLL_OPEN' ? t('poll.alreadyOpen') : e.code === 'ALREADY_VOTED' ? t('cchat.voted') : e.code === 'POLL_CLOSED' ? t('poll.closedMsg') : e.message) : t('state.error'));
 
   const open = poll?.status === 'OPEN';

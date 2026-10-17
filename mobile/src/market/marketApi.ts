@@ -237,6 +237,7 @@ export const market = {
   removeClassPupil: (token: string, id: string, pupilId: string) => apiRequest(`/classes/${id}/pupils/${pupilId}`, { method: 'DELETE', token }),
   children: (token: string) => apiRequest<{ id: string; name: string | null }[]>('/guardian/children', { token }),
   roomState: (token: string, sid: string) => apiRequest<ClassRoomState>(`/class-sessions/${sid}`, { token }),
+  roomAudience: (token: string, sid: string) => apiRequest<Audience>(`/class-sessions/${sid}/audience`, { token }),
   roomRoster: (token: string, sid: string) => apiRequest<RosterRow[]>(`/class-sessions/${sid}/roster`, { token }),
   roomStart: (token: string, sid: string) => apiRequest<ClassRoomState>(`/class-sessions/${sid}/start`, { method: 'POST', token, body: {} }),
   roomHand: (token: string, sid: string, raised: boolean) => apiRequest(`/class-sessions/${sid}/hand`, { method: 'POST', token, body: { raised } }),
@@ -416,6 +417,8 @@ export interface StudentDetail {
   chatBookingId: string | null;
 }
 
+export interface AudienceItem { id: string | null; key: string; name: string | null; username: string | null; hasPhoto: boolean; teacher: boolean; me: boolean; present: boolean; hand: boolean; stage: 'NONE' | 'VOICE' | 'VOICE_VIDEO'; removed: boolean }
+export interface Audience { items: AudienceItem[] }
 export interface ChannelMember { id: string | null; name: string | null; username: string | null; hasPhoto: boolean; teacher: boolean; me: boolean }
 export interface ChannelInfo {
   theme: string; hasLogo: boolean;

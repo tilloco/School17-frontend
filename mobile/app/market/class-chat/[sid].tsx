@@ -7,12 +7,13 @@ import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
 import { ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
+import { useRealtime } from '../../../src/lib/realtime';
 import { useSessionProtect } from '../../../src/lib/protect';
 import { t } from '../../../src/i18n';
 import { ClassMsg, ClassQuestionItem, market } from '../../../src/market/marketApi';
 import { colors, radius, spacing } from '../../../src/theme/colors';
 
-const POLL_MS = 2500; // polling fallback; the realtime channel pushes class:message / class:question events when connected
+const POLL_MS = 15000; // polling fallback; the realtime channel pushes class:message / class:question events when connected
 
 function errText(e: unknown): string {
   if (!(e instanceof ApiError)) return t('state.error');
@@ -61,6 +62,7 @@ export default function ClassChatScreen() {
     const timer = setInterval(() => void load(), POLL_MS);
     return () => clearInterval(timer);
   }, [load]);
+  useRealtime(['class:message', 'class:message_deleted', 'class:question', 'class:settings', 'connect'], () => void load());
 
   const run = async (fn: () => Promise<unknown>) => {
     setProblem(null);

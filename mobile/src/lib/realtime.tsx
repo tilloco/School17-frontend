@@ -7,7 +7,7 @@ type Handler = (payload: unknown) => void;
 interface Ctx { subscribe: (event: string, h: Handler) => () => void; live: boolean }
 const RealtimeContext = createContext<Ctx>({ subscribe: () => () => undefined, live: false });
 
-const EVENTS = ['message', 'receipt', 'class.channel', 'class:chat', 'class:poll', 'class:present', 'class:whiteboard'];
+const EVENTS = ['message', 'receipt', 'class.channel', 'class:state', 'class:message', 'class:message_deleted', 'class:question', 'class:settings', 'class:poll', 'class:present', 'class:whiteboard'];
 
 /** Keeps one live connection while signed in. Screens listen with useRealtime(); "connect" fires on every (re)connection so they can catch up. */
 export function RealtimeProvider({ children }: { children: React.ReactNode }) {
