@@ -1270,4 +1270,6 @@ export const en: Record<string, string> = {
   "video.watch": "Watch",
   "video.hint": "Your name is shown over the picture. Recording or sharing this lesson is not allowed.",
   "tg.message": "{title}: our class is now on School17. Open the link, send a photo of your payment and you will be added. Lessons, videos and files are in one place. {link}",
+  "phone.locked": "You asked for codes too many times. You can ask again in {time}.",
+  "phone.unitH": "h",
 };

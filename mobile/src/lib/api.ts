@@ -1,3 +1,4 @@
+import { deviceId } from './device-id';
 import type { ApiErrorBody, User, VerifyOtpResponse } from '../types/api';
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
@@ -24,6 +25,7 @@ interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   token?: string | null;
+  headers?: Record<string, string>;
 }
 
 /** Reads (GET) are tried once more after a short pause when the network blinks; writes are never repeated by themselves. */
@@ -43,6 +45,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 async function requestOnce<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (options.token) headers.Authorization = `Bearer ${options.token}`;
+  if (options.headers) Object.assign(headers, options.headers);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
@@ -107,7 +110,7 @@ export const api = {
   registerEmail: (body: { email: string; password: string; name: string; role: 'STUDENT' | 'TEACHER' | 'GUARDIAN'; dateOfBirth: string; acceptTerms: boolean; locale: string; username?: string }) =>
     request<{ accessToken: string }>('/auth/email/register', { method: 'POST', body }),
   loginEmail: (email: string, password: string) => request<{ accessToken: string }>('/auth/email/login', { method: 'POST', body: { email, password } }),
-  requestPhoneCode: (phone: string) => request<{ sent: boolean; ttlSeconds: number; devCode?: string }>('/auth/phone/request', { method: 'POST', body: { phone } }),
+  requestPhoneCode: async (phone: string) => request<{ sent: boolean; ttlSeconds: number; devCode?: string }>('/auth/phone/request', { method: 'POST', body: { phone }, headers: { 'X-Device-Id': await deviceId() } }),
   verifyPhoneCode: (body: Record<string, unknown>) => request<{ accessToken?: string; needsProfile?: boolean }>('/auth/phone/verify', { method: 'POST', body }),
   loginWithGoogle: (idToken: string) => request<VerifyOtpResponse>('/auth/google', { method: 'POST', body: { idToken } }),
 };

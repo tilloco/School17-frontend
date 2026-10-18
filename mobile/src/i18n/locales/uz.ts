@@ -1270,4 +1270,6 @@ export const uz: Record<string, string> = {
   "video.watch": "Ko‘rish",
   "video.hint": "Ismingiz tasvir ustida ko‘rinadi. Bu darsni yozib olish yoki tarqatish taqiqlangan.",
   "tg.message": "{title}: sinfimiz endi School17 da. Havolani oching, to‘lov rasmini yuboring — sizni qo‘shamiz. Darslar, videolar va fayllar bir joyda. {link}",
+  "phone.locked": "Kodni juda ko‘p so‘radingiz. Qayta so‘rash mumkin: {time} dan keyin.",
+  "phone.unitH": "soat",
 };

@@ -53,6 +53,12 @@ export default function PhoneScreen() {
 
   const fail = (e: unknown) => {
     const m: Record<string, string> = { BAD_PHONE: 'phone.badPhone', NO_TELEGRAM: 'phone.noTelegram', SEND_FAILED: 'phone.sendFailed', CODE_RATE: 'phone.rate', BAD_CODE: 'phone.badCode', TERMS_REQUIRED: 'auth.errTerms', BAD_DOB: 'auth.errDob', USERNAME_TAKEN: 'auth.usernameTaken', BAD_USERNAME: 'auth.usernameBad', RESERVED_USERNAME: 'auth.usernameTaken', TOO_YOUNG: role === 'STUDENT' ? 'auth.tooYoungPupil' : 'auth.tooYoungAdult' };
+    if (e instanceof ApiError && e.code === 'CODE_LOCKED') {
+      const sec = Number(e.details.retryAfterSeconds) || 3600;
+      const h = Math.floor(sec / 3600);
+      const min = Math.max(1, Math.ceil((sec % 3600) / 60));
+      return setError(t('phone.locked', { time: h > 0 ? `${h} ${t('phone.unitH')} ${min} ${t('common.min')}` : `${min} ${t('common.min')}` }));
+    }
     setError(e instanceof ApiError ? (e.code && m[e.code] ? t(m[e.code]) : e.statusCode === 429 ? t('auth.tooMany') : e.message) : t('state.error'));
   };
   const run = async (fn: () => Promise<void>) => {
