@@ -4,7 +4,7 @@ One server runs everything: PostgreSQL, the backend, the LiveKit video server an
 
 ## What you need
 - A Linux server (2 vCPU / 4 GB is a sensible start) with Docker and the Compose plugin.
-- A domain with two DNS A records pointing at the server: `YOUR-DOMAIN` and `lk.YOUR-DOMAIN`.
+- A domain with two DNS A records pointing at the server's IP. With `mamunapp.xyz`: `api.mamunapp.xyz` and `lk.api.mamunapp.xyz` (then `DOMAIN=api.mamunapp.xyz` in `.env`). The root `mamunapp.xyz` stays free for anything else.
 - Open ports: 80, 443 (web), 7881/tcp and 50000–50100/udp (video).
 
 ## First start

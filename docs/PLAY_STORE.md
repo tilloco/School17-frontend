@@ -4,8 +4,8 @@
 
 ## 0. Things only you can do (nobody else can)
 1. **Google Play developer account** (one-time fee, identity check). New personal accounts must first run a *closed test* with a group of testers for about two weeks before production access (Google's current rule is about 12 testers for 14 days; check the Play Console, the rules change).
-2. **A domain name** (for example `school17.uz`) and a server to run the backend (section 3). The app and the privacy-policy link need real `https` addresses; the old `onrender` address in `mobile/.env` is a stand-in.
-3. **A lawyer's review** of the privacy policy and terms (`LAWYER_QUESTIONS.md`). Until you set `LEGAL_REVIEWED=1` the public pages carry a "draft" banner, and the retention period and contact address stay as visible brackets. Do not publish before this is settled.
+2. **A domain name** (yours: `mamunapp.xyz` works fine; the app name stays School17, they need not match; see `docs/COSTS.md`) and a server to run the backend (section 3). The app and the privacy-policy link need real `https` addresses; the old `onrender` address in `mobile/.env` is a stand-in.
+3. **Fill the policy blanks yourself** (your decision whether to involve a lawyer). In the server `.env` set `LEGAL_OPERATOR` (your full name or company, city, country), `LEGAL_RETENTION` (for example `12 months`), `SUPPORT_EMAIL`, and `LEGAL_REVIEWED=1`. That fills every bracket on `/privacy` and removes the draft banner. Google only needs the policy to be true to what the app does, and it is written from the code.
 4. **A support e-mail address** you actually read (`SUPPORT_EMAIL`), shown on the policy and delete-account pages.
 
 ## 1. The upload key (already created)
