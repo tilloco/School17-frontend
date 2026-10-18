@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '../../../src/ui/Text';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { documentPicker } from '../../../src/lib/native';
 import { Screen } from '../../../src/components/Screen';
 import { PrimaryButton } from '../../../src/components/PrimaryButton';
@@ -28,6 +28,7 @@ function fmtBytes(n?: number | null) {
 export default function ClassFilesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
+  const router = useRouter();
   useClassProtect(id);
   const [q, setQ] = useState('');
   const me = useAsync(() => market.me(token as string), [token]);
@@ -90,6 +91,7 @@ export default function ClassFilesScreen() {
                 {f.sizeBytes ? ` · ${(f.sizeBytes / 1048576).toFixed(1)} MB` : ''}
               </Text>
               <View style={styles.row}>
+                {!!f.mime && (f.mime.startsWith('video/') || f.mime.startsWith('audio/')) && <PrimaryButton title={t('video.watch')} onPress={() => router.push(`/market/class-video/${f.id}?classId=${id}&title=${encodeURIComponent(f.name)}` as never)} />}
                 {(teacher || f.allowDownload) && <PrimaryButton title={t('cfile.download')} variant="outline" onPress={() => download(f.id)} />}
                 {teacher ? (
                   <>

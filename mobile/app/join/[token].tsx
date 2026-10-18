@@ -8,7 +8,7 @@ import { ApiError } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth-context';
 import { savePendingJoin } from '../../src/lib/pending-join';
 import { t } from '../../src/i18n';
-import { market } from '../../src/market/marketApi';
+import { isPending, market } from '../../src/market/marketApi';
 import { colors, spacing } from '../../src/theme/colors';
 import { Action } from '../../src/ui';
 
@@ -25,10 +25,13 @@ export default function JoinScreen() {
     setState('loading');
     try {
       const c = await market.joinClass(token as string, { token: invite, studentId });
+      if (isPending(c)) { setMessage(t('join.sentText')); setState('error'); return; }
       router.replace(`/market/class/${c.id}` as never);
     } catch (e) {
       // Already in the class: just open it
       if (e instanceof ApiError && e.code === 'ALREADY_ENROLLED') return router.replace('/(tabs)/learning' as never);
+      if (e instanceof ApiError && e.code === 'PROOF_REQUIRED') return router.replace(`/market/join-request?token=${encodeURIComponent(String(invite))}${studentId ? `&studentId=${studentId}` : ''}` as never);
+      if (e instanceof ApiError && e.code === 'ALREADY_REQUESTED') { setMessage(t('join.alreadyRequested')); setState('error'); return; }
       const map: Record<string, string> = { CLASS_NOT_FOUND: 'join.notFound', REMOVED: 'join.removed', JOIN_LIMIT: 'auth.tooMany', CLASS_FULL: 'join.full' };
       setMessage(e instanceof ApiError ? (e.code && map[e.code] ? t(map[e.code]) : e.message) : t('state.error'));
       setState('error');

@@ -86,10 +86,10 @@ export function ReplyQuote({ reply, accent, onDark, onPress, onClose }: { reply:
  * One chat bubble. `author` is shown above other people's messages in group chats (class channel).
  * Swipe a bubble to the right to reply (like Telegram); a quoted message shows on top and a tap on it jumps to the original.
  */
-export function Bubble({ token, mine, body, at, file, state, author, authorIsTeacher, onLongPress, onAuthorPress, authorPhotoId, onRetry, pinned, highlight, theme, replyTo, onQuotePress, onSwipeReply, hidden, reports, locked }: {
+export function Bubble({ token, mine, body, at, file, state, author, authorIsTeacher, authorIsAssistant, onLongPress, onAuthorPress, authorPhotoId, onRetry, pinned, highlight, theme, replyTo, onQuotePress, onSwipeReply, hidden, reports, locked }: {
   locked?: boolean; hidden?: 'reported' | 'review' | null; reports?: number;
   pinned?: boolean; highlight?: boolean; theme?: ChatTheme; replyTo?: ReplyInfo | null; onQuotePress?: () => void; onSwipeReply?: () => void;
-  token: string; mine: boolean; body: string; at: string; file?: ChatFile | null; state?: DeliveryState; author?: string | null; authorIsTeacher?: boolean; onLongPress?: () => void; onAuthorPress?: () => void; authorPhotoId?: string | null; onRetry?: () => void;
+  token: string; mine: boolean; body: string; at: string; file?: ChatFile | null; state?: DeliveryState; author?: string | null; authorIsTeacher?: boolean; authorIsAssistant?: boolean; onLongPress?: () => void; onAuthorPress?: () => void; authorPhotoId?: string | null; onRetry?: () => void;
 }) {
   const th = theme ?? themeOf(null);
   const x = useRef(new Animated.Value(0)).current;
@@ -130,7 +130,7 @@ export function Bubble({ token, mine, body, at, file, state, author, authorIsTea
           {!mine && !!author && (
             <Pressable onPress={onAuthorPress} disabled={!onAuthorPress} hitSlop={6} accessibilityRole="button" accessibilityLabel={author} style={styles.authorRow}>
               <Avatar name={author} size={22} userId={authorPhotoId ?? null} />
-              <Text style={[styles.author, { color: authorIsTeacher ? '#FF9500' : nameColor(author) }]} numberOfLines={1}>{author}{authorIsTeacher ? `  ·  ${t('role.TEACHER')}` : ''}</Text>
+              <Text style={[styles.author, { color: authorIsTeacher ? '#FF9500' : authorIsAssistant ? '#1D9BF0' : nameColor(author) }]} numberOfLines={1}>{author}{authorIsTeacher ? `  ·  ${t('role.TEACHER')}` : authorIsAssistant ? `  ·  ${t('helper.assistant')}` : ''}</Text>
             </Pressable>
           )}
           {!!reports && reports > 0 && (

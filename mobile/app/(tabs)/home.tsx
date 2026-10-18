@@ -47,6 +47,7 @@ export default function HomeScreen() {
   const students = useAsync(() => (teacher ? market.students(token as string).catch(() => []) : Promise.resolve([])), [token, teacher]);
   const profile = useAsync(() => (teacher ? market.ownProfile(token as string).catch(() => null) : Promise.resolve(null)), [token, teacher]);
   const rating = useAsync(() => (profile.data ? market.reviews(token as string, profile.data.id).catch(() => null) : Promise.resolve(null)), [token, profile.data?.id]);
+  const helping = useAsync(() => market.helpingClasses(token as string).catch(() => []), [token]);
   const unread = useAsync(() => market.unread(token as string).catch(() => null), [token]);
   const top = useAsync(() => (teacher ? Promise.resolve(null) : market.search(token as string, { sort: 'rating' }).catch(() => null)), [token, teacher]);
   const progress = useAsync(() => (teacher ? Promise.resolve(null) : market.progress(token as string).catch(() => null)), [token, teacher]);
@@ -70,7 +71,7 @@ export default function HomeScreen() {
   // the language on this phone is the language of the notifications too: keep the server in step, once
   useEffect(() => { if (token && user && user.locale && user.locale !== locale) void market.updateMe(token, { locale }).then(() => refreshUser()).catch(() => undefined); }, [token, user?.locale, locale]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { takePendingJoin().then((inv) => { if (inv) router.push(`/join/${inv}` as never); }); }, [router]);
-  const reload = () => { progress.reload(); unread.reload(); home.reload(); classes.reload(); students.reload(); profile.reload(); top.reload(); };
+  const reload = () => { helping.reload(); progress.reload(); unread.reload(); home.reload(); classes.reload(); students.reload(); profile.reload(); top.reload(); };
 
   if (home.state !== 'ready' || !home.data) return <Page padded><StateView state={home.state === 'ready' ? 'loading' : home.state} onRetry={home.reload} /></Page>;
   const d = home.data;
@@ -198,6 +199,18 @@ export default function HomeScreen() {
               )}
               {!profile.data && <Pressable onPress={() => go('/market/profile-edit')} accessibilityRole="button"><Text style={styles.link}>{t('setup.profile')}</Text></Pressable>}
             </Card>
+          </>
+        )}
+
+        {(helping.data ?? []).length > 0 && (
+          <>
+            <SectionTitle title={t('helping.title')} />
+            <Group>
+              {helping.data!.map((h) => {
+                const n = h.pendingRequests + h.paymentsToCheck;
+                return <ListRow key={h.classId} icon="people-circle" tone={n > 0 ? 'warning' : 'primary'} title={h.title} subtitle={h.teacher ?? ''} right={n > 0 ? String(n) : undefined} onPress={() => go(`/market/class-desk/${h.classId}`)} />;
+              })}
+            </Group>
           </>
         )}
 

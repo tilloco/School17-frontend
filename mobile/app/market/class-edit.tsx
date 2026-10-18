@@ -26,12 +26,14 @@ export default function ClassEditScreen() {
   const [price, setPrice] = useState('');
   const [busy, setBusy] = useState(false);
   const [protect, setProtect] = useState(false);
+  const [approval, setApproval] = useState(false);
+  const [proof, setProof] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     market.classDetail(token as string, id).then((c) => {
       setTitle(c.title); setSubject(c.subject); setDescription(c.description);
-      setProtect(!!c.protectContent); setLimit(c.capacity >= 500 ? '' : String(c.capacity)); setPrice(c.priceMinor ? String(Math.round(c.priceMinor / 100)) : '');
+      setProtect(!!c.protectContent); setApproval(!!c.joinApproval); setProof(!!c.requireProof); setLimit(c.capacity >= 500 ? '' : String(c.capacity)); setPrice(c.priceMinor ? String(Math.round(c.priceMinor / 100)) : '');
     }).catch(() => undefined);
   }, [id, token]);
 
@@ -41,7 +43,7 @@ export default function ClassEditScreen() {
     if (title.trim().length < 2 || subject.trim().length < 2 || (cap !== undefined && !(cap >= 1)) || Number.isNaN(p)) return Alert.alert(t('common.error'), t('class.formInvalid'));
     setBusy(true);
     try {
-      const body: Record<string, unknown> = { title: title.trim(), subject: subject.trim(), description: description.trim(), priceMinor: p * 100, protectContent: protect, ...(cap ? { capacity: cap } : {}) };
+      const body: Record<string, unknown> = { title: title.trim(), subject: subject.trim(), description: description.trim(), priceMinor: p * 100, protectContent: protect, joinApproval: approval, requireProof: approval && proof, ...(cap ? { capacity: cap } : {}) };
       if (id) {
         await market.updateClass(token as string, id, body);
         router.back();
@@ -94,6 +96,21 @@ export default function ClassEditScreen() {
           </Pressable>
           <Text style={styles.help}>{t('protect.text')}</Text>
           <Text style={styles.help}>{t('protect.limit')}</Text>
+        </View>
+        <View style={styles.protect}>
+          <Pressable accessibilityRole="switch" onPress={() => setApproval(!approval)} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
+            <Text style={[styles.label, { flex: 1 }]}>{t('class.approval')}</Text>
+            <Switch value={approval} onValueChange={setApproval} trackColor={{ true: colors.success }} />
+          </Pressable>
+          <Text style={styles.help}>{t('class.approvalHint')}</Text>
+          {approval && (
+            <Pressable accessibilityRole="switch" onPress={() => setProof(!proof)} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 6 }}>
+              <Ionicons name="camera" size={20} color={colors.primary} />
+              <Text style={[styles.label, { flex: 1 }]}>{t('class.requireProof')}</Text>
+              <Switch value={proof} onValueChange={setProof} trackColor={{ true: colors.success }} />
+            </Pressable>
+          )}
         </View>
         <Action label={busy ? t('state.loading') : t(id ? 'common.save' : 'class.create')} kind="accent" onPress={save} disabled={busy} />
       </ScrollView>

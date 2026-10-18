@@ -18,6 +18,7 @@ export default function LearningScreen() {
   const router = useRouter();
   const [child, setChild] = useState<string | undefined>();
   const res = useAsync(() => market.learning(token as string, child), [token, child]);
+  const waiting = useAsync(() => market.myRequests(token as string).catch(() => []), [token]);
 
   if (res.state !== 'ready' || !res.data) return <Page><StateView state={res.state === 'ready' ? 'loading' : res.state} onRetry={res.reload} /></Page>;
   const d = res.data;
@@ -52,6 +53,13 @@ export default function LearningScreen() {
           </View>
         ))}
       </View>
+
+      {(waiting.data ?? []).map((w) => (
+        <View key={w.classId} style={styles.wait}>
+          <Ionicons name={w.status === 'PENDING' ? 'hourglass' : 'close-circle'} size={22} color={w.status === 'PENDING' ? '#FF9500' : colors.danger} />
+          <View style={{ flex: 1 }}><Text style={styles.waitTitle} numberOfLines={1}>{w.title}</Text><Text style={styles.waitSub}>{t(w.status === 'PENDING' ? 'join.waitingText' : 'join.declinedText')}</Text></View>
+        </View>
+      ))}
 
       <SectionTitle title={t('learn.myClasses')} action={{ label: t('learn.joinClass'), onPress: () => router.push('/market/classes' as never) }} />
       {d.classes.length === 0 ? (
@@ -102,6 +110,9 @@ export default function LearningScreen() {
 
 const styles = StyleSheet.create({
   h1: { fontSize: 28, fontWeight: '800', color: colors.text },
+  wait: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderRadius: 18, padding: 14 },
+  waitTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
+  waitSub: { fontSize: 13, color: colors.textMuted },
   statsRow: { flexDirection: 'row', gap: spacing.sm },
   stat: { flex: 1, backgroundColor: colors.surface, borderRadius: 18, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', gap: 2 },
   statNum: { fontSize: 22, fontWeight: '800', color: colors.text },

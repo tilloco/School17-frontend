@@ -36,6 +36,17 @@ export function routeFor(type: string, data?: Record<string, unknown> | null): s
       const c = id(d.classId);
       return c ? `/market/class/${c}` : '/market/classes';
     }
+    case 'class.request':
+    case 'class.helper': {
+      const c = id(d.classId);
+      return c ? `/market/class-desk/${c}` : '/market/classes';
+    }
+    case 'class.approved': {
+      const c = id(d.classId);
+      return c ? `/market/class/${c}` : '/market/classes';
+    }
+    case 'class.declined':
+      return '/market/classes';
     case 'class.removed':
       return '/market/classes';
     case 'class.homework':

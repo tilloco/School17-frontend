@@ -6,7 +6,7 @@ import { StateView } from '../../src/components/StateView';
 import { ApiError } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth-context';
 import { t } from '../../src/i18n';
-import { market } from '../../src/market/marketApi';
+import { isPending, market } from '../../src/market/marketApi';
 import { useAsync } from '../../src/market/useAsync';
 import { colors, radius, spacing } from '../../src/theme/colors';
 import { fmtDayTime } from '../../src/ui/format';
@@ -26,10 +26,14 @@ export default function ClassesScreen() {
   const join = async () => {
     try {
       const c = await market.joinClass(token as string, { code: code.trim(), studentId: child ?? undefined });
+      const typed = code.trim();
       setCode('');
       list.reload();
+      if (isPending(c)) { Alert.alert(t('join.sentTitle'), t('join.sentText')); return; }
       router.push(`/market/class/${c.id}` as never);
+      void typed;
     } catch (e) {
+      if (e instanceof ApiError && e.code === 'PROOF_REQUIRED') { router.push(`/market/join-request?code=${encodeURIComponent(code.trim())}${child ? `&studentId=${child}` : ''}` as never); return; }
       const msg = e instanceof ApiError ? (e.code === 'CLASS_FULL' ? t('class.full') : e.code === 'CLASS_NOT_FOUND' ? t('class.notFound') : e.code === 'JOIN_LIMIT' ? t('class.joinLimit') : e.code === 'REMOVED' ? t('class.removedFromClass') : e.message) : t('state.error');
       Alert.alert(t('common.error'), msg);
     }

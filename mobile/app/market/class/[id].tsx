@@ -115,6 +115,7 @@ export default function ClassChannelScreen() {
   const c = cls.data;
   const th = themeOf(c?.theme);
   const teacher = c?.role === 'teacher';
+  const staff = teacher || c?.role === 'assistant'; // a helper answers and moderates like the teacher, but cannot edit the class
   const next = sessions.data?.find((s) => ['SCHEDULED', 'LOBBY', 'LIVE'].includes(s.status));
   const fail = (e: unknown) => Alert.alert(t('common.error'), e instanceof ApiError ? e.message : t('state.error'));
   const push = (path: string) => router.push(path as never);
@@ -146,7 +147,7 @@ export default function ClassChannelScreen() {
   useEffect(() => onReconnect(() => pendingRef.current.filter((x) => x.state === 'FAILED').forEach((x) => void deliver(x))), []); // eslint-disable-line react-hooks/exhaustive-deps
   const sendFile = async (fileId: string) => { try { add(await market.channelPost(token as string, id, { fileId, replyToId: replyTo?.id })); setReplyTo(null); } catch (e) { throw new Error(e instanceof ApiError ? e.message : t('state.error')); } };
   const removePost = (p: ChannelPost) => {
-    if (!(p.mine || teacher)) return;
+    if (!(p.mine || staff)) return;
     Alert.alert(t('chan.deleteMsg'), undefined, [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('common.ok'), style: 'destructive', onPress: () => market.channelRemove(token as string, id, p.id).then(() => setPosts((x) => x.filter((y) => y.id !== p.id))).catch(fail) },
@@ -157,7 +158,7 @@ export default function ClassChannelScreen() {
     { text: t('common.ok'), onPress: async () => {
       try {
         const r = await market.regenerateClassCode(token as string, id);
-        await Share.share({ message: t('invite.message', { title: c?.title ?? '', link: inviteLink(API_URL, r.inviteToken), code: r.joinCode }) });
+        await Share.share({ message: t(c?.joinApproval ? 'tg.message' : 'invite.message', { title: c?.title ?? '', link: inviteLink(API_URL, r.inviteToken), code: r.joinCode }) });
       } catch (e) { fail(e); }
     } },
   ]);
@@ -175,6 +176,7 @@ export default function ClassChannelScreen() {
   const actions: SheetAction[] = teacher
     ? [
         { label: t('invite.share'), icon: 'share-social', onPress: invite },
+        { label: t('desk.title'), icon: 'people-circle', onPress: () => push(`/market/class-desk/${id}`) },
         { label: t('sched.add'), icon: 'calendar', onPress: () => push(`/market/class-schedule/${id}`) },
         { label: t('rank.title'), icon: 'trophy', onPress: () => push(`/market/class-ranking/${id}`) },
         { label: t('class.pupils'), icon: 'people', onPress: () => push(`/market/class-pupils/${id}`) },
@@ -183,6 +185,7 @@ export default function ClassChannelScreen() {
         { label: t('class.edit'), icon: 'settings', onPress: () => push(`/market/class-edit?id=${id}`) },
       ]
     : [
+        ...(c?.role === 'assistant' ? [{ label: t('desk.title'), icon: 'people-circle' as const, onPress: () => push(`/market/class-desk/${id}`) }] : []),
         { label: t('rank.title'), icon: 'trophy', onPress: () => push(`/market/class-ranking/${id}`) },
         { label: t('class.classmates'), icon: 'people', onPress: () => push(`/market/class-pupils/${id}`) },
         { label: t('hw.title'), icon: 'create', onPress: () => push(`/market/class-homework/${id}`) },
@@ -256,6 +259,7 @@ export default function ClassChannelScreen() {
                 onRetry={() => void deliver(item as Pending)}
                 author={item.author.name}
                 authorIsTeacher={item.author.teacher}
+                authorIsAssistant={!!item.author.assistant}
                 authorPhotoId={item.author.hasPhoto ? item.author.id : null}
                 onAuthorPress={() => setWho({ userId: item.author.id, name: item.author.name, username: item.author.username, hasPhoto: item.author.hasPhoto, teacher: item.author.teacher })}
                 file={item.file ? { id: item.file.id, name: item.file.name, size: item.file.size, image: item.file.image } : null}
@@ -276,13 +280,13 @@ export default function ClassChannelScreen() {
         {closed ? <Text style={styles.closed}>{t('class.cancelledLabel')}</Text> : <Composer reply={replyTo ? { id: replyTo.id, body: replyTo.body, author: replyTo.author.name, hasFile: !!replyTo.file } : null} onCancelReply={() => setReplyTo(null)} accent={th.accent} wall={wallOf(th)} keyboardOpen={kbOpen} token={token as string} placeholder={t('chan.placeholder')} onSend={send} onAttached={sendFile} />}
       </View>
       <PinsSheet visible={pinList} items={pins.map((p) => ({ id: p.id, body: p.body, at: p.at, fileName: p.file?.name, image: p.file?.image }))} onClose={() => setPinList(false)}
-        onJump={(p) => void jumpTo(p.id, 0)} onUnpin={teacher ? (p) => { const full = pins.find((x) => x.id === p.id); if (full) void pinPost(full, false); } : undefined} />
+        onJump={(p) => void jumpTo(p.id, 0)} onUnpin={staff ? (p) => { const full = pins.find((x) => x.id === p.id); if (full) void pinPost(full, false); } : undefined} />
       <Sheet visible={!!actionsFor} onClose={() => setActionsFor(null)} title={actionsFor?.body ? actionsFor.body.slice(0, 40) : undefined} actions={actionsFor ? [
         ...(actionsFor.hidden ? [] : [{ label: t('reply.action'), icon: 'arrow-undo' as const, onPress: () => setReplyTo(actionsFor) }]),
         ...(!actionsFor.mine && !actionsFor.hidden ? [{ label: t('rp.action'), icon: 'flag' as const, onPress: () => setReporting(actionsFor), danger: true }] : []),
-        ...(teacher && (actionsFor.reports ?? 0) > 0 ? [{ label: t('rp.clear'), icon: 'checkmark-circle' as const, onPress: () => void clearReports(actionsFor) }] : []),
-        ...(teacher && !actionsFor.hidden ? [{ label: pins.some((x) => x.id === actionsFor.id) ? t('pin.unpin') : t('pin.pin'), icon: 'pin' as const, onPress: () => void pinPost(actionsFor, !pins.some((x) => x.id === actionsFor.id)) }] : []),
-        ...((actionsFor.mine || teacher) ? [{ label: t('common.delete'), icon: 'trash' as const, onPress: () => removePost(actionsFor), danger: true }] : []),
+        ...(staff && (actionsFor.reports ?? 0) > 0 ? [{ label: t('rp.clear'), icon: 'checkmark-circle' as const, onPress: () => void clearReports(actionsFor) }] : []),
+        ...(staff && !actionsFor.hidden ? [{ label: pins.some((x) => x.id === actionsFor.id) ? t('pin.unpin') : t('pin.pin'), icon: 'pin' as const, onPress: () => void pinPost(actionsFor, !pins.some((x) => x.id === actionsFor.id)) }] : []),
+        ...((actionsFor.mine || staff) ? [{ label: t('common.delete'), icon: 'trash' as const, onPress: () => removePost(actionsFor), danger: true }] : []),
       ] : []} />
       <Sheet visible={!!reporting} onClose={() => setReporting(null)} title={t('rp.title')} actions={reporting ? [
         { label: t('rp.spam'), icon: 'megaphone' as const, onPress: () => void sendReport(reporting, 'SPAM') },

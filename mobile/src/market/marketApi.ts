@@ -243,7 +243,18 @@ export const market = {
   cancelClass: (token: string, id: string) => apiRequest(`/classes/${id}/cancel`, { method: 'POST', token, body: {} }),
   cancelClassSession: (token: string, id: string, sessionId: string) => apiRequest(`/classes/${id}/sessions/${sessionId}/cancel`, { method: 'POST', token, body: {} }),
   regenerateClassCode: (token: string, id: string) => apiRequest<{ joinCode: string; inviteToken: string }>(`/classes/${id}/regenerate-code`, { method: 'POST', token, body: {} }),
-  joinClass: (token: string, body: { code?: string; token?: string; studentId?: string }) => apiRequest<ClassDetail>('/classes/join', { method: 'POST', token, body }),
+  joinClass: (token: string, body: { code?: string; token?: string; studentId?: string; proofFileId?: string; note?: string }) => apiRequest<ClassDetail | JoinPending>('/classes/join', { method: 'POST', token, body }),
+  myRequests: (token: string) => apiRequest<{ classId: string; title: string; status: 'PENDING' | 'DECLINED'; at: string }[]>('/class-staff/my-requests', { token }),
+  helpingClasses: (token: string) => apiRequest<HelpingClass[]>('/class-staff/mine', { token }),
+  classRequests: (token: string, id: string) => apiRequest<StaffRequest[]>(`/class-staff/${id}/requests`, { token }),
+  decideRequest: (token: string, id: string, eid: string, approve: boolean) => apiRequest(`/class-staff/${id}/requests/${eid}/${approve ? 'approve' : 'decline'}`, { method: 'POST', token, body: {} }),
+  classMoney: (token: string, id: string) => apiRequest<ClassMoney>(`/class-staff/${id}/money`, { token }),
+  classMarkReceived: (token: string, id: string, ids: string[]) => apiRequest(`/class-staff/${id}/money/received`, { method: 'POST', token, body: { ids } }),
+  classMarkNotReceived: (token: string, id: string, ids: string[]) => apiRequest(`/class-staff/${id}/money/not-received`, { method: 'POST', token, body: { ids } }),
+  classHelpers: (token: string, id: string) => apiRequest<ClassHelperRow[]>(`/class-staff/${id}/helpers`, { token }),
+  addClassHelper: (token: string, id: string, body: { username: string; canPayments?: boolean; canMembers?: boolean; canChat?: boolean }) => apiRequest(`/class-staff/${id}/helpers`, { method: 'POST', token, body }),
+  removeClassHelper: (token: string, id: string, uid: string) => apiRequest(`/class-staff/${id}/helpers/${uid}`, { method: 'DELETE', token }),
+  classVideoUrl: (token: string, id: string, fid: string) => apiRequest<{ url: string; mime: string }>(`/classes/${id}/files/${fid}/stream-url`, { method: 'POST', token, body: {} }),
   leaveClass: (token: string, id: string, studentId: string) => apiRequest(`/classes/${id}/leave`, { method: 'POST', token, body: { studentId } }),
   removeClassPupil: (token: string, id: string, pupilId: string) => apiRequest(`/classes/${id}/pupils/${pupilId}`, { method: 'DELETE', token }),
   children: (token: string) => apiRequest<{ id: string; name: string | null }[]>('/guardian/children', { token }),
@@ -369,8 +380,15 @@ export interface ClassItem {
   teacher?: { id: string; name: string | null }; pupil?: { id: string; name: string };
   next: { id: string; startAt: string; isTrial: boolean } | null;
 }
+export interface JoinPending { pending: true; classId: string; title: string }
+export const isPending = (r: unknown): r is JoinPending => !!r && typeof r === 'object' && (r as JoinPending).pending === true;
+export interface StaffRequest { id: string; name: string; minor: boolean; note: string | null; hasProof: boolean; byGuardian: boolean; at: string }
+export interface HelpingClass { classId: string; title: string; subject: string; teacher: string | null; canPayments: boolean; canMembers: boolean; canChat: boolean; pendingRequests: number; paymentsToCheck: number }
+export interface ClassHelperRow { userId: string; name: string | null; username: string | null; hasPhoto: boolean; canPayments: boolean; canMembers: boolean; canChat: boolean }
+export interface ClassMoney { classId: string; rows: { id: string; name: string | null; amountMinor: number; status: 'UNPAID' | 'PUPIL_MARKED_PAID' | 'TEACHER_CONFIRMED' | 'NOT_RECEIVED' | 'WAIVED'; pupilMarkedAt: string | null }[] }
 export interface ClassDetail {
-  id: string; title: string; subject: string; description: string; capacity: number; enrolled: number; priceMinor: number; status: string; role: 'teacher' | 'pupil'; protectContent?: boolean; theme?: string; hasLogo?: boolean;
+  joinApproval?: boolean; requireProof?: boolean; pendingRequests?: number; paymentsToCheck?: number; perms?: { canPayments: boolean; canMembers: boolean; canChat: boolean };
+  id: string; title: string; subject: string; description: string; capacity: number; enrolled: number; priceMinor: number; status: string; role: 'teacher' | 'pupil' | 'assistant'; protectContent?: boolean; theme?: string; hasLogo?: boolean;
   pupils?: { id: string; name: string | null }[]; classmates?: { name: string }[]; mySeats?: string[];
 }
 export interface ClassRoomState {
@@ -469,7 +487,7 @@ export interface ChannelInfo {
 export interface ChannelPost {
   id: string; seq: number; at: string; body: string; mine: boolean; pinned?: boolean; hidden?: 'reported' | 'review' | null; reports?: number;
   replyTo?: { id: string; body: string; author: string | null; deleted?: boolean; hasFile?: boolean } | null;
-  author: { id: string | null; name: string | null; teacher: boolean; username: string | null; hasPhoto: boolean };
+  author: { id: string | null; name: string | null; teacher: boolean; assistant?: boolean; username: string | null; hasPhoto: boolean };
   file: { id: string; name: string; size: number; mime: string; image: boolean } | null;
 }
 
