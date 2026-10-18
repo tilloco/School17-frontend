@@ -35,3 +35,13 @@ Video provider (LiveKit self-hosted or cloud), object storage, email/push, payme
 
 ## Export / deletion
 `GET /me/export` (rate-limited 3/hour, audited) returns the user's own data as JSON, never other users' emails/ids/birth dates. `POST /me/delete {confirm:"DELETE"}` refuses while open bookings, unsettled money or teacher balances exist (code `DELETE_BLOCKED`). Guardian-initiated deletion/export of a minor's account is **not implemented** (LAWYER).
+
+## Update 2026-10-18 (what changed since the table above)
+The table above predates phone sign-in, contacts matching, push notifications, topics and public comments. Current facts:
+- **Phone number** (sign-in code by phone/Telegram), optional "find me by phone": stored on `User`; deleted/anonymised with the account.
+- **Contacts**: the phone scrambles each number (SHA-256) and sends only the hashes to find friends who already use the app. The server does not store the list; matching is a lookup. Optional, off until the user agrees (Android `READ_CONTACTS`).
+- **Push tokens**: `PushToken` (one per device); deleted with the account.
+- **Topics**: `TopicAttempt` (quiz scores), `TopicVideoVote`, `TopicVideo` (links added by verified teachers; picked videos belong to no person), `TeacherComment` (public comment + stars): all of a person's rows are deleted with the account (`PrivacyService.deleteAccount`, covered by `topics.int.spec.ts`).
+- **Teacher profile**: photo is now mandatory; experience, education, city and certificates are public once approved by a moderator.
+- **Contacts, location, ads**: no advertising ID; no precise location.
+- Public web pages (`/privacy`, `/terms`, `/delete-account`, `/p/<teacher>`, `/t/<topic>`) show only public facts.

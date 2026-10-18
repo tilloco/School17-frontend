@@ -1,0 +1,87 @@
+# School17 production stack: database + backend + video server (LiveKit) + automatic HTTPS (Caddy).
+# Usage (on a server with Docker):  cp deploy/.env.production.example .env  ->  fill it in  ->  docker compose up -d --build
+# Full steps: deploy/README.md. Nothing here is started by the app's own tests.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: school17
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: school17
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U school17 -d school17"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      TRUST_PROXY: "1" # Caddy is the one proxy in front
+      DATABASE_URL: postgresql://school17:${POSTGRES_PASSWORD}@db:5432/school17?schema=public
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?set ADMIN_JWT_SECRET}
+      OTP_PEPPER: ${OTP_PEPPER:?set OTP_PEPPER}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      TELEGRAM_GATEWAY_TOKEN: ${TELEGRAM_GATEWAY_TOKEN:-}
+      CALL_PROVIDER: livekit
+      LIVEKIT_URL: wss://lk.${DOMAIN}
+      LIVEKIT_HTTP_URL: http://livekit:7880
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?set LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET}
+      EXPO_PUSH_ENABLED: ${EXPO_PUSH_ENABLED:-0}
+      EXPO_ACCESS_TOKEN: ${EXPO_ACCESS_TOKEN:-}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
+      LEGAL_REVIEWED: ${LEGAL_REVIEWED:-0}
+      LEGAL_OPERATOR: ${LEGAL_OPERATOR:-}
+      LEGAL_RETENTION: ${LEGAL_RETENTION:-}
+      FILES_DIR: /data/files
+    volumes:
+      - files:/data/files
+      - avatars:/app/uploads
+
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+    volumes:
+      - ./deploy/livekit.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "7881:7881" # media over TCP (fallback)
+      - "50000-50100:50000-50100/udp" # media over UDP
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - livekit
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN (for example school17.example.com)}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+
+volumes:
+  dbdata:
+  files:
+  avatars:
+  caddydata:
+  caddyconfig:

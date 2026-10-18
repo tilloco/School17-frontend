@@ -297,6 +297,13 @@ export const market = {
   testPush: (token: string) => apiRequest('/notifications/test', { method: 'POST', token, body: {} }),
   readNotif: (token: string, id: string) => apiRequest(`/notifications/${id}/read`, { method: 'POST', token, body: {} }),
   home: (token: string) => apiRequest<HomeData>('/me/home', { token }),
+  topics: (token: string, f: { subject?: string; q?: string }) => apiRequest<TopicRow[]>(`/topics?${q(f)}`, { token }),
+  topic: (token: string, slug: string) => apiRequest<TopicDetail>(`/topics/${slug}`, { token }),
+  addTopicVideo: (token: string, slug: string, body: { url: string; title: string; lang: string }) => apiRequest(`/topics/${slug}/videos`, { method: 'POST', token, body }),
+  removeVideo: (token: string, id: string) => apiRequest(`/topics/videos/${id}`, { method: 'DELETE', token }),
+  voteVideo: (token: string, id: string) => apiRequest<{ voted: boolean; votes: number }>(`/topics/videos/${id}/vote`, { method: 'POST', token, body: {} }),
+  quiz: (token: string, slug: string) => apiRequest<Quiz>(`/topics/${slug}/quiz`, { token }),
+  submitQuiz: (token: string, slug: string, answers: { id: string; choice: number }[]) => apiRequest<QuizResult>(`/topics/${slug}/quiz`, { method: 'POST', token, body: { answers } }),
   progress: (token: string) => apiRequest<ProgressResponse>('/me/progress', { token }),
   learning: (token: string, studentId?: string) => apiRequest<LearningData>(`/me/learning${studentId ? `?studentId=${studentId}` : ''}`, { token }),
   students: (token: string) => apiRequest<StudentRow[]>('/teachers/me/students', { token }),
@@ -400,6 +407,16 @@ export interface PollView { id: string; question: string; status: 'OPEN' | 'CLOS
 export interface NotifPrefs { categories: { id: string; enabled: boolean; canDisable: boolean }[]; quiet: { start: string; end: string } | null; pushOnServer: boolean }
 
 export interface AgendaItem { kind: 'lesson' | 'class'; id: string; classId?: string; startAt: string; endAt: string; title: string; counterpart: string; pupil?: string; status: string; canJoin: boolean; isTrial?: boolean }
+export interface TopicRow { slug: string; subject: string; level: string; title: string; videos: number; questions: number; best: number | null }
+export interface TopicDetail {
+  slug: string; subject: string; level: string; title: string; summary: string; questions: number;
+  videos: { id: string; title: string; lang: string; url: string; videoId: string | null; embed: string | null; votes: number; voted: boolean; mine: boolean; curated: boolean; author: string | null; by: { teacherId: string; name: string | null } | null }[];
+  teachers: { id: string; name: string | null; headline: string; hasPhoto: boolean; rating: number | null }[];
+  leaderboard: { players: number; top: { rank: number; name: string; score: number; mine: boolean }[]; best: number | null; percentile: number | null };
+}
+export interface Quiz { slug: string; title: string; questions: { id: string; text: string; options: string[] }[] }
+export interface QuizResult { score: number; total: number; results: { id: string; chosen: number; correct: number; right: boolean }[]; best: number | null; percentile: number | null; players: number }
+
 export interface Progress {
   eligible: true;
   streak: number;

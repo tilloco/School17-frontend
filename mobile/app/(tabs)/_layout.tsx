@@ -37,6 +37,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="home" options={{ title: t('tab.home'), tabBarIcon: icon('home-outline', 'home') }} />
       <Tabs.Screen name="students" options={{ title: t('tab.students'), tabBarIcon: icon('people-outline', 'people'), href: teacher ? undefined : null }} />
       <Tabs.Screen name="classes" options={{ title: t('tab.classes'), tabBarIcon: icon('easel-outline', 'easel'), href: teacher ? undefined : null }} />
+      <Tabs.Screen name="topics" options={{ title: t('tab.topics'), tabBarIcon: icon('compass-outline', 'compass'), href: teacher ? null : undefined }} />
       <Tabs.Screen name="learning" options={{ title: t('tab.learning'), tabBarIcon: icon('book-outline', 'book'), href: teacher ? null : undefined }} />
       <Tabs.Screen name="find" options={{ title: t('tab.find'), tabBarIcon: icon('search-outline', 'search'), href: teacher ? null : undefined }} />
       <Tabs.Screen name="messages" options={{ href: null }} />

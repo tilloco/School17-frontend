@@ -1,0 +1,11 @@
+# HTTPS certificates are fetched and renewed by Caddy by itself. Point two DNS records at the server:
+#   {DOMAIN}      -> the API and the public pages (privacy policy, share links)
+#   lk.{DOMAIN}   -> the video server's signalling channel
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy backend:3000
+}
+
+lk.{$DOMAIN} {
+	reverse_proxy livekit:7880
+}

@@ -1,0 +1,9 @@
+# LiveKit video server settings for the production stack. The API key and secret come from the environment (LIVEKIT_KEYS in docker-compose.yml).
+port: 7880
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  use_external_ip: true # the server announces its public address, so phones outside can connect
+logging:
+  level: info

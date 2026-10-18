@@ -130,6 +130,7 @@ export default function HomeScreen() {
               <Quick icon="add-circle" label={t('class.create')} onPress={() => go('/market/class-edit')} n={0} />
               <Quick icon="calendar" label={t('sched.add')} onPress={() => (myClasses.length === 1 ? go(`/market/class-schedule/${myClasses[0].id}`) : go('/(tabs)/classes'))} n={1} />
               <Quick icon="time" label={t('setup.availability')} onPress={() => go('/market/availability')} n={2} />
+              <Quick icon="compass" label={t('topics.title')} onPress={() => go('/(tabs)/topics')} n={3} />
             </>
           ) : null}
         </View>}
@@ -243,8 +244,8 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: spacing.md, gap: spacing.md, paddingTop: spacing.xs },
   search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.surface, borderRadius: 999, paddingHorizontal: 18, minHeight: 50, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   searchText: { color: colors.textMuted, fontSize: 15 },
-  quickRow: { flexDirection: 'row', gap: spacing.md },
-  quick: { width: '30%', alignItems: 'center', gap: 6 },
+  quickRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  quick: { width: '23%', alignItems: 'center', gap: 6 },
   quickIcon: { width: 62, height: 62, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   quickLabel: { fontSize: 12, fontWeight: '600', color: colors.text, textAlign: 'center' },
   classTile: { width: 156, borderRadius: 22, padding: 16, backgroundColor: colors.surface, gap: 6 },
