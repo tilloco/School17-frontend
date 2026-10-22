@@ -1,0 +1,25 @@
+{
+  "name": "school17-teacher",
+  "productName": "School17 Teacher",
+  "version": "1.0.0",
+  "description": "School17 for teachers on Windows: share videos with your classes",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "uz.school17.teacher",
+    "productName": "School17 Teacher",
+    "files": ["src/**/*", "package.json"],
+    "directories": { "output": "dist" },
+    "electronDist": "node_modules/electron/dist",
+    "win": { "target": ["portable"], "signAndEditExecutable": false, "icon": "build/icon.png" },
+    "portable": { "artifactName": "School17-Teacher.exe" }
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}
