@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import * as SecureStore from 'expo-secure-store';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../../src/ui/Text';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,13 +15,9 @@ import { AgendaCard } from '../../src/ui/AgendaRow';
 import { PressScale } from '../../src/ui/PressScale';
 import { fmtDayTime } from '../../src/ui/format';
 import { Avatar, Card, Empty, Group, IconName, ListRow, Page, Pill, SectionTitle, Stars } from '../../src/ui';
-import { Celebrate } from '../../src/ui/Celebrate';
 import { GetStarted, Step } from '../../src/ui/GetStarted';
-import { StreakChip, WeekCard } from '../../src/ui/Progress';
 import { colorFor } from '../../src/theme/subjects';
 
-/** The Monday of this week, as a key for "have I already celebrated this week". */
-const weekKey = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 const TILE = ['#1A8CFF', '#2ED573', '#FF8A00', '#A55EEA'];
@@ -50,28 +45,10 @@ export default function HomeScreen() {
   const helping = useAsync(() => market.helpingClasses(token as string).catch(() => []), [token]);
   const unread = useAsync(() => market.unread(token as string).catch(() => null), [token]);
   const top = useAsync(() => (teacher ? Promise.resolve(null) : market.search(token as string, { sort: 'rating' }).catch(() => null)), [token, teacher]);
-  const progress = useAsync(() => (teacher ? Promise.resolve(null) : market.progress(token as string).catch(() => null)), [token, teacher]);
-  const [cel, setCel] = useState<{ title: string; text: string; icon: IconName } | null>(null);
-  useEffect(() => {
-    const p = progress.data;
-    if (!p || !p.eligible) return;
-    void (async () => {
-      const gk = `s17_goal_${weekKey()}`;
-      let win: { title: string; text: string; icon: IconName } | null = null;
-      if (p.week.reached && !(await SecureStore.getItemAsync(gk).catch(() => 'x'))) { await SecureStore.setItemAsync(gk, '1').catch(() => undefined); win = { title: t('cel.goalTitle'), text: t('cel.goalText'), icon: 'trophy' }; }
-      for (const r of p.ranks) {
-        const k = `s17_rank_${r.classId}`;
-        const last = Number(await SecureStore.getItemAsync(k).catch(() => '') || 0);
-        if (last && r.rank < last && !win) win = { title: t('cel.rankTitle'), text: t('cel.rankText', { rank: r.rank, title: r.title }), icon: 'trending-up' };
-        await SecureStore.setItemAsync(k, String(r.rank)).catch(() => undefined);
-      }
-      if (win) setCel(win);
-    })();
-  }, [progress.data]);
   // the language on this phone is the language of the notifications too: keep the server in step, once
   useEffect(() => { if (token && user && user.locale && user.locale !== locale) void market.updateMe(token, { locale }).then(() => refreshUser()).catch(() => undefined); }, [token, user?.locale, locale]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { takePendingJoin().then((inv) => { if (inv) router.push(`/join/${inv}` as never); }); }, [router]);
-  const reload = () => { helping.reload(); progress.reload(); unread.reload(); home.reload(); classes.reload(); students.reload(); profile.reload(); top.reload(); };
+  const reload = () => { helping.reload(); unread.reload(); home.reload(); classes.reload(); students.reload(); profile.reload(); top.reload(); };
 
   if (home.state !== 'ready' || !home.data) return <Page padded><StateView state={home.state === 'ready' ? 'loading' : home.state} onRetry={home.reload} /></Page>;
   const d = home.data;
@@ -80,7 +57,6 @@ export default function HomeScreen() {
   const attention = (students.data ?? []).filter((s) => s.attention).slice(0, 3);
   const myClasses = (classes.data ?? []).filter((c) => c.status === 'ACTIVE');
   const first = (user?.name ?? '').trim().split(/\s+/)[0] ?? '';
-  const prog = progress.data && progress.data.eligible ? progress.data : null;
   const now = new Date();
   const todayCount = d.agenda.filter((i) => sameDay(new Date(i.startAt), now)).length;
   const steps: Step[] = teacher
@@ -91,8 +67,7 @@ export default function HomeScreen() {
         { key: 'class', label: t('start.tClass'), done: myClasses.length > 0, onPress: () => go('/market/class-edit') },
       ]
     : [
-        { key: 'join', label: t('start.pupilJoin'), done: myClasses.length > 0 || d.agenda.length > 0, onPress: () => go('/(tabs)/find') },
-        { key: 'first', label: t('start.pupilFirst'), done: !!prog && (prog.week.done > 0 || prog.streak > 0), onPress: () => go('/(tabs)/learning') },
+        { key: 'join', label: t('start.pupilJoin'), done: myClasses.length > 0 || d.agenda.length > 0, onPress: () => go('/(tabs)/find') }
       ];
 
   return (
@@ -100,7 +75,6 @@ export default function HomeScreen() {
       <View style={styles.body}>
         <View style={styles.hello}>
           <Text style={styles.helloText} numberOfLines={1}>{t('home.hi', { name: first })}</Text>
-          {prog && <StreakChip streak={prog.streak} todayDone={prog.todayDone} />}
         </View>
         {!teacher && (
           <Pressable accessibilityRole="search" onPress={() => go('/(tabs)/find')} style={styles.search}>
@@ -143,8 +117,6 @@ export default function HomeScreen() {
           </Card>
         )}
         {rest.map((i) => <AgendaCard key={`${i.kind}${i.id}`} item={i} />)}
-
-        {prog && <WeekCard p={prog} onRank={(cid) => go(`/market/class-ranking/${cid}`)} />}
 
         <GetStarted role={teacher ? 'T' : 'P'} steps={steps} />
 
@@ -241,7 +213,6 @@ export default function HomeScreen() {
           </>
         )}
       </View>
-      <Celebrate visible={!!cel} title={cel?.title ?? ''} text={cel?.text} icon={cel?.icon} onClose={() => setCel(null)} />
     </Page>
   );
 }

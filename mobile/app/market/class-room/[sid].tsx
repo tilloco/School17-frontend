@@ -16,7 +16,6 @@ import { LiveLesson } from '../../../src/call/LiveLesson';
 import { t } from '../../../src/i18n';
 import { Audience, AudienceItem, ClassRoomState, market } from '../../../src/market/marketApi';
 import { ClassPayGate } from '../../../src/market/ClassPayGate';
-import { PollPanel } from '../../../src/market/PollPanel';
 import { PresentationPanel } from '../../../src/market/PresentationPanel';
 import { colors, spacing } from '../../../src/theme/colors';
 import { Avatar } from '../../../src/ui';
@@ -26,7 +25,7 @@ import { Sheet, SheetAction } from '../../../src/ui/Sheet';
 
 const POLL_MS = 15000; // safety net only: changes arrive instantly over the live connection
 
-type Panel = 'poll' | 'material' | null;
+type Panel = 'material' | null;
 
 /** Small round-corner shortcut used under the video (whiteboard, chat, poll, material). */
 function Chip({ icon, label, onPress, badge }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void; badge?: number }) {
@@ -141,11 +140,8 @@ export default function ClassRoomScreen() {
         {st.teacherReconnecting && <Text style={[styles.muted, { textAlign: 'center', marginTop: 6 }]} accessibilityLiveRegion="polite">{t('room.teacherReconnecting')}</Text>}
 
         <View style={styles.chips}>
-          {live && <Chip icon="brush" label={t('wb.title')} onPress={() => router.push(`/market/class-whiteboard/${sid}` as never)} />}
           {(live || st.status === 'LOBBY') && <Chip icon="chatbubbles" label={t('cchat.title')} onPress={() => router.push(`/market/class-chat/${sid}` as never)} />}
-          {live && <Chip icon="stats-chart" label={t('poll.title')} onPress={() => setPanel('poll')} />}
           {live && <Chip icon="document-text" label={t('pres.title')} onPress={() => setPanel('material')} />}
-          {(st.status === 'SCHEDULED' || st.status === 'LOBBY') && <Chip icon="speedometer" label={t('pre.title')} onPress={() => router.push('/market/precheck' as never)} />}
           {teacher && live && <Chip icon="ellipsis-horizontal" label={t('room.more')} onPress={() => setMenu(true)} />}
         </View>
 
@@ -219,7 +215,6 @@ export default function ClassRoomScreen() {
           <Pressable style={[styles.panel, { paddingBottom: (kbModal || insets.bottom) + 12, maxHeight: kbModal ? '95%' : '82%' }]} onPress={() => undefined}>
             <View style={styles.grip} />
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              {panel === 'poll' && <PollPanel token={token as string} sessionId={sid} teacher={teacher} />}
               {panel === 'material' && <PresentationPanel token={token as string} classId={st.classId} sessionId={sid} state={st} teacher={teacher} onChanged={load} />}
             </ScrollView>
           </Pressable>

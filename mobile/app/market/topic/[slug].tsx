@@ -57,14 +57,6 @@ export default function TopicScreen() {
           <Text style={styles.heroMeta}>{t(`subj.${d.subject}`)} · {t(`level.${d.level}`)}</Text>
         </View>
 
-        <Pressable accessibilityRole="button" onPress={() => router.push(`/market/topic-quiz/${d.slug}` as never)} style={[styles.cta, { backgroundColor: colors.primary }]}>
-          <Ionicons name="flash" size={22} color="#fff" />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.ctaTitle}>{t('topic.takeTest')}</Text>
-            <Text style={styles.ctaSub}>{best !== null ? t('topic.yourBest', { a: best, b: d.questions }) + (d.leaderboard.percentile !== null ? ` · ${t('topic.better', { n: d.leaderboard.percentile })}` : '') : t('topic.testHint', { n: d.questions })}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#fff" />
-        </Pressable>
 
         <SectionTitle title={t('topic.videos')} action={teacher ? { label: t('topic.addVideo'), onPress: () => router.push(`/market/topic-add/${d.slug}` as never) } : undefined} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>

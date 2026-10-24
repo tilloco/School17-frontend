@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, DevSettings, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../src/ui/Text';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,7 +12,7 @@ import { LOCALES, Locale, t } from '../../src/i18n';
 import { useLocale } from '../../src/i18n/LocaleProvider';
 import { market } from '../../src/market/marketApi';
 import { useAsync } from '../../src/market/useAsync';
-import { colors, saveThemeMode, spacing, themeMode, ThemeMode } from '../../src/theme/colors';
+import { colors, spacing } from '../../src/theme/colors';
 import { Avatar, Card, Group, ListRow, Page, Pill, SectionTitle } from '../../src/ui';
 
 const LANG_NAMES: Record<Locale, string> = { uz: "O'zbekcha", ru: 'Русский', en: 'English' };
@@ -61,13 +61,6 @@ export default function MoreScreen() {
       setBusy(false);
     }
   };
-  // The palette is read when the app starts, so the new look needs a restart; in development builds the app restarts itself.
-  const pickTheme = (m: ThemeMode) => {
-    if (m === themeMode) return;
-    saveThemeMode(m);
-    if (__DEV__) DevSettings.reload();
-    else Alert.alert(t('theme.restartTitle'), t('theme.restartText'));
-  };
   return (
     <Page>
       <Card style={styles.profile}>
@@ -90,16 +83,6 @@ export default function MoreScreen() {
           </Pressable>
         ))}
       </View>
-
-      <SectionTitle title={t('theme.title')} />
-      <View style={styles.langs}>
-        {(['auto', 'light', 'dark', 'evening'] as ThemeMode[]).map((m) => (
-          <Pressable key={m} accessibilityRole="radio" accessibilityState={{ selected: m === themeMode }} onPress={() => pickTheme(m)} style={[styles.lang, m === themeMode && styles.langOn]}>
-            <Text style={[styles.langText, m === themeMode && { color: colors.primary }]}>{t(`theme.${m}`)}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <Text style={styles.themeHint}>{t(`theme.hint.${themeMode}`)}</Text>
 
       {role === 'TEACHER' && (
         <>
@@ -130,7 +113,6 @@ export default function MoreScreen() {
       <SectionTitle title={t('more.account')} />
       <Group>
         <ListRow icon="notifications" title={t('notif.title')} badge={unread.data?.unread} onPress={() => go('/market/notifications')} />
-        <ListRow icon="options" title={t('ns.title')} onPress={() => go('/market/notification-settings')} />
         <ListRow icon="person-circle" title={t('acct.title')} subtitle={t('acct.hint')} onPress={() => go('/market/account')} />
         <ListRow icon="shield-checkmark" title={t('market.safety')} subtitle={t('more.safetyHint')} onPress={() => go('/market/safety')} />
       </Group>

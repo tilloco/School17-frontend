@@ -78,11 +78,6 @@ export default function TopicWatchScreen() {
           <Ionicons name={voted ? 'thumbs-up' : 'thumbs-up-outline'} size={20} color={voted ? '#fff' : colors.primary} />
           <Text style={[styles.usefulText, voted && { color: '#fff' }]}>{t('topic.vote')}{votes !== null ? ` · ${votes}` : ''}</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" onPress={() => router.replace(`/market/topic-quiz/${slug}` as never)} style={styles.cta}>
-          <Ionicons name="flash" size={22} color="#fff" />
-          <View style={{ flex: 1 }}><Text style={styles.ctaTitle}>{t('topic.afterVideo')}</Text><Text style={styles.ctaSub}>{t('topic.afterVideoHint')}</Text></View>
-          <Ionicons name="chevron-forward" size={20} color="#fff" />
-        </Pressable>
       </ScrollView>
     </View>
   );

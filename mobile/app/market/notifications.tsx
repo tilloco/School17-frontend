@@ -43,9 +43,7 @@ export default function NotificationsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Stack.Screen options={{ headerShown: true, title: t('notif.title'), headerBackTitle: t('common.back'), headerRight: () => (
-        <Pressable accessibilityRole="button" accessibilityLabel={t('ns.title')} onPress={() => router.push('/market/notification-settings' as never)} hitSlop={12}><Ionicons name="options-outline" size={24} color={colors.primary} /></Pressable>
-      ) }} />
+      <Stack.Screen options={{ headerShown: true, title: t('notif.title'), headerBackTitle: t('common.back') }} />
       <Page edges={[]} onRefresh={res.reload}>
         {res.state === 'empty' ? <Empty icon="notifications" title={t('notif.emptyTitle')} text={t('notif.emptyText')} /> : res.state !== 'ready' || !res.data ? (
           <StateView state={res.state === 'ready' ? 'loading' : res.state} onRetry={res.reload} />

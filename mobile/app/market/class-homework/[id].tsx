@@ -7,7 +7,6 @@ import { imagePicker } from '../../../src/lib/native';
 import { Screen } from '../../../src/components/Screen';
 import { PrimaryButton } from '../../../src/components/PrimaryButton';
 import { StateView } from '../../../src/components/StateView';
-import { Celebrate } from '../../../src/ui/Celebrate';
 import { ApiError } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth-context';
 import { t } from '../../../src/i18n';
@@ -130,7 +129,6 @@ export default function ClassHomeworkScreen() {
           ))
         )}
       </ScrollView>
-      <Celebrate visible={win} title={t('cel.hwTitle')} text={t('cel.hwText')} icon="checkmark-done" onClose={() => setWin(false)} />
     </Screen>
   );
 }

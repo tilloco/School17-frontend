@@ -178,7 +178,6 @@ export default function ClassChannelScreen() {
         { label: t('invite.share'), icon: 'share-social', onPress: invite },
         { label: t('desk.title'), icon: 'people-circle', onPress: () => push(`/market/class-desk/${id}`) },
         { label: t('sched.add'), icon: 'calendar', onPress: () => push(`/market/class-schedule/${id}`) },
-        { label: t('rank.title'), icon: 'trophy', onPress: () => push(`/market/class-ranking/${id}`) },
         { label: t('class.pupils'), icon: 'people', onPress: () => push(`/market/class-pupils/${id}`) },
         { label: t('cfile.title'), icon: 'document-text', onPress: () => push(`/market/class-files/${id}`) },
         { label: t('hw.title'), icon: 'create', onPress: () => push(`/market/class-homework/${id}`) },
@@ -186,7 +185,6 @@ export default function ClassChannelScreen() {
       ]
     : [
         ...(c?.role === 'assistant' ? [{ label: t('desk.title'), icon: 'people-circle' as const, onPress: () => push(`/market/class-desk/${id}`) }] : []),
-        { label: t('rank.title'), icon: 'trophy', onPress: () => push(`/market/class-ranking/${id}`) },
         { label: t('class.classmates'), icon: 'people', onPress: () => push(`/market/class-pupils/${id}`) },
         { label: t('hw.title'), icon: 'create', onPress: () => push(`/market/class-homework/${id}`) },
         { label: t('rev.rateClass'), icon: 'star', onPress: () => push(`/market/class-review/${id}`) },
@@ -214,10 +212,7 @@ export default function ClassChannelScreen() {
   return (
     <View style={[styles.root, { backgroundColor: wallOf(th) }]}>
       {header}
-      <Pressable accessibilityRole="button" onPress={() => push(`/market/class-ranking/${id}`)} style={[styles.info, styles.infoRow]}>
-        <Text style={styles.infoText} numberOfLines={1}>{c.subject}</Text>
-        <View style={styles.rankChip}><Ionicons name="trophy" size={14} color="#FF9500" /><Text style={styles.rankChipText}>{t('rank.title')}</Text></View>
-      </Pressable>
+      <View style={[styles.info, styles.infoRow]}><Text style={styles.infoText} numberOfLines={1}>{c.subject}</Text></View>
       <PinnedBar accent={th.accent} items={pins.map((p) => ({ id: p.id, body: p.body, at: p.at, fileName: p.file?.name, image: p.file?.image }))} index={pinIdx} onJump={onPinBar} onList={() => setPinList(true)} />
       {next && !closed && (
         <Pressable accessibilityRole="button" onPress={() => push(`/market/class-room/${next.id}`)} style={[styles.next, { backgroundColor: th.accent }]}>

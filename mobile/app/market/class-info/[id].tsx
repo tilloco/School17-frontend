@@ -80,7 +80,6 @@ export default function ClassInfoScreen() {
   const quick: { icon: Icon; label: string; count?: number; onPress: () => void }[] = [
     { icon: 'document-text', label: t('info.files'), count: d.filesCount, onPress: () => router.push(`/market/class-files/${id}` as never) },
     { icon: 'pin', label: t('info.pinned'), count: d.pinsCount, onPress: () => router.back() },
-    { icon: 'trophy', label: t('rank.title'), onPress: () => router.push(`/market/class-ranking/${id}` as never) },
     { icon: 'people', label: t('info.members'), count: d.members, onPress: () => router.push(`/market/class-pupils/${id}` as never) },
   ];
   const th = themeOf(theme);
