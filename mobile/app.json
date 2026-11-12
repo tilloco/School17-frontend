@@ -27,7 +27,8 @@
     "android": {
       "package": "uz.school17.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0B4F6C"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#008EFE"
       },
       "permissions": [
         "android.permission.CAMERA",

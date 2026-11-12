@@ -1,0 +1,47 @@
+# Render "Blueprint" for a free deployment of the School17 backend.
+# On render.com: New -> Blueprint -> pick this repo -> it reads this file.
+# Fill in the env vars marked sync:false in the Render dashboard after it's created.
+# Full walkthrough: docs/DEPLOY_FREE.md
+
+services:
+  - type: web
+    name: school17-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /privacy
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: TRUST_PROXY
+        value: "1"
+      # Video calls: no LiveKit project yet, so calls are deliberately left non-functional
+      # for now instead of crashing the server. Switch to CALL_PROVIDER=livekit (+ the
+      # LIVEKIT_* vars) once you set up LiveKit Cloud's free tier or your own server.
+      - key: CALL_PROVIDER
+        value: mock
+      - key: ALLOW_MOCK_CALLS_IN_PRODUCTION
+        value: "1"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_JWT_SECRET
+        generateValue: true
+      - key: OTP_PEPPER
+        generateValue: true
+      # Must be exactly 32 bytes (64 hex chars) -- generateValue's format doesn't match,
+      # so generate it yourself (see docs/DEPLOY_FREE.md) and paste it in.
+      - key: APP_DATA_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: TELEGRAM_GATEWAY_TOKEN
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
