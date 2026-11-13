@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -22,13 +22,33 @@ export default function TopicWatchScreen() {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [ytError, setYtError] = useState<number | null>(null);
   const [tries, setTries] = useState(0);
   const [voted, setVoted] = useState(false);
   const [votes, setVotes] = useState<number | null>(null);
 
   // The embed address is built by our server; still, refuse anything that is not an https player address.
   const uri = useMemo(() => (embed && /^https:\/\/(www\.youtube-nocookie\.com|player\.vimeo\.com)\//.test(embed) ? embed : null), [embed]);
-  const html = useMemo(() => (uri ? `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;background:#000}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src="${uri}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></body></html>` : ''), [uri]);
+  const isYoutube = !!uri && uri.includes('youtube-nocookie.com');
+  const youtubeId = isYoutube ? /\/embed\/([\w-]{6,20})/.exec(uri as string)?.[1] ?? null : null;
+  // enablejsapi lets the player tell us when it is ready or why it cannot play (embedding switched off, video removed...)
+  const src = useMemo(() => (uri && isYoutube ? `${uri}${uri.includes('?') ? '&' : '?'}enablejsapi=1&origin=${encodeURIComponent('https://school17.app')}` : uri), [uri, isYoutube]);
+  const html = useMemo(() => (src ? `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;background:#000}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe id="p" src="${src}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe><script>var f=document.getElementById('p');function out(m){try{window.ReactNativeWebView.postMessage(m)}catch(e){}}window.addEventListener('message',function(e){if(typeof e.data==='string')out(e.data)});f.addEventListener('load',function(){out('{"event":"frameLoaded"}');try{f.contentWindow.postMessage(JSON.stringify({event:'listening',id:1,channel:'widget'}),'*')}catch(e){}});</script></body></html>` : ''), [src]);
+
+  // A YouTube player that has not said "ready" after 15 seconds is not going to: show the reason and a way out instead of a spinner.
+  useEffect(() => {
+    if (!isYoutube || failed || ytError !== null || !loading) return;
+    const timer = setTimeout(() => setYtError(-1), 15000);
+    return () => clearTimeout(timer);
+  }, [isYoutube, failed, ytError, loading, tries]);
+  const onPlayerMessage = (raw: string) => {
+    try {
+      const m = JSON.parse(raw) as { event?: string; info?: unknown };
+      if (m.event === 'onReady' || m.event === 'infoDelivery') setLoading(false);
+      if (m.event === 'onError') setYtError(Number(m.info) || -1);
+    } catch { /* not a player message */ }
+  };
+  const errorText = ytError === 100 ? t('topic.removed') : ytError === 101 || ytError === 150 || ytError === 153 ? t('topic.embedBlocked') : t('topic.cannotPlay');
 
   const vote = async () => {
     try {
@@ -44,10 +64,11 @@ export default function TopicWatchScreen() {
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: true, title: '', headerBackTitle: t('common.back'), headerStyle: { backgroundColor: '#000' }, headerTintColor: '#fff' }} />
       <View style={styles.player}>
-        {uri && !failed ? (
+        {uri && !failed && ytError === null ? (
           <WebView
             key={tries}
             source={{ html, baseUrl: 'https://school17.app' }}
+            onMessage={(ev) => onPlayerMessage(ev.nativeEvent.data)}
             style={styles.web}
             originWhitelist={['https://*', 'about:blank']}
             javaScriptEnabled
@@ -56,7 +77,7 @@ export default function TopicWatchScreen() {
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
             setSupportMultipleWindows={false}
-            onLoadEnd={() => setLoading(false)}
+            onLoadEnd={() => { if (!isYoutube) setLoading(false); }}
             onError={() => { setFailed(true); setLoading(false); }}
             onHttpError={() => undefined}
             onShouldStartLoadWithRequest={(r) => r.url === 'about:blank' || r.url.startsWith('https://school17.app') || ALLOWED.test(r.url)}
@@ -64,11 +85,14 @@ export default function TopicWatchScreen() {
         ) : (
           <View style={styles.fail}>
             <Ionicons name="cloud-offline-outline" size={34} color="#fff" />
-            <Text style={styles.failText}>{t('topic.cannotPlay')}</Text>
-            <Pressable accessibilityRole="button" onPress={() => { setFailed(false); setLoading(true); setTries((n) => n + 1); }} style={styles.retry}><Text style={styles.retryText}>{t('common.retry')}</Text></Pressable>
+            <Text style={styles.failText}>{errorText}</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable accessibilityRole="button" onPress={() => { setFailed(false); setYtError(null); setLoading(true); setTries((n) => n + 1); }} style={styles.retry}><Text style={styles.retryText}>{t('common.retry')}</Text></Pressable>
+              {!!youtubeId && <Pressable accessibilityRole="button" onPress={() => void Linking.openURL(`https://www.youtube.com/watch?v=${youtubeId}`)} style={[styles.retry, { backgroundColor: '#FF0033' }]}><Text style={styles.retryText}>{t('topic.openYoutube')}</Text></Pressable>}
+            </View>
           </View>
         )}
-        {loading && uri && !failed && <View style={styles.spin} pointerEvents="none"><ActivityIndicator color="#fff" /></View>}
+        {loading && uri && !failed && ytError === null && <View style={styles.spin} pointerEvents="none"><ActivityIndicator color="#fff" /></View>}
       </View>
 
       <ScrollView contentContainerStyle={[styles.body, { paddingBottom: spacing.xl + insets.bottom }]}>

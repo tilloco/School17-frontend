@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { KeyboardAvoidingView, Pressable, StyleSheet, TextInput as RNTextInput, View } from 'react-native';
 import { Text, TextInput } from '../../src/ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -26,11 +26,18 @@ const fmtPhone = (raw: string) => {
 };
 const num = (s: string) => (/^\d+$/.test(s) ? Number(s) : NaN);
 
+type Step = 'phone' | 'code' | 'role' | 'name' | 'username' | 'dob' | 'terms';
+/** New people answer one question per screen, like Instagram's sign-up. */
+const PROFILE: Step[] = ['role', 'name', 'username', 'dob', 'terms'];
+const TITLE_KEY: Partial<Record<Step, string>> = { role: 'role', name: 'name', username: 'user', dob: 'dob', terms: 'terms' };
+/** Server errors that belong to one question send the person back to that question. */
+const STEP_OF_ERROR: Record<string, Step> = { USERNAME_TAKEN: 'username', BAD_USERNAME: 'username', RESERVED_USERNAME: 'username', BAD_DOB: 'dob', TOO_YOUNG: 'dob' };
+
 /** Sign in or sign up with a phone number: Telegram sends the code in its official "Verification Codes" chat. New people then give a name, role and date of birth. */
 export default function PhoneScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
-  const [step, setStep] = useState<'phone' | 'code' | 'profile'>('phone');
+  const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('+998 ');
   const [code, setCode] = useState('');
   const [devCode, setDevCode] = useState<string | null>(null);
@@ -43,6 +50,24 @@ export default function PhoneScreen() {
   const [accept, setAccept] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unState, setUnState] = useState<'idle' | 'checking' | 'ok' | 'taken' | 'bad'>('idle');
+  const mmRef = useRef<RNTextInput>(null);
+  const yRef = useRef<RNTextInput>(null);
+
+  useEffect(() => {
+    if (username.length < 3) { setUnState(username ? 'bad' : 'idle'); return; }
+    setUnState('checking');
+    let live = true;
+    const tm = setTimeout(async () => {
+      try {
+        const r = await api.usernameAvailable(username);
+        if (live) setUnState(r.ok ? 'ok' : r.reason === 'TAKEN' ? 'taken' : 'bad');
+      } catch {
+        if (live) setUnState('idle');
+      }
+    }, 400);
+    return () => { live = false; clearTimeout(tm); };
+  }, [username]);
 
   const dob = (() => {
     const d = num(dd), m = num(mm), y = num(yyyy);
@@ -60,6 +85,10 @@ export default function PhoneScreen() {
       return setError(t('phone.locked', { time: h > 0 ? `${h} ${t('phone.unitH')} ${min} ${t('common.min')}` : `${min} ${t('common.min')}` }));
     }
     setError(e instanceof ApiError ? (e.code && m[e.code] ? t(m[e.code]) : e.statusCode === 429 ? t('auth.tooMany') : e.message) : t('state.error'));
+    if (e instanceof ApiError && e.code && STEP_OF_ERROR[e.code]) {
+      if (STEP_OF_ERROR[e.code] === 'username') setUnState('taken');
+      setStep(STEP_OF_ERROR[e.code]);
+    }
   };
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -78,23 +107,39 @@ export default function PhoneScreen() {
     if (r.accessToken) {
       await signIn(r.accessToken);
       router.replace(profile && (profile as { role?: string }).role === 'TEACHER' ? '/(auth)/setup' : '/(tabs)/home');
-    } else if (r.needsProfile) setStep('profile');
+    } else if (r.needsProfile) setStep('role');
   });
   const finish = () => {
-    if (name.trim().length < 2) return setError(t('auth.errName'));
-    if (!dob) return setError(t('auth.errDob'));
     if (!accept) return setError(t('auth.errTerms'));
-    verify({ name: name.trim(), role, dateOfBirth: dob, acceptTerms: true, locale: getLocale(), ...(username ? { username } : {}) });
+    verify({ name: name.trim(), role, dateOfBirth: dob, acceptTerms: true, locale: getLocale(), username });
   };
+  const go = (s: Step) => { setError(null); setStep(s); };
+  const pIndex = PROFILE.indexOf(step);
+  const back = () => (step === 'phone' ? router.back() : step === 'code' ? go('phone') : step === 'role' ? go('code') : go(PROFILE[pIndex - 1]));
+  const canNext = step === 'role' || (step === 'name' && name.trim().length >= 2) || (step === 'username' && unState === 'ok') || (step === 'dob' && !!dob);
+  const next = () => {
+    if (step === 'name' && name.trim().length < 2) return setError(t('auth.errName'));
+    if (step === 'dob' && !dob) return setError(t('auth.errDob'));
+    if (canNext) go(PROFILE[pIndex + 1]);
+  };
+  const title = pIndex >= 0 ? t(`onb.${TITLE_KEY[step]}.title`) : t(step === 'phone' ? 'phone.title' : 'phone.codeTitle');
 
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={undefined}>
         <KeyboardScroll contentContainerStyle={styles.body}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={() => (step === 'phone' ? router.back() : setStep(step === 'profile' ? 'code' : 'phone'))} hitSlop={10}>
-            <Ionicons name="chevron-back" size={28} color={colors.text} />
-          </Pressable>
-          <Text style={styles.title}>{t(step === 'phone' ? 'phone.title' : step === 'code' ? 'phone.codeTitle' : 'phone.profileTitle')}</Text>
+          <View style={styles.headRow}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={back} hitSlop={10}>
+              <Ionicons name="chevron-back" size={28} color={colors.text} />
+            </Pressable>
+            {pIndex >= 0 && (
+              <View style={styles.progress} accessibilityLabel={`${pIndex + 1}/${PROFILE.length}`}>
+                {PROFILE.map((s, i) => <View key={s} style={[styles.progressPart, i <= pIndex && styles.progressOn]} />)}
+              </View>
+            )}
+          </View>
+          <Text style={styles.title}>{title}</Text>
+          {pIndex >= 0 && <Text style={styles.help}>{t(`onb.${TITLE_KEY[step]}.sub`)}</Text>}
 
           {step === 'phone' && (
             <>
@@ -121,28 +166,54 @@ export default function PhoneScreen() {
             </>
           )}
 
-          {step === 'profile' && (
+          {step === 'role' && (
+            <View style={styles.roles}>
+              {ROLES.map((r) => (
+                <Pressable key={r.id} accessibilityRole="radio" accessibilityState={{ selected: role === r.id }} onPress={() => setRole(r.id)} style={[styles.role, role === r.id && styles.roleOn]}>
+                  <Ionicons name={r.icon} size={30} color={role === r.id ? '#fff' : colors.primary} />
+                  <Text style={[styles.roleText, role === r.id && { color: '#fff' }]}>{t(`role.${r.id}`)}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+
+          {step === 'name' && (
+            <TextInput value={name} onChangeText={setName} autoFocus autoComplete="name" textContentType="name" placeholder={t('auth.fullName')} placeholderTextColor={colors.textMuted} accessibilityLabel={t('auth.fullName')} style={styles.input} maxLength={100} returnKeyType="next" onSubmitEditing={next} />
+          )}
+
+          {step === 'username' && (
             <>
-              <Text style={styles.help}>{t('phone.welcomeNew')}</Text>
-              <Text style={styles.label}>{t('auth.iAm')}</Text>
-              <View style={styles.roles}>
-                {ROLES.map((r) => (
-                  <Pressable key={r.id} accessibilityRole="radio" accessibilityState={{ selected: role === r.id }} onPress={() => setRole(r.id)} style={[styles.role, role === r.id && styles.roleOn]}>
-                    <Ionicons name={r.icon} size={26} color={role === r.id ? '#fff' : colors.primary} />
-                    <Text style={[styles.roleText, role === r.id && { color: '#fff' }]}>{t(`role.${r.id}`)}</Text>
-                  </Pressable>
-                ))}
+              <View style={styles.unWrap}>
+                <Text style={styles.at}>@</Text>
+                <TextInput value={username} onChangeText={(v) => setUsername(v.replace(/[^A-Za-z0-9_]/g, '').toLowerCase())} autoFocus autoCapitalize="none" autoCorrect={false} placeholder="aziz_tursunov" placeholderTextColor={colors.textMuted} accessibilityLabel={t('auth.username')} style={[styles.input, styles.unInput]} maxLength={20} returnKeyType="next" onSubmitEditing={next} />
+                <View style={styles.unIcon}>
+                  {unState === 'ok' && <Ionicons name="checkmark-circle" size={24} color={colors.success} />}
+                  {(unState === 'taken' || unState === 'bad') && <Ionicons name="close-circle" size={24} color={colors.danger} />}
+                </View>
               </View>
-              <Text style={styles.label}>{t('auth.fullName')}</Text>
-              <TextInput value={name} onChangeText={setName} autoComplete="name" textContentType="name" accessibilityLabel={t('auth.fullName')} style={styles.input} maxLength={100} />
-              <Text style={styles.label}>{t('auth.username')}</Text>
-              <TextInput value={username} onChangeText={(v) => setUsername(v.replace(/[^A-Za-z0-9_]/g, '').toLowerCase())} autoCapitalize="none" autoCorrect={false} placeholder="aziz_tursunov" placeholderTextColor={colors.textMuted} accessibilityLabel={t('auth.username')} style={styles.input} maxLength={20} />
-              <Text style={styles.label}>{t('auth.dob')}</Text>
-              <View style={styles.dobRow}>
-                <TextInput value={dd} onChangeText={setDd} placeholderTextColor={colors.textMuted} placeholder={t('auth.dd')} keyboardType="number-pad" maxLength={2} accessibilityLabel={t('auth.dd')} style={[styles.input, styles.dob]} />
-                <TextInput value={mm} onChangeText={setMm} placeholderTextColor={colors.textMuted} placeholder={t('auth.mm')} keyboardType="number-pad" maxLength={2} accessibilityLabel={t('auth.mm')} style={[styles.input, styles.dob]} />
-                <TextInput value={yyyy} onChangeText={setYyyy} placeholderTextColor={colors.textMuted} placeholder={t('auth.yyyy')} keyboardType="number-pad" maxLength={4} accessibilityLabel={t('auth.yyyy')} style={[styles.input, styles.dob, { flex: 1.6 }]} />
-              </View>
+              <Text style={[styles.hint, (unState === 'taken' || unState === 'bad') && { color: colors.danger }, unState === 'ok' && { color: colors.success }]} accessibilityLiveRegion="polite">
+                {unState === 'taken' ? t('auth.usernameTaken') : unState === 'ok' ? t('auth.usernameFree') : unState === 'bad' ? t('auth.usernameBad') : unState === 'checking' ? t('onb.user.checking') : t('auth.usernameRules')}
+              </Text>
+            </>
+          )}
+
+          {step === 'dob' && (
+            <View style={styles.dobRow}>
+              <TextInput value={dd} onChangeText={(v) => { setDd(v); if (v.length === 2) mmRef.current?.focus(); }} autoFocus placeholderTextColor={colors.textMuted} placeholder={t('auth.dd')} keyboardType="number-pad" maxLength={2} accessibilityLabel={t('auth.dd')} style={[styles.input, styles.dob]} />
+              <TextInput ref={mmRef} value={mm} onChangeText={(v) => { setMm(v); if (v.length === 2) yRef.current?.focus(); }} placeholderTextColor={colors.textMuted} placeholder={t('auth.mm')} keyboardType="number-pad" maxLength={2} accessibilityLabel={t('auth.mm')} style={[styles.input, styles.dob]} />
+              <TextInput ref={yRef} value={yyyy} onChangeText={setYyyy} placeholderTextColor={colors.textMuted} placeholder={t('auth.yyyy')} keyboardType="number-pad" maxLength={4} accessibilityLabel={t('auth.yyyy')} style={[styles.input, styles.dob, { flex: 1.6 }]} onSubmitEditing={next} />
+            </View>
+          )}
+
+          {pIndex >= 0 && step !== 'terms' && (
+            <>
+              {!!error && <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text>}
+              <Action label={t('onb.next')} kind="accent" onPress={next} disabled={!canNext} />
+            </>
+          )}
+
+          {step === 'terms' && (
+            <>
               <View style={styles.termsRow}>
                 <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: accept }} onPress={() => setAccept(!accept)} hitSlop={8}>
                   <Ionicons name={accept ? 'checkbox' : 'square-outline'} size={26} color={accept ? colors.primary : colors.textMuted} />
@@ -165,7 +236,15 @@ export default function PhoneScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   body: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xl * 2 },
-  title: { fontSize: 28, fontWeight: '800', color: colors.text, marginBottom: spacing.xs },
+  title: { fontSize: 28, fontWeight: '800', color: colors.text, marginBottom: spacing.xs, marginTop: spacing.sm },
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  progress: { flex: 1, flexDirection: 'row', gap: 4 },
+  progressPart: { flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.border },
+  progressOn: { backgroundColor: colors.primary },
+  unWrap: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm },
+  at: { position: 'absolute', left: spacing.md, zIndex: 1, fontSize: 18, fontWeight: '700', color: colors.textMuted },
+  unInput: { flex: 1, paddingLeft: spacing.md + 18, paddingRight: 44 },
+  unIcon: { position: 'absolute', right: spacing.md },
   help: { color: colors.textMuted, fontSize: 15, lineHeight: 21 },
   label: { fontWeight: '600', color: colors.text, marginTop: spacing.sm },
   input: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, paddingHorizontal: spacing.md, minHeight: 52, fontSize: 16, color: colors.text },

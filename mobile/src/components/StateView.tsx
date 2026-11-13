@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../ui/Text';
@@ -12,6 +12,14 @@ export type ViewState = 'loading' | 'empty' | 'error' | 'offline';
 export function StateView({ state, message, onRetry }: { state: ViewState; message?: string; onRetry?: () => void }) {
   const text = message ?? t(state === 'loading' ? 'state.loading' : state === 'empty' ? 'state.empty' : state === 'offline' ? 'state.offline' : 'state.error');
   const bad = state === 'error' || state === 'offline';
+  // A load that finishes in a moment should not flash a spinner and a "Loading…" word: that makes a 1-second wait feel like 3.
+  const [late, setLate] = useState(false);
+  useEffect(() => {
+    if (state !== 'loading') { setLate(false); return; }
+    const timer = setTimeout(() => setLate(true), 300);
+    return () => clearTimeout(timer);
+  }, [state]);
+  if (state === 'loading' && !late) return <View style={styles.box} />;
   return (
     <View style={styles.box} accessibilityLiveRegion="polite">
       {state === 'loading' ? <ActivityIndicator size="large" color={colors.primary} /> : (

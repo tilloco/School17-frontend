@@ -63,7 +63,6 @@ export default function WelcomeScreen() {
       </View>
       <View style={styles.actions}>
         <Action label={t('auth.phoneContinue')} kind="accent" icon="call" onPress={() => router.push('/(auth)/phone')} />
-        <Action label={t('auth.emailContinue')} kind="outline" icon="mail" onPress={() => router.push('/(auth)/signin')} />
         <Pressable accessibilityRole="button" onPress={google} disabled={busy} style={styles.google}>
           <Text style={styles.googleText}>{t('auth.google')}</Text>
         </Pressable>

@@ -65,7 +65,7 @@ export function routeFor(type: string, data?: Record<string, unknown> | null): s
     case 'guardian.linked':
       return '/(tabs)/profile';
     case 'push.test':
-      return '/market/notification-settings';
+      return '/market/notifications';
     default:
       return null;
   }

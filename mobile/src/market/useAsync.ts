@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ApiError } from '../lib/api';
+import { ApiError, captureGets } from '../lib/api';
 import type { ViewState } from '../components/StateView';
 import { onReconnect } from '../lib/connection';
 
@@ -9,6 +9,11 @@ export interface AsyncState<T> {
   error: string | null;
   reload: () => void;
 }
+
+/** Last good result of each screen's requests: opening a screen again shows it at once while the fresh data loads behind it. */
+const remembered = new Map<string, unknown>();
+const MAX_REMEMBERED = 150;
+export function forgetScreens() { remembered.clear(); }
 
 /** ApiError.statusCode === 0 — tarmoq xatosi yoki taymaut: ekranlarda "oflayn" holati ko'rsatiladi. */
 export function useAsync<T>(fn: () => Promise<T>, deps: unknown[], isEmpty?: (d: T) => boolean): AsyncState<T> {
@@ -24,11 +29,24 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[], isEmpty?: (d:
     alive.current = true;
     const key = JSON.stringify(deps);
     if (key !== depKey.current) { depKey.current = key; hasData.current = false; } // different inputs: the old data is not valid any more
-    if (!hasData.current) setState('loading'); // a refresh keeps showing the old data instead of flashing a spinner
-    fn()
+    const { result, keys } = captureGets(fn);
+    const memo = keys.length ? keys.join('&') : null;
+    if (!hasData.current && memo && remembered.has(memo)) {
+      const d = remembered.get(memo) as T;
+      hasData.current = true;
+      setData(d);
+      setError(null);
+      setState(isEmpty?.(d) ? 'empty' : 'ready');
+    } else if (!hasData.current) setState('loading'); // a refresh keeps showing the old data instead of flashing a spinner
+    result
       .then((d) => {
         if (!alive.current) return;
         hasData.current = true;
+        if (memo) {
+          remembered.delete(memo);
+          remembered.set(memo, d);
+          if (remembered.size > MAX_REMEMBERED) remembered.delete(remembered.keys().next().value as string);
+        }
         setData(d);
         setError(null);
         setState(isEmpty?.(d) ? 'empty' : 'ready');

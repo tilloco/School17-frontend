@@ -9,9 +9,12 @@ import { PushBootstrap } from '../src/notifications/PushBootstrap';
 import { KeyboardRoot } from '../src/lib/keyboard';
 import { RealtimeProvider } from '../src/lib/realtime';
 import { ConnectionProvider } from '../src/lib/connection';
+import { API_URL } from '../src/lib/api';
 import { DialogHost, installDialog } from '../src/ui/Dialog';
 
 installDialog();
+// Wake a sleeping server while the person is still looking at the welcome screen.
+fetch(`${API_URL}/health`).catch(() => undefined);
 import { useFonts } from 'expo-font';
 import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
 import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';

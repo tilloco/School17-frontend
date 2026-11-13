@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { api, setUnauthorizedHandler } from './api';
+import { forgetScreens } from '../market/useAsync';
 import { clearToken, getToken, saveToken } from './storage';
 import type { User } from '../types/api';
 
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     await clearToken();
+    forgetScreens();
     setToken(null);
     setUser(null);
   }, []);

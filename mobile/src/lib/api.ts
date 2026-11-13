@@ -3,6 +3,8 @@ import type { ApiErrorBody, User, VerifyOtpResponse } from '../types/api';
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 const DEFAULT_TIMEOUT_MS = 15000;
+/** A free server that has been idle needs up to a minute to wake; the second try waits for it instead of giving up again. */
+const RETRY_TIMEOUT_MS = 45000;
 export class ApiError extends Error {
   statusCode: number;
   code?: string;
@@ -28,27 +30,41 @@ interface RequestOptions {
   headers?: Record<string, string>;
 }
 
+let capturing: string[] | null = null;
+/** Runs fn and reports which GET requests it started right away (screens use this to remember their last result). */
+export function captureGets<T>(fn: () => T): { result: T; keys: string[] } {
+  const previous = capturing;
+  const keys: string[] = [];
+  capturing = keys;
+  try {
+    return { result: fn(), keys };
+  } finally {
+    capturing = previous;
+  }
+}
+
 /** Reads (GET) are tried once more after a short pause when the network blinks; writes are never repeated by themselves. */
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const isRead = !options.method || options.method === 'GET';
+  if (isRead && capturing) capturing.push(`${(options.token ?? '').slice(-12)}|${path}`);
   try {
     return await requestOnce<T>(path, options);
   } catch (e) {
     if (isRead && e instanceof ApiError && e.statusCode === 0) {
       await new Promise((r) => setTimeout(r, 700));
-      return requestOnce<T>(path, options);
+      return requestOnce<T>(path, options, RETRY_TIMEOUT_MS);
     }
     throw e;
   }
 }
 
-async function requestOnce<T>(path: string, options: RequestOptions = {}): Promise<T> {
+async function requestOnce<T>(path: string, options: RequestOptions = {}, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (options.token) headers.Authorization = `Bearer ${options.token}`;
   if (options.headers) Object.assign(headers, options.headers);
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   let res: Response;
   try {
@@ -113,6 +129,7 @@ export const api = {
   requestPhoneCode: async (phone: string) => request<{ sent: boolean; ttlSeconds: number; devCode?: string }>('/auth/phone/request', { method: 'POST', body: { phone }, headers: { 'X-Device-Id': await deviceId() } }),
   verifyPhoneCode: (body: Record<string, unknown>) => request<{ accessToken?: string; needsProfile?: boolean }>('/auth/phone/verify', { method: 'POST', body }),
   loginWithGoogle: (idToken: string) => request<VerifyOtpResponse>('/auth/google', { method: 'POST', body: { idToken } }),
+  usernameAvailable: (u: string) => request<{ ok: boolean; reason?: 'TAKEN' | 'BAD' }>(`/auth/username-check?u=${encodeURIComponent(u)}`),
 };
 
 export const apiRequest = request;
