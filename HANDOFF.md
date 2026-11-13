@@ -1,3 +1,4 @@
+**Deploy, build and current state: read `docs/TEAM_HANDOFF.md` first (2026-11-14).**
 STEP1 done. Prompts applied: S17-RESUME-V5, S17-GATE1-NOTE, S17-CLASSROOM-V1.
 (A7, A8 also done before the gate; next after the gate: A9.)
 # HANDOFF

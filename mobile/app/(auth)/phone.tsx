@@ -116,7 +116,7 @@ export default function PhoneScreen() {
   const go = (s: Step) => { setError(null); setStep(s); };
   const pIndex = PROFILE.indexOf(step);
   const back = () => (step === 'phone' ? router.back() : step === 'code' ? go('phone') : step === 'role' ? go('code') : go(PROFILE[pIndex - 1]));
-  const canNext = step === 'role' || (step === 'name' && name.trim().length >= 2) || (step === 'username' && unState === 'ok') || (step === 'dob' && !!dob);
+  const canNext = step === 'role' || (step === 'name' && name.trim().length >= 2) || (step === 'username' && username.length >= 3 && (unState === 'ok' || unState === 'idle')) || (step === 'dob' && !!dob);
   const next = () => {
     if (step === 'name' && name.trim().length < 2) return setError(t('auth.errName'));
     if (step === 'dob' && !dob) return setError(t('auth.errDob'));
